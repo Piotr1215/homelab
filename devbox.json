@@ -5,7 +5,9 @@
     "kn@latest",
     "fluxcd@latest",
     "ollama@latest",
-    "vault@latest"
+    "vault@latest",
+    "cilium-cli@latest",
+    "hubble@latest"
   ],
   "shell": {
     "init_hook": [

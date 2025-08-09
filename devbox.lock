@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "cilium-cli@latest": {
+      "last_modified": "2025-08-05T11:35:34Z",
+      "resolved": "github:NixOS/nixpkgs/a683adc19ff5228af548c6539dbc3440509bfed3#cilium-cli",
+      "source": "devbox-search",
+      "version": "0.18.6",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ycj2v9f0cl5xszzhyixd3acwmlh4yapy-cilium-cli-0.18.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ycj2v9f0cl5xszzhyixd3acwmlh4yapy-cilium-cli-0.18.6"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/3zaddxxb2qvs9jynp3vcfxq06jl2miv5-cilium-cli-0.18.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/3zaddxxb2qvs9jynp3vcfxq06jl2miv5-cilium-cli-0.18.6"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/xcaa6n1w491iz7lvvm9yqshfgxcnf7yr-cilium-cli-0.18.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/xcaa6n1w491iz7lvvm9yqshfgxcnf7yr-cilium-cli-0.18.6"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/b2nzz1lrwfd8yqx0xwkwwbdvbifdkz58-cilium-cli-0.18.6",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/b2nzz1lrwfd8yqx0xwkwwbdvbifdkz58-cilium-cli-0.18.6"
+        }
+      }
+    },
     "fluxcd@latest": {
       "last_modified": "2025-07-28T17:09:23Z",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#fluxcd",
@@ -52,6 +100,54 @@
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2025-08-09T03:53:37Z",
       "resolved": "github:NixOS/nixpkgs/00b574b1ba8a352f0601c4dde4faff4b534ebb1e?lastModified=1754711617&narHash=sha256-WrZ280bT6NzNbBo%2BCKeJA%2FNW1rhvN%2FRUPZczqCpu2mI%3D"
+    },
+    "hubble@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#hubble",
+      "source": "devbox-search",
+      "version": "1.17.2",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/r77xjjj9v6kq5b1j6dnhp5m7rdbbkdxq-hubble-1.17.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/r77xjjj9v6kq5b1j6dnhp5m7rdbbkdxq-hubble-1.17.2"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/j9lp9nd556r9m4qwxzfjb09rmv7ss3fz-hubble-1.17.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/j9lp9nd556r9m4qwxzfjb09rmv7ss3fz-hubble-1.17.2"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/2g230w8ygxb5j5a35krzxmcwb504rcxc-hubble-1.17.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/2g230w8ygxb5j5a35krzxmcwb504rcxc-hubble-1.17.2"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/nf154sbs85x7wvby1zpgc7bcw00d4p6i-hubble-1.17.2",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/nf154sbs85x7wvby1zpgc7bcw00d4p6i-hubble-1.17.2"
+        }
+      }
     },
     "istioctl@latest": {
       "last_modified": "2025-07-31T04:07:16Z",

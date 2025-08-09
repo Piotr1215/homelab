@@ -51,17 +51,17 @@ data:
           href: http://192.168.178.94
           icon: homepage.svg
     - Services:
-      - Nginx Demo:
-          description: Sample Application
-          href: http://nginx.vcluster.local
-          icon: nginx.svg
+      - Proxmox:
+          description: Hypervisor Management
+          href: https://192.168.178.75:8006
+          icon: proxmox.svg
       - External Secrets:
-          description: ESO Operator
-          href: #
+          description: View in ArgoCD
+          href: http://192.168.178.93/applications/argocd/configs
           icon: kubernetes.svg
       - Cert Manager:
-          description: TLS Certificate Management
-          href: #
+          description: View in ArgoCD
+          href: http://192.168.178.93/applications/argocd/infrastructure
           icon: cert-manager.svg
   settings.yaml: |
     title: Homelab Dashboard

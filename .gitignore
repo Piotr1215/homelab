@@ -1,2 +1,67 @@
+# Claude
 **/.claude/settings.local.json
+
+# Terraform
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+terraform.tfstate.backup
+
+# Kubernetes
 kubeconfig
+*.kubeconfig
+config
+.kube/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+tmp/
+
+# Secrets
+*.key
+*.pem
+*.crt
+*.csr
+secrets/
+*-secret.yaml
+*-secrets.yaml
+vault-token
+
+# Devbox
+.devbox/
+devbox.lock
+
+# Nix
+result
+result-*

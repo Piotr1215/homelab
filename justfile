@@ -27,3 +27,25 @@ retrieve_headlamp_token:
 
 apply-storage:
   kubectl --kubeconfig=./kubeconfig apply -f yaml/local-storage-class.yaml -f yaml/vcluster-pv.yaml
+
+# ArgoCD commands
+argocd_port := "8080"
+copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
+browse := if os() == "linux" { "xdg-open" } else { "open" }
+
+launch_argo:
+  #!/usr/bin/env bash
+  echo "ArgoCD Admin Password (copied to clipboard):"
+  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d | tee >({{copy}})
+  echo ""
+  echo "Getting ArgoCD LoadBalancer IP..."
+  ARGO_IP=$(kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "Opening ArgoCD UI at http://$ARGO_IP"
+  sleep 2
+  nohup {{browse}} http://$ARGO_IP >/dev/null 2>&1 &
+
+argo_password:
+  @kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+argo_sync_apps:
+  kubectl apply -f gitops/clusters/homelab/

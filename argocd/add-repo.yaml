@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: homelab-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: https://github.com/Piotr1215/homelab
+  # For private repos, you need one of:
+  # Option 1: Username and PAT (Personal Access Token)
+  # username: Piotr1215
+  # password: <YOUR_GITHUB_PAT>
+  
+  # Option 2: SSH key
+  # sshPrivateKey: |
+  #   -----BEGIN RSA PRIVATE KEY-----
+  #   ...
+  #   -----END RSA PRIVATE KEY-----

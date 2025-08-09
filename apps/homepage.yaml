@@ -19,33 +19,64 @@ metadata:
     
 data:
   bookmarks.yaml: |
-    - Developer:
-      - Github:
+    - Homelab:
+      - Github Repo:
         - abbr: GH
-          href: https://github.com/
+          href: https://github.com/Piotr1215/homelab
+      - ArgoCD:
+        - abbr: Argo
+          href: http://192.168.178.93
+      - Vault:
+        - abbr: Vault
+          href: http://192.168.178.92:8200
   docker.yaml: ""
   kubernetes.yaml: |
-    mode: disable
+    mode: cluster
   services.yaml: |
-    - My First Group:
-      - My First Service:
-          description: Homepage is awesome
-          href: http://localhost/
-    - My Second Group:
-      - My Second Service:
-          description: Homepage is the best
-          href: http://localhost/
-    - My Third Group:
-      - My Third Service:
-          description: "Homepage is \U0001F60E"
-          href: http://localhost/
+    - Infrastructure:
+      - ArgoCD:
+          description: GitOps Continuous Delivery
+          href: http://192.168.178.93
+          icon: argocd.svg
+      - Vault:
+          description: Secrets Management
+          href: http://192.168.178.92:8200
+          icon: vault.svg
+      - Homepage:
+          description: This Dashboard
+          href: http://192.168.178.94
+          icon: homepage.svg
+    - Kubernetes:
+      - Control Plane:
+          description: kube-main
+          href: #
+          icon: kubernetes.svg
+      - Worker 1:
+          description: kube-worker1
+          href: #
+          icon: kubernetes.svg
+      - Worker 2:
+          description: kube-worker2
+          href: #
+          icon: kubernetes.svg
+    - Monitoring:
+      - External Secrets:
+          description: ESO Operator
+          href: #
+          icon: kubernetes.svg
   settings.yaml: |
-    title: Homepage
+    title: Homelab Dashboard
     headerStyle: boxed
     layout:
-      My First Group:
-      My Second Group:
-      My Third Group:
+      Infrastructure:
+        style: row
+        columns: 3
+      Kubernetes:
+        style: row
+        columns: 3
+      Monitoring:
+        style: row
+        columns: 3
     
   widgets.yaml: |
     - resources:
@@ -74,7 +105,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 3000
+    - port: 80
       targetPort: http
       protocol: TCP
       name: http
@@ -125,7 +156,7 @@ spec:
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "192.168.178.94:3000"
+              value: "192.168.178.94"
           ports:
             - name: http
               containerPort: 3000

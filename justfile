@@ -49,3 +49,18 @@ argo_password:
 
 argo_sync_apps:
   kubectl apply -f gitops/clusters/homelab/
+
+launch_vault:
+  #!/usr/bin/env bash
+  echo "Vault Root Token (copied to clipboard): root"
+  echo "root" | {{copy}}
+  VAULT_IP=$(kubectl get svc -n vault vault-ui -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "Opening Vault UI at http://$VAULT_IP:8200"
+  sleep 2
+  nohup {{browse}} http://$VAULT_IP:8200 >/dev/null 2>&1 &
+
+launch_homepage:
+  #!/usr/bin/env bash
+  HOMEPAGE_IP=$(kubectl get svc -n homepage homepage -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "Opening Homepage at http://$HOMEPAGE_IP"
+  nohup {{browse}} http://$HOMEPAGE_IP >/dev/null 2>&1 &

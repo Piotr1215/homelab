@@ -1,0 +1,21 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ***REMOVED***-bucket-setup
+  namespace: ***REMOVED***
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mc
+        image: ***REMOVED***/mc:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          mc alias set ***REMOVED*** http://***REMOVED***.***REMOVED***.svc.cluster.local:9000 ***REMOVED*** ***REMOVED***
+          mc mb --ignore-existing ***REMOVED***/velero-backups
+          mc anonymous set download ***REMOVED***/velero-backups
+          echo "Bucket setup complete!"

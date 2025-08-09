@@ -34,6 +34,10 @@ data:
         - abbr: Argo
           href: https://argo-cd.readthedocs.io/
   docker.yaml: ""
+  proxmox.yaml: |
+    url: https://192.168.178.75:8006
+    username: homepage@pve!homepage-token
+    password: ***REMOVED***
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
@@ -63,10 +67,16 @@ data:
           description: Secrets Management
           href: http://192.168.178.92:8200
           icon: vault.svg
+          showStats: true
+          namespace: vault
+          podSelector: app.kubernetes.io/name=vault
       - Hubble UI:
           description: eBPF Network Observability
           href: http://192.168.178.95
           icon: cilium.svg
+          showStats: true
+          namespace: kube-system
+          podSelector: k8s-app=hubble-ui
     - Network:
       - FRITZ!Box:
           description: Router & Internet Gateway
@@ -82,22 +92,87 @@ data:
           description: Hypervisor Management  
           href: https://192.168.178.75:8006
           icon: proxmox.svg
+          showStats: true
+          widget:
+            type: proxmox
+            url: https://192.168.178.75:8006
+            username: homepage@pve!homepage-token
+            password: ***REMOVED***
+            node: pve
+    - Virtual Machines:
+      - Kube Main:
+          description: Control Plane VM 101
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/101/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
+      - Kube Worker1:
+          description: Worker Node VM 102
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/102/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
+      - Kube Worker2:
+          description: Worker Node VM 103
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/103/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed
     layout:
-      Infrastructure:
+      Core Infrastructure:
         style: row
         columns: 2
-      Critical System Components:
+      Security & Monitoring:
         style: row
         columns: 2
       Network:
         style: row
         columns: 1
-      Management:
+      Infrastructure:
         style: row
-        columns: 2
+        columns: 1
+      Virtual Machines:
+        style: row
+        columns: 3
     
   widgets.yaml: |
     - glances:
@@ -106,20 +181,20 @@ data:
         cpu: true
         mem: true
         uptime: true
-        disk: /
-        label: "Proxmox Host"
+        disk:
+          - /
+          - /var/lib/vz
+        expanded: true
+        label: "Proxmox Host (i7-13620H • 32GB RAM • 1TB NVMe)"
     - kubernetes:
         cluster:
           show: true
           cpu: true
           memory: true
           showLabel: true
-          label: "Homelab Cluster"
+          label: "Kubernetes Cluster"
         nodes:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
+          show: false
     - search:
         provider: duckduckgo
         target: _blank

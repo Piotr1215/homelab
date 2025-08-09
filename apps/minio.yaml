@@ -1,0 +1,104 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ***REMOVED***
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ***REMOVED***-pvc
+  namespace: ***REMOVED***
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ***REMOVED***
+  namespace: ***REMOVED***
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ***REMOVED***
+  template:
+    metadata:
+      labels:
+        app: ***REMOVED***
+    spec:
+      containers:
+      - name: ***REMOVED***
+        image: ***REMOVED***/***REMOVED***:latest
+        args:
+        - server
+        - /data
+        - --console-address
+        - ":9001"
+        env:
+        - name: MINIO_ROOT_USER
+          value: "***REMOVED***"
+        - name: MINIO_ROOT_PASSWORD
+          value: "***REMOVED***"
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        volumeMounts:
+        - name: storage
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /***REMOVED***/health/live
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /***REMOVED***/health/ready
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 20
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: ***REMOVED***-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ***REMOVED***
+  namespace: ***REMOVED***
+spec:
+  selector:
+    app: ***REMOVED***
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: api
+    - port: 9001
+      targetPort: 9001
+      protocol: TCP
+      name: console
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ***REMOVED***-console
+  namespace: ***REMOVED***
+spec:
+  selector:
+    app: ***REMOVED***
+  ports:
+    - port: 80
+      targetPort: 9001
+      protocol: TCP
+  type: LoadBalancer

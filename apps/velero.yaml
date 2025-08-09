@@ -1,0 +1,79 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://vmware-tanzu.github.io/helm-charts
+    targetRevision: 7.2.1
+    chart: velero
+    helm:
+      values: |
+        initContainers:
+          - name: velero-plugin-for-aws
+            image: velero/velero-plugin-for-aws:v1.10.1
+            imagePullPolicy: IfNotPresent
+            volumeMounts:
+              - mountPath: /target
+                name: plugins
+        configuration:
+          backupStorageLocation:
+            - name: default
+              provider: aws
+              bucket: velero-backups
+              config:
+                region: ***REMOVED***
+                s3ForcePathStyle: "true"
+                s3Url: http://***REMOVED***.***REMOVED***.svc.cluster.local:9000
+                publicUrl: http://***REMOVED***.***REMOVED***.svc.cluster.local:9000
+          volumeSnapshotLocation:
+            - name: default
+              provider: aws
+              config:
+                region: ***REMOVED***
+        credentials:
+          useSecret: true
+          name: velero-credentials
+          secretContents:
+            cloud: |
+              [default]
+              aws_access_key_id=***REMOVED***
+              aws_secret_access_key=***REMOVED***
+        backupsEnabled: true
+        snapshotsEnabled: false
+        deployNodeAgent: true
+        nodeAgent:
+          podVolumePath: /var/lib/kubelet/pods
+          privileged: true
+        resources:
+          requests:
+            cpu: 500m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false
+            additionalLabels: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

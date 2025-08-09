@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ***REMOVED***-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/data/***REMOVED***
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - kube-main
+          - kube-worker1
+          - kube-worker2

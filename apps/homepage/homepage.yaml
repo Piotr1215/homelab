@@ -1,0 +1,177 @@
+---
+# Source: homepage/templates/common.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  labels:
+    helm.sh/chart: homepage-2.1.0
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/managed-by: Helm
+    
+data:
+  bookmarks.yaml: |
+    - Developer:
+      - Github:
+        - abbr: GH
+          href: https://github.com/
+  docker.yaml: ""
+  kubernetes.yaml: |
+    mode: disable
+  services.yaml: |
+    - My First Group:
+      - My First Service:
+          description: Homepage is awesome
+          href: http://localhost/
+    - My Second Group:
+      - My Second Service:
+          description: Homepage is the best
+          href: http://localhost/
+    - My Third Group:
+      - My Third Service:
+          description: "Homepage is \U0001F60E"
+          href: http://localhost/
+  settings.yaml: |
+    title: Homepage
+    headerStyle: boxed
+    layout:
+      My First Group:
+      My Second Group:
+      My Third Group:
+    
+  widgets.yaml: |
+    - resources:
+        backend: resources
+        cpu: true
+        expanded: true
+        memory: true
+    - search:
+        provider: duckduckgo
+        target: _blank
+---
+# Source: homepage/templates/common.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+  labels:
+    app.kubernetes.io/service: homepage
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/version: v1.2.0
+    helm.sh/chart: homepage-2.1.0
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/name: homepage
+---
+# Source: homepage/templates/common.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  labels:
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/version: v1.2.0
+    helm.sh/chart: homepage-2.1.0
+  annotations:
+    values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: homepage
+      app.kubernetes.io/instance: homepage
+  template:
+    metadata:
+      annotations:
+        
+        values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
+      labels:
+        app.kubernetes.io/name: homepage
+        app.kubernetes.io/instance: homepage
+    spec:
+      
+      serviceAccountName: default
+      automountServiceAccountToken: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:v1.2.0
+          imagePullPolicy: 
+          env:
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: <nil>
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - name: homepage-base-config
+              mountPath: /app/config
+            - name: homepage-config
+              subPath: bookmarks.yaml
+              mountPath: /app/config/bookmarks.yaml
+            - name: homepage-config
+              subPath: docker.yaml
+              mountPath: /app/config/docker.yaml
+            - name: homepage-config
+              subPath: kubernetes.yaml
+              mountPath: /app/config/kubernetes.yaml
+            - name: homepage-config
+              subPath: services.yaml
+              mountPath: /app/config/services.yaml
+            - name: homepage-config
+              subPath: settings.yaml
+              mountPath: /app/config/settings.yaml
+            - name: homepage-config
+              subPath: widgets.yaml
+              mountPath: /app/config/widgets.yaml
+            - name: logs
+              mountPath: /app/config/logs
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+          startupProbe:
+            failureThreshold: 30
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+      volumes:
+        - name: homepage-base-config
+          emptyDir: {}
+        - name: homepage-config
+          configMap:
+            name: homepage
+        - name: logs
+          emptyDir:
+            {}

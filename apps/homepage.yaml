@@ -62,7 +62,7 @@ data:
             env: 1
             kubernetes: true
             key: ***REMOVED***
-    - Security & Monitoring:
+    - Services:
       - Vault:
           description: Secrets Management
           href: http://192.168.178.92:8200
@@ -70,6 +70,13 @@ data:
           showStats: true
           namespace: vault
           podSelector: app.kubernetes.io/name=vault
+      - MinIO:
+          description: S3-Compatible Object Storage
+          href: http://192.168.178.97
+          icon: ***REMOVED***.svg
+          showStats: true
+          namespace: ***REMOVED***
+          podSelector: app=***REMOVED***
       - Hubble UI:
           description: eBPF Network Observability
           href: http://192.168.178.95
@@ -161,9 +168,9 @@ data:
       Core Infrastructure:
         style: row
         columns: 2
-      Security & Monitoring:
+      Services:
         style: row
-        columns: 2
+        columns: 3
       Network:
         style: row
         columns: 1
@@ -198,55 +205,6 @@ data:
     - search:
         provider: duckduckgo
         target: _blank
----
-# ServiceAccount for Homepage to access Kubernetes API
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: homepage
-  namespace: homepage
-  labels:
-    app.kubernetes.io/name: homepage
-    app.kubernetes.io/instance: homepage
----
-# ClusterRole for Homepage
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: homepage
-  labels:
-    app.kubernetes.io/name: homepage
-    app.kubernetes.io/instance: homepage
-rules:
-  - apiGroups: [""]
-    resources: ["namespaces", "pods", "nodes", "services"]
-    verbs: ["get", "list"]
-  - apiGroups: ["extensions", "apps"]
-    resources: ["deployments", "replicasets"]
-    verbs: ["get", "list"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get", "list"]
-  - apiGroups: ["metrics.k8s.io"]
-    resources: ["nodes", "pods"]
-    verbs: ["get", "list"]
----
-# ClusterRoleBinding for Homepage
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: homepage
-  labels:
-    app.kubernetes.io/name: homepage
-    app.kubernetes.io/instance: homepage
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: homepage
-subjects:
-  - kind: ServiceAccount
-    name: homepage
-    namespace: homepage
 ---
 # Source: homepage/templates/common.yaml
 apiVersion: v1

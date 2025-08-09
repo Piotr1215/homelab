@@ -64,3 +64,11 @@ launch_homepage:
   HOMEPAGE_IP=$(kubectl get svc -n homepage homepage -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
   echo "Opening Homepage at http://$HOMEPAGE_IP"
   nohup {{browse}} http://$HOMEPAGE_IP >/dev/null 2>&1 &
+
+# Launch Portainer UI
+launch_portainer:
+  #!/usr/bin/env bash
+  PORTAINER_IP=$(kubectl get svc -n portainer portainer -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "Opening Portainer at https://$PORTAINER_IP:9443"
+  echo "Note: First time setup required - create admin user"
+  nohup {{browse}} https://$PORTAINER_IP:9443 >/dev/null 2>&1 &

@@ -37,44 +37,77 @@ data:
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
-    - Infrastructure:
+    - Core Infrastructure:
       - ArgoCD:
           description: GitOps Continuous Delivery
           href: http://192.168.178.93
-          icon: argocd.svg
+          icon: argocd.png
+          showStats: true
+          widget:
+            type: argocd
+            url: http://192.168.178.93
+            key: ***REMOVED***
+      - Portainer:
+          description: Container Management Platform
+          href: https://192.168.178.96:9443
+          icon: portainer.svg
+          showStats: true
+          widget:
+            type: portainer
+            url: https://192.168.178.96:9443
+            env: 1
+            kubernetes: true
+            key: ***REMOVED***
+    - Security & Monitoring:
       - Vault:
           description: Secrets Management
           href: http://192.168.178.92:8200
           icon: vault.svg
-      - Homepage:
-          description: This Dashboard
-          href: http://192.168.178.94
-          icon: homepage.svg
-    - Services:
+      - Hubble UI:
+          description: eBPF Network Observability
+          href: http://192.168.178.95
+          icon: cilium.svg
+    - Network:
+      - FRITZ!Box:
+          description: Router & Internet Gateway
+          href: http://fritz.box
+          icon: router.svg
+          showStats: true
+          widget:
+            type: fritzbox
+            url: http://192.168.178.1
+            fields: ["connectionStatus", "uptime", "maxDown", "maxUp"]
+    - Infrastructure:
       - Proxmox:
-          description: Hypervisor Management
+          description: Hypervisor Management  
           href: https://192.168.178.75:8006
           icon: proxmox.svg
-      - External Secrets:
-          description: View in ArgoCD
-          href: http://192.168.178.93/applications/argocd/configs
-          icon: kubernetes.svg
-      - Cert Manager:
-          description: View in ArgoCD
-          href: http://192.168.178.93/applications/argocd/infrastructure
-          icon: cert-manager.svg
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed
     layout:
       Infrastructure:
         style: row
-        columns: 3
-      Services:
+        columns: 2
+      Critical System Components:
         style: row
-        columns: 3
+        columns: 2
+      Network:
+        style: row
+        columns: 1
+      Management:
+        style: row
+        columns: 2
     
   widgets.yaml: |
+    - glances:
+        url: http://192.168.178.75:61208
+        version: 3
+        cpu: true
+        mem: true
+        uptime: true
+        disk: /
+        label: "Proxmox Host"
     - kubernetes:
         cluster:
           show: true
@@ -90,6 +123,55 @@ data:
     - search:
         provider: duckduckgo
         target: _blank
+---
+# ServiceAccount for Homepage to access Kubernetes API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/instance: homepage
+---
+# ClusterRole for Homepage
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/instance: homepage
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "nodes", "services"]
+    verbs: ["get", "list"]
+  - apiGroups: ["extensions", "apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+---
+# ClusterRoleBinding for Homepage
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/instance: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homepage
+subjects:
+  - kind: ServiceAccount
+    name: homepage
+    namespace: homepage
 ---
 # Source: homepage/templates/common.yaml
 apiVersion: v1
@@ -155,11 +237,13 @@ spec:
       enableServiceLinks: true
       containers:
         - name: homepage
-          image: ghcr.io/gethomepage/homepage:v1.2.0
+          image: ghcr.io/gethomepage/homepage:latest
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
               value: "192.168.178.94"
+            - name: LOG_LEVEL
+              value: "debug"
           ports:
             - name: http
               containerPort: 3000

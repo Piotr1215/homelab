@@ -12,8 +12,6 @@ spec:
     includedNamespaces:
     - "*"
     storageLocation: default
-    volumeSnapshotLocations:
-    - default
 ---
 # Hourly backup of critical namespaces
 apiVersion: velero.io/v1
@@ -32,8 +30,6 @@ spec:
     - vault
     - ***REMOVED***
     storageLocation: default
-    volumeSnapshotLocations:
-    - default
 ---
 # Weekly backup with extended retention
 apiVersion: velero.io/v1
@@ -48,6 +44,4 @@ spec:
     includedNamespaces:
     - "*"
     storageLocation: default
-    volumeSnapshotLocations:
-    - default
     includeClusterResources: true

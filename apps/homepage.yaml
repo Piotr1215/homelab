@@ -45,7 +45,7 @@ data:
       - ArgoCD:
           description: GitOps Continuous Delivery
           href: http://192.168.178.93
-          icon: argocd.png
+          icon: git.svg
           showStats: true
           widget:
             type: argocd
@@ -106,6 +106,17 @@ data:
             username: homepage@pve!homepage-token
             password: ***REMOVED***
             node: pve
+      - Synology NAS:
+          description: Network Attached Storage
+          href: http://192.168.178.60:5000
+          icon: synology.svg
+          showStats: true
+          widget:
+            type: diskstation
+            url: http://192.168.178.60:5000
+            username: homepage_stats
+            password: ***REMOVED***
+            volume: volume_1
     - Virtual Machines:
       - Kube Main:
           description: Control Plane VM 101
@@ -176,7 +187,7 @@ data:
         columns: 1
       Infrastructure:
         style: row
-        columns: 1
+        columns: 2
       Virtual Machines:
         style: row
         columns: 3

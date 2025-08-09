@@ -4,18 +4,7 @@ kind: Namespace
 metadata:
   name: ***REMOVED***
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: ***REMOVED***-pvc
-  namespace: ***REMOVED***
-spec:
-  storageClassName: local-storage
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
+# Using NFS PVC defined in ***REMOVED***-nfs-pv.yaml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -68,7 +57,7 @@ spec:
       volumes:
       - name: storage
         persistentVolumeClaim:
-          claimName: ***REMOVED***-pvc
+          claimName: ***REMOVED***-nfs-pvc
 ---
 apiVersion: v1
 kind: Service

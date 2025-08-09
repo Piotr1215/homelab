@@ -62,5 +62,5 @@ launch_vault:
 launch_homepage:
   #!/usr/bin/env bash
   HOMEPAGE_IP=$(kubectl get svc -n homepage homepage -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  echo "Opening Homepage at http://$HOMEPAGE_IP"
-  nohup {{browse}} http://$HOMEPAGE_IP >/dev/null 2>&1 &
+  echo "Opening Homepage at http://$HOMEPAGE_IP:3000"
+  nohup {{browse}} http://$HOMEPAGE_IP:3000 >/dev/null 2>&1 &

@@ -125,7 +125,7 @@ spec:
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: <nil>
+              value: "192.168.178.94:3000"
           ports:
             - name: http
               containerPort: 3000

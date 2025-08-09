@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homepage
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    chart: homepage
+    repoURL: https://jameswynn.github.io/helm-charts
+    targetRevision: 1.2.3
+    helm:
+      values: |
+        config:
+          bookmarks:
+            - Homelab:
+                - ArgoCD:
+                    - abbr: Argo
+                      href: http://192.168.178.93
+                - Vault:
+                    - abbr: Vault
+                      href: http://192.168.178.92:8200
+                - Github:
+                    - abbr: GH
+                      href: https://github.com/Piotr1215/homelab
+          services:
+            - Infrastructure:
+                - ArgoCD:
+                    href: http://192.168.178.93
+                    description: GitOps Continuous Delivery
+                - Vault:
+                    href: http://192.168.178.92:8200
+                    description: Secrets Management
+          widgets:
+            - kubernetes:
+                cluster:
+                  show: true
+                  cpu: true
+                  memory: true
+                  showLabel: true
+                  label: "homelab"
+                nodes:
+                  show: true
+                  cpu: true
+                  memory: true
+                  showLabel: true
+            - search:
+                provider: duckduckgo
+                target: _blank
+        kubernetes:
+          mode: cluster
+        serviceAccount:
+          create: true
+          name: homepage
+        enableRbac: true
+        service:
+          main:
+            type: LoadBalancer
+        ingress:
+          main:
+            enabled: true
+            ingressClassName: nginx
+            hosts:
+              - host: homepage.local
+                paths:
+                  - path: /
+                    pathType: Prefix
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homepage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

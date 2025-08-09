@@ -1,0 +1,70 @@
+global:
+  domain: argocd.local
+
+configs:
+  params:
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    server.insecure: true
+  
+  cm:
+    timeout.reconciliation: 60s
+    application.resourceTrackingMethod: annotation
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+
+server:
+  service:
+    type: LoadBalancer
+  
+  extraArgs:
+    - --insecure
+  
+  config:
+    repositories: |
+      - type: git
+        url: https://github.com/yourusername/homelab-gitops
+        name: homelab
+
+controller:
+  replicas: 1
+  
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+
+repoServer:
+  replicas: 1
+  
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8084"
+
+redis:
+  enabled: true
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+applicationSet:
+  enabled: true
+  replicas: 1

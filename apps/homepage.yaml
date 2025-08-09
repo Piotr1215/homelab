@@ -9,6 +9,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: homepage
+  namespace: homepage
   labels:
     helm.sh/chart: homepage-2.1.0
     app.kubernetes.io/name: homepage
@@ -61,6 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: homepage
+  namespace: homepage
   labels:
     app.kubernetes.io/service: homepage
     app.kubernetes.io/instance: homepage
@@ -85,6 +87,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: homepage
+  namespace: homepage
   labels:
     app.kubernetes.io/instance: homepage
     app.kubernetes.io/managed-by: Helm

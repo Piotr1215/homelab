@@ -19,16 +19,20 @@ metadata:
     
 data:
   bookmarks.yaml: |
-    - Homelab:
-      - Github Repo:
+    - Developer:
+      - Github:
         - abbr: GH
+          href: https://github.com/Piotr1215
+      - Homelab Repo:
+        - abbr: Repo
           href: https://github.com/Piotr1215/homelab
-      - ArgoCD:
+    - Documentation:
+      - K8s Docs:
+        - abbr: K8s
+          href: https://kubernetes.io/docs/
+      - ArgoCD Docs:
         - abbr: Argo
-          href: http://192.168.178.93
-      - Vault:
-        - abbr: Vault
-          href: http://192.168.178.92:8200
+          href: https://argo-cd.readthedocs.io/
   docker.yaml: ""
   kubernetes.yaml: |
     mode: cluster
@@ -46,24 +50,19 @@ data:
           description: This Dashboard
           href: http://192.168.178.94
           icon: homepage.svg
-    - Kubernetes:
-      - Control Plane:
-          description: kube-main
-          href: #
-          icon: kubernetes.svg
-      - Worker 1:
-          description: kube-worker1
-          href: #
-          icon: kubernetes.svg
-      - Worker 2:
-          description: kube-worker2
-          href: #
-          icon: kubernetes.svg
-    - Monitoring:
+    - Services:
+      - Nginx Demo:
+          description: Sample Application
+          href: http://nginx.vcluster.local
+          icon: nginx.svg
       - External Secrets:
           description: ESO Operator
           href: #
           icon: kubernetes.svg
+      - Cert Manager:
+          description: TLS Certificate Management
+          href: #
+          icon: cert-manager.svg
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed
@@ -71,19 +70,23 @@ data:
       Infrastructure:
         style: row
         columns: 3
-      Kubernetes:
-        style: row
-        columns: 3
-      Monitoring:
+      Services:
         style: row
         columns: 3
     
   widgets.yaml: |
-    - resources:
-        backend: resources
-        cpu: true
-        expanded: true
-        memory: true
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "Homelab Cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
     - search:
         provider: duckduckgo
         target: _blank
@@ -146,7 +149,7 @@ spec:
         app.kubernetes.io/instance: homepage
     spec:
       
-      serviceAccountName: default
+      serviceAccountName: homepage
       automountServiceAccountToken: true
       dnsPolicy: ClusterFirst
       enableServiceLinks: true

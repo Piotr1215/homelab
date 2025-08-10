@@ -1,25 +1,27 @@
+set export
+
 default:
   just --list
 
 # SSH connections
 ubuntu:
-  ssh coder@192.168.178.76
+  ssh coder@${UBUNTU_HOST}
 
 kube-main:
-  ssh decoder@192.168.178.87
+  ssh decoder@${KUBE_MAIN}
 
 kube-worker1:
-  ssh decoder@192.168.178.88
+  ssh decoder@${KUBE_WORKER1}
 
 kube-worker2:
-  ssh decoder@192.168.178.89
+  ssh decoder@${KUBE_WORKER2}
 
 proxmox:
-  ssh root@192.168.178.75
+  ssh root@${PROXMOX_HOST}
 
 # Utilities
 get-kubeconfig:
-  scp decoder@192.168.178.87:/etc/kubernetes/admin.conf ./kubeconfig
+  scp decoder@${KUBE_MAIN}:/etc/kubernetes/admin.conf ./kubeconfig
 
 copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
 browse := if os() == "linux" { "xdg-open" } else { "open" }

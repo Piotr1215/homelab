@@ -10,5 +10,12 @@ export KUBECONFIG=/path/to/your/kubeconfig
 export VAULT_TOKEN=your-vault-token
 export VAULT_ADDR='http://your-vault-ip:8200'
 
+# Homelab hosts (optional - used by justfile SSH shortcuts)
+export PROXMOX_HOST=your-proxmox-ip
+export UBUNTU_HOST=your-ubuntu-ip
+export KUBE_MAIN=your-kube-main-ip
+export KUBE_WORKER1=your-kube-worker1-ip
+export KUBE_WORKER2=your-kube-worker2-ip
+
 # Note: All application secrets are managed through Vault and pulled
 # by External Secrets Operator. You don't need to set them locally.

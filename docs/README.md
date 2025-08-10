@@ -101,9 +101,3 @@ See `just --list` for all available commands:
 - `just launch_homepage` - Open Homepage dashboard
 - `just argo_suspend` - Disable auto-sync for development
 - `just argo_resume` - Re-enable auto-sync
-
-## Notes
-
-- **App of Apps Pattern**: Root applications in `gitops/clusters/homelab/` deploy everything else
-- **Future**: Will migrate to ApplicationSets for better scalability
-- **Security**: All secrets managed via Vault, no hardcoded values

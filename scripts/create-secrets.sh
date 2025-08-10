@@ -16,7 +16,7 @@ fi
 
 # Create namespaces if they don't exist
 kubectl create namespace homepage --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace ***REMOVED*** --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace minio --dry-run=client -o yaml | kubectl apply -f -
 
 # Homepage secrets from environment variables
 echo "Creating homepage secrets..."
@@ -30,8 +30,8 @@ kubectl create secret generic homepage-secrets \
 
 # MinIO secrets from environment variables
 echo "Creating MinIO secrets..."
-kubectl create secret generic ***REMOVED***-secrets \
-  --namespace=***REMOVED*** \
+kubectl create secret generic minio-secrets \
+  --namespace=minio \
   --from-literal=root-user="${MINIO_ROOT_USER}" \
   --from-literal=root-password="${MINIO_ROOT_PASSWORD}" \
   --dry-run=client -o yaml | kubectl apply -f -

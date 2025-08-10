@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: ***REMOVED***-nfs-pv
+  name: minio-nfs-pv
 spec:
   capacity:
     storage: 100Gi  # Adjust size as needed
@@ -17,13 +17,13 @@ spec:
     - rw
   nfs:
     server: 192.168.178.60  # Synology NAS IP
-    path: /volume1/Kubernetes/***REMOVED***  # Synology NAS path (note capital K)
+    path: /volume1/Kubernetes/minio  # Synology NAS path (note capital K)
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ***REMOVED***-nfs-pvc
-  namespace: ***REMOVED***
+  name: minio-nfs-pvc
+  namespace: minio
 spec:
   storageClassName: nfs-storage
   accessModes:

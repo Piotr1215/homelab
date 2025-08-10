@@ -84,9 +84,27 @@ argo_suspend:
     kubectl annotate application $app -n argocd \
       argocd.argoproj.io/disable-auto-sync="true" --overwrite
   done
-  echo "✅ Auto-sync disabled for all applications."
+  echo "✅ Auto-sync disabled for $(kubectl get applications -n argocd --no-headers | wc -l) applications."
   echo "📝 Apps will show as OutOfSync but won't auto-reconcile."
-  echo "💡 Manual sync is still possible if needed."
+  echo "⚠️  Note: New apps added after this won't be suspended automatically!"
+  echo "💡 Run 'just argo_suspend_watch' to continuously suspend new apps."
+
+# Watch for new apps and suspend them automatically
+argo_suspend_watch:
+  #!/usr/bin/env bash
+  echo "👁️  Watching for new ArgoCD applications to suspend..."
+  echo "Press Ctrl+C to stop watching"
+  while true; do
+    for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
+      # Check if already has the annotation
+      if ! kubectl get application $app -n argocd -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/disable-auto-sync}' | grep -q "true"; then
+        echo "  🆕 New app detected: $app - suspending..."
+        kubectl annotate application $app -n argocd \
+          argocd.argoproj.io/disable-auto-sync="true" --overwrite
+      fi
+    done
+    sleep 5
+  done
 
 # Resume auto-sync for all applications
 argo_resume:
@@ -164,10 +182,10 @@ argo_start:
 argo_status:
   @echo "📊 ArgoCD Application Status:"
   @echo "================================"
-  @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision | column -t
+  @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,AUTO-SYNC:.metadata.annotations.argocd\\.argoproj\\.io/disable-auto-sync | column -t
   @echo ""
   @echo "🔍 Controller Status:"
   @kubectl get statefulset argocd-application-controller -n argocd
   @echo ""
-  @echo "📝 Sync Windows (if any):"
-  @kubectl get appproject default -n argocd -o jsonpath='{.spec.syncWindows}' 2>/dev/null || echo "No sync windows configured"
+  @echo "🚫 Suspended Apps:"
+  @kubectl get applications -n argocd -o json | jq -r '.items[] | select(.metadata.annotations."argocd.argoproj.io/disable-auto-sync" == "true") | .metadata.name' | xargs echo "  -" 2>/dev/null || echo "  None"

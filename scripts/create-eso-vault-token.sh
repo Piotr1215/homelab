@@ -27,7 +27,7 @@ ESO_TOKEN=$(vault token create -policy=eso-policy -format=json | jq -r '.auth.cl
 echo "Creating Kubernetes secret with Vault token for ESO..."
 
 # Create the token secret in each namespace that needs it
-for namespace in homepage ***REMOVED*** default; do
+for namespace in homepage minio default; do
     echo "Creating vault-token secret in namespace: $namespace"
     kubectl create namespace $namespace --dry-run=client -o yaml | kubectl apply -f -
     

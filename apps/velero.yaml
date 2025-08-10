@@ -32,15 +32,15 @@ spec:
               provider: aws
               bucket: velero-backups
               config:
-                region: ***REMOVED***
+                region: minio
                 s3ForcePathStyle: "true"
-                s3Url: http://***REMOVED***.***REMOVED***.svc.cluster.local:9000
-                publicUrl: http://***REMOVED***.***REMOVED***.svc.cluster.local:9000
+                s3Url: http://minio.minio.svc.cluster.local:9000
+                publicUrl: http://minio.minio.svc.cluster.local:9000
           volumeSnapshotLocation:
             - name: default
               provider: aws
               config:
-                region: ***REMOVED***
+                region: minio
         credentials:
           useSecret: true
           name: velero-credentials

@@ -6,9 +6,9 @@ Velero provides backup and restore capabilities for Kubernetes cluster resources
 ## Components
 
 ### 1. MinIO (S3-Compatible Storage)
-- **File**: `***REMOVED***.yaml`
+- **File**: `minio.yaml`
 - Provides S3-compatible object storage for Velero backups
-- Deployed in `***REMOVED***` namespace
+- Deployed in `minio` namespace
 - Console accessible via LoadBalancer service
 
 ### 2. Velero
@@ -31,12 +31,12 @@ Velero provides backup and restore capabilities for Kubernetes cluster resources
 
 2. **Deploy MinIO storage**:
    ```bash
-   kubectl apply -f ***REMOVED***.yaml
+   kubectl apply -f minio.yaml
    ```
 
 3. **Wait for MinIO to be ready**:
    ```bash
-   kubectl wait --for=condition=ready pod -l app=***REMOVED*** -n ***REMOVED*** --timeout=300s
+   kubectl wait --for=condition=ready pod -l app=minio -n minio --timeout=300s
    ```
 
 4. **Create the backup bucket**:
@@ -54,10 +54,10 @@ Velero provides backup and restore capabilities for Kubernetes cluster resources
 ### MinIO Console
 After deployment, get the MinIO console URL:
 ```bash
-kubectl get svc ***REMOVED***-console -n ***REMOVED***
+kubectl get svc minio-console -n minio
 ```
-- Username: `***REMOVED***`
-- Password: `***REMOVED***`
+- Username: `minio`
+- Password: `minio123`
 
 ### Velero CLI
 Install the Velero CLI:
@@ -94,8 +94,8 @@ velero schedule create daily-backup --schedule="0 2 * * *" --include-namespaces 
 ### Backup Storage Location
 - Provider: AWS (S3-compatible)
 - Bucket: `velero-backups`
-- Region: `***REMOVED***`
-- S3 URL: `http://***REMOVED***.***REMOVED***.svc.cluster.local:9000`
+- Region: `minio`
+- S3 URL: `http://minio.minio.svc.cluster.local:9000`
 
 ### Node Agent
 - Enabled for filesystem backups
@@ -140,6 +140,6 @@ velero backup logs <backup-name>
 
 ### Verify MinIO connectivity
 ```bash
-kubectl run -it --rm debug --image=***REMOVED***/mc:latest --restart=Never -n velero -- \
-  mc alias set ***REMOVED*** http://***REMOVED***.***REMOVED***.svc.cluster.local:9000 ***REMOVED*** ***REMOVED***
+kubectl run -it --rm debug --image=minio/mc:latest --restart=Never -n velero -- \
+  mc alias set minio http://minio.minio.svc.cluster.local:9000 minio minio123
 ```

@@ -46,7 +46,7 @@ Generate and distribute Vault tokens for ESO to use:
 This will:
 - Create a Vault policy for ESO with read access to `homelab/*`
 - Generate a Vault token with that policy
-- Create `vault-token` secrets in namespaces: homepage, ***REMOVED***, default
+- Create `vault-token` secrets in namespaces: homepage, minio, default
 
 ### 4. Apply ESO Configurations
 
@@ -67,8 +67,8 @@ kubectl get secret homepage-secrets -n homepage
 kubectl describe externalsecret homepage-secrets -n homepage
 
 # Check MinIO secrets
-kubectl get secret ***REMOVED***-secrets -n ***REMOVED***
-kubectl describe externalsecret ***REMOVED***-secrets -n ***REMOVED***
+kubectl get secret minio-secrets -n minio
+kubectl describe externalsecret minio-secrets -n minio
 
 # Check other secrets
 kubectl get secret synology-secrets -n default
@@ -84,7 +84,7 @@ Now you can deploy the applications that use these secrets:
 kubectl apply -f apps/homepage-with-eso.yaml
 
 # Deploy MinIO with ESO-managed secrets
-kubectl apply -f apps/***REMOVED***-clean.yaml
+kubectl apply -f apps/minio-clean.yaml
 ```
 
 ## Secret Structure in Vault
@@ -98,7 +98,7 @@ homelab/
 │   ├── argocd_token
 │   ├── portainer_key
 │   └── grafana_password
-├── ***REMOVED***/
+├── minio/
 │   ├── root_user
 │   └── root_password
 ├── synology/

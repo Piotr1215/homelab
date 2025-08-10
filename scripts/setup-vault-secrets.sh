@@ -56,7 +56,7 @@ vault kv put secret/homepage/config \
 
 # Store MinIO secrets in Vault
 echo "Storing MinIO secrets in Vault..."
-vault kv put secret/***REMOVED***/config \
+vault kv put secret/minio/config \
   root_user="${MINIO_ROOT_USER}" \
   root_password="${MINIO_ROOT_PASSWORD}"
 

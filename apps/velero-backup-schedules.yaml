@@ -28,7 +28,7 @@ spec:
     - homepage
     - portainer
     - vault
-    - ***REMOVED***
+    - minio
     storageLocation: default
 ---
 # Weekly backup with extended retention

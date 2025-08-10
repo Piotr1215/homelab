@@ -164,10 +164,10 @@ data:
       - MinIO:
           description: S3-Compatible Object Storage
           href: http://192.168.178.97:9001
-          icon: ***REMOVED***.svg
+          icon: minio.svg
           showStats: true
-          namespace: ***REMOVED***
-          podSelector: app=***REMOVED***
+          namespace: minio
+          podSelector: app=minio
       - Hubble UI:
           description: eBPF Network Observability
           href: http://192.168.178.95

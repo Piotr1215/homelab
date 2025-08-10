@@ -72,3 +72,98 @@ launch_portainer:
   echo "Opening Portainer at https://$PORTAINER_IP:9443"
   echo "Note: First time setup required - create admin user"
   nohup {{browse}} https://$PORTAINER_IP:9443 >/dev/null 2>&1 &
+
+# ArgoCD sync management for branch development using Sync Windows
+# Create a "deny all" sync window to prevent any syncing
+argo_suspend:
+  #!/usr/bin/env bash
+  echo "🛑 Creating sync window to suspend ArgoCD reconciliation..."
+  # Create an AppProject with a deny-all sync window if it doesn't exist
+  kubectl apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  description: Default project with sync window control
+  sourceRepos:
+  - '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  syncWindows:
+  - kind: deny
+    schedule: '* * * * *'
+    duration: 24h
+    timeZone: "UTC"
+    manualSync: false
+EOF
+  echo "✅ Sync window created. ArgoCD will NOT sync automatically."
+  echo "📝 Note: Manual syncs are still disabled. Apps will remain OutOfSync."
+
+# Remove sync window to resume normal operations
+argo_resume:
+  #!/usr/bin/env bash
+  echo "▶️  Removing sync window to resume ArgoCD reconciliation..."
+  # Remove the sync windows from the default project
+  kubectl patch appproject default -n argocd --type='json' \
+    -p='[{"op":"remove","path":"/spec/syncWindows"}]' 2>/dev/null || \
+  kubectl patch appproject default -n argocd --type='merge' \
+    -p='{"spec":{"syncWindows":[]}}' 2>/dev/null || true
+  echo "✅ Sync window removed. ArgoCD can now sync normally."
+  echo "🔄 Re-enabling auto-sync for all applications..."
+  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
+    kubectl patch application $app -n argocd --type='merge' \
+      -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}' 2>/dev/null || true
+  done
+  echo "✅ Auto-sync re-enabled for all applications."
+
+# Alternative: Use compare-options to ignore differences
+argo_ignore_diffs:
+  #!/usr/bin/env bash
+  echo "🔧 Configuring ArgoCD to ignore local differences..."
+  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
+    echo "  Configuring: $app"
+    kubectl patch application $app -n argocd --type='merge' \
+      -p='{"spec":{"ignoreDifferences":[{"group":"*","kind":"*","jsonPointers":["/data","/spec"]}]}}'
+  done
+  echo "✅ ArgoCD will now ignore differences in data and spec fields."
+
+# Remove ignore differences configuration
+argo_track_diffs:
+  #!/usr/bin/env bash
+  echo "🔍 Resetting ArgoCD to track all differences..."
+  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
+    echo "  Resetting: $app"
+    kubectl patch application $app -n argocd --type='json' \
+      -p='[{"op":"remove","path":"/spec/ignoreDifferences"}]' 2>/dev/null || true
+  done
+  echo "✅ ArgoCD will now track all differences again."
+
+# Apply local changes from current branch (use after argo_disable_sync)
+apply_local:
+  #!/usr/bin/env bash
+  echo "Applying local changes from current branch..."
+  echo "📁 Applying apps..."
+  kubectl apply -f apps/ 2>/dev/null || true
+  echo "📁 Applying gitops/infra..."
+  kubectl apply -f gitops/infra/ 2>/dev/null || true
+  echo "✅ Local changes applied."
+
+# Full workflow: suspend ArgoCD and test branch locally
+test_branch:
+  just argo_suspend
+  just apply_local
+  @echo "🧪 Branch testing mode enabled. Test your changes locally."
+  @echo "⚠️  Remember to run 'just restore_argo' when done!"
+
+# Restore ArgoCD control
+restore_argo:
+  just argo_resume
+  @echo "🔄 ArgoCD will now sync from the main branch."
+  @echo "🔃 Triggering sync for all apps..."
+  @kubectl get applications -n argocd -o name | xargs -I {} kubectl patch {} -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'

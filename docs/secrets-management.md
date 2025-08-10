@@ -2,6 +2,23 @@
 
 This guide explains how to set up secrets management for the homelab using Vault and External Secrets Operator (ESO).
 
+## Local Development Setup
+
+For local development, copy `.envrc.example` to `.envrc` and update with your values:
+
+```bash
+cp .envrc.example .envrc
+# Edit .envrc with your Vault token and address
+direnv allow
+```
+
+Only the following secrets are needed locally:
+- `VAULT_TOKEN` - For Vault CLI operations
+- `VAULT_ADDR` - Vault server address  
+- `KUBECONFIG` - Path to your kubeconfig file
+
+All application secrets are managed through Vault and automatically synced to Kubernetes via External Secrets Operator.
+
 ## Prerequisites
 
 1. Vault is installed and running at `http://192.168.178.92:8200`

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source_up
+eval "$(devbox generate direnv --print-envrc)"
+
+# Essential local configuration
+export KUBECONFIG=/path/to/your/kubeconfig
+
+# Vault CLI access (for managing secrets)
+export VAULT_TOKEN=your-vault-token
+export VAULT_ADDR='http://your-vault-ip:8200'
+
+# Note: All application secrets are managed through Vault and pulled
+# by External Secrets Operator. You don't need to set them locally.

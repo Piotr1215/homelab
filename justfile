@@ -73,21 +73,19 @@ launch_portainer:
   echo "Note: First time setup required - create admin user"
   nohup {{browse}} https://$PORTAINER_IP:9443 >/dev/null 2>&1 &
 
-# ArgoCD sync management using official annotation approach
-# Temporarily disable auto-sync for all applications
+# ArgoCD sync management - simple approach
+# Disable automated sync policy for all applications
 argo_suspend:
   #!/usr/bin/env bash
-  echo "🛑 Disabling auto-sync for all ArgoCD applications..."
+  echo "🛑 Disabling automated sync for all ArgoCD applications..."
   for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    echo "  Disabling auto-sync for: $app"
-    # Add annotation to disable auto-sync temporarily
-    kubectl annotate application $app -n argocd \
-      argocd.argoproj.io/disable-auto-sync="true" --overwrite
+    echo "  Removing automated sync from: $app"
+    # Remove the automated sync policy
+    kubectl patch application $app -n argocd --type='json' \
+      -p='[{"op":"remove","path":"/spec/syncPolicy/automated"}]' 2>/dev/null || true
   done
-  echo "✅ Auto-sync disabled for $(kubectl get applications -n argocd --no-headers | wc -l) applications."
-  echo "📝 Apps will show as OutOfSync but won't auto-reconcile."
-  echo "⚠️  Note: New apps added after this won't be suspended automatically!"
-  echo "💡 Run 'just argo_suspend_watch' to continuously suspend new apps."
+  echo "✅ Automated sync disabled for all applications."
+  echo "📝 Apps can still be synced manually but won't auto-sync."
 
 # Watch for new apps and suspend them automatically
 argo_suspend_watch:
@@ -106,18 +104,18 @@ argo_suspend_watch:
     sleep 5
   done
 
-# Resume auto-sync for all applications
+# Re-enable automated sync for all applications
 argo_resume:
   #!/usr/bin/env bash
-  echo "▶️  Re-enabling auto-sync for all ArgoCD applications..."
+  echo "▶️  Re-enabling automated sync for all ArgoCD applications..."
   for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    echo "  Enabling auto-sync for: $app"
-    # Remove the disable-auto-sync annotation
-    kubectl annotate application $app -n argocd \
-      argocd.argoproj.io/disable-auto-sync- --overwrite
+    echo "  Enabling automated sync for: $app"
+    # Add automated sync policy with prune and self-heal
+    kubectl patch application $app -n argocd --type='merge' \
+      -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
   done
-  echo "✅ Auto-sync re-enabled for all applications."
-  echo "🔄 Applications will now reconcile automatically."
+  echo "✅ Automated sync re-enabled for all applications."
+  echo "🔄 Applications will now sync automatically from Git."
 
 # Alternative: Use compare-options to ignore differences
 argo_ignore_diffs:

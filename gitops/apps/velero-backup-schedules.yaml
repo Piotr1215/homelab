@@ -13,24 +13,6 @@ spec:
     - "*"
     storageLocation: default
 ---
-# Hourly backup of critical namespaces
-apiVersion: velero.io/v1
-kind: Schedule
-metadata:
-  name: hourly-critical
-  namespace: velero
-spec:
-  schedule: "0 * * * *"
-  template:
-    ttl: 168h  # Keep backups for 7 days
-    includedNamespaces:
-    - argocd
-    - homepage
-    - portainer
-    - vault
-    - minio
-    storageLocation: default
----
 # Weekly backup with extended retention
 apiVersion: velero.io/v1
 kind: Schedule

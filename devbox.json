@@ -7,7 +7,8 @@
     "ollama@latest",
     "vault@latest",
     "cilium-cli@latest",
-    "hubble@latest"
+    "hubble@latest",
+    "velero@latest",
   ],
   "shell": {
     "init_hook": [
@@ -15,8 +16,8 @@
     ],
     "scripts": {
       "test": [
-        "echo \"Error: no test specified\" && exit 1"
+        "echo \"Error: no test specified\" && exit 1",
       ],
-    }
-  }
+    },
+  },
 }

@@ -1,0 +1,274 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: homepage
+---
+# SecretStore to connect to Vault
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vault-backend
+  namespace: homepage
+spec:
+  provider:
+    vault:
+      server: "http://192.168.178.92:8200"
+      path: "homelab"
+      version: "v2"
+      auth:
+        tokenSecretRef:
+          name: "vault-token"
+          key: "token"
+---
+# ExternalSecret to pull Homepage secrets from Vault
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: homepage-secrets
+  namespace: homepage
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: homepage-secrets
+    creationPolicy: Owner
+  data:
+  - secretKey: proxmox-password
+    remoteRef:
+      key: homepage
+      property: proxmox_password
+  - secretKey: argocd-token
+    remoteRef:
+      key: homepage
+      property: argocd_token
+  - secretKey: portainer-key
+    remoteRef:
+      key: homepage
+      property: portainer_key
+  - secretKey: grafana-password
+    remoteRef:
+      key: homepage
+      property: grafana_password
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  namespace: homepage
+data:
+  kubernetes.yaml: |
+    mode: cluster
+  proxmox.yaml: |
+    url: https://192.168.178.75:8006
+    username: homepage@pve!homepage-token
+    password: {{HOMEPAGE_FILE_PROXMOX_PASSWORD}}
+  bookmarks.yaml: |
+    - Developer:
+      - Github:
+        - abbr: GH
+          href: https://github.com/Piotr1215
+      - Homelab Repo:
+        - abbr: Repo
+          href: https://github.com/Piotr1215/homelab
+    - Documentation:
+      - K8s Docs:
+        - abbr: K8s
+          href: https://kubernetes.io/docs/
+      - ArgoCD Docs:
+        - abbr: Argo
+          href: https://argo-cd.readthedocs.io/
+  services.yaml: |
+    - Management:
+      - ArgoCD:
+          description: GitOps Continuous Delivery
+          href: http://192.168.178.93
+          icon: git.svg
+          showStats: true
+          widget:
+            type: argocd
+            url: http://192.168.178.93
+            key: {{HOMEPAGE_FILE_ARGOCD_TOKEN}}
+      - Portainer:
+          description: Container Management Platform
+          href: https://192.168.178.96:9443
+          icon: portainer.svg
+          showStats: true
+          widget:
+            type: portainer
+            url: https://192.168.178.96:9443
+            env: 1
+            kubernetes: true
+            key: {{HOMEPAGE_FILE_PORTAINER_KEY}}
+    - Observability:
+      - Prometheus:
+          description: Metrics & Monitoring
+          href: http://192.168.178.99:9090
+          icon: prometheus.svg
+          widget:
+            type: prometheus
+            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+      - Grafana:
+          description: Visualization & Dashboards
+          href: http://192.168.178.98
+          icon: grafana.svg
+          widget:
+            type: grafana
+            url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local:80
+            username: admin
+            password: {{HOMEPAGE_FILE_GRAFANA_PASSWORD}}
+  docker.yaml: ""
+  settings.yaml: ""
+  widgets.yaml: ""
+  custom.css: ""
+  custom.js: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/name: homepage
+  annotations:
+    kubernetes.io/service-account.name: homepage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "nodes", "services"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homepage
+subjects:
+  - kind: ServiceAccount
+    name: homepage
+    namespace: homepage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: homepage
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: homepage
+    spec:
+      serviceAccountName: homepage
+      automountServiceAccountToken: true
+      containers:
+      - name: homepage
+        image: ghcr.io/gethomepage/homepage:latest
+        imagePullPolicy: Always
+        env:
+          - name: HOMEPAGE_ALLOWED_HOSTS
+            value: "*"
+          # Point to the mounted secret files
+          - name: HOMEPAGE_FILE_PROXMOX_PASSWORD
+            value: /secrets/proxmox-password
+          - name: HOMEPAGE_FILE_ARGOCD_TOKEN
+            value: /secrets/argocd-token
+          - name: HOMEPAGE_FILE_PORTAINER_KEY
+            value: /secrets/portainer-key
+          - name: HOMEPAGE_FILE_GRAFANA_PASSWORD
+            value: /secrets/grafana-password
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        # Mount config files
+        - mountPath: /app/config/kubernetes.yaml
+          name: homepage-config
+          subPath: kubernetes.yaml
+        - mountPath: /app/config/proxmox.yaml
+          name: homepage-config
+          subPath: proxmox.yaml
+        - mountPath: /app/config/bookmarks.yaml
+          name: homepage-config
+          subPath: bookmarks.yaml
+        - mountPath: /app/config/services.yaml
+          name: homepage-config
+          subPath: services.yaml
+        - mountPath: /app/config/docker.yaml
+          name: homepage-config
+          subPath: docker.yaml
+        - mountPath: /app/config/settings.yaml
+          name: homepage-config
+          subPath: settings.yaml
+        - mountPath: /app/config/widgets.yaml
+          name: homepage-config
+          subPath: widgets.yaml
+        - mountPath: /app/config/custom.css
+          name: homepage-config
+          subPath: custom.css
+        - mountPath: /app/config/custom.js
+          name: homepage-config
+          subPath: custom.js
+        # Mount secrets as files (managed by ESO)
+        - mountPath: /secrets
+          name: homepage-secrets
+          readOnly: true
+        - mountPath: /app/config/logs
+          name: logs
+      volumes:
+      - name: homepage-config
+        configMap:
+          name: homepage
+      - name: homepage-secrets
+        secret:
+          secretName: homepage-secrets  # This secret is created by ESO
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.94
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: homepage

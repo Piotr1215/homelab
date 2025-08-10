@@ -1,5 +1,8 @@
 set export
 
+copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
+browse := if os() == "linux" { "xdg-open" } else { "open" }
+
 default:
   just --list
 
@@ -22,9 +25,6 @@ proxmox:
 # Utilities
 get-kubeconfig:
   scp decoder@${KUBE_MAIN}:/etc/kubernetes/admin.conf ./kubeconfig
-
-copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
-browse := if os() == "linux" { "xdg-open" } else { "open" }
 
 # Launch ArgoCD UI
 launch_argo:

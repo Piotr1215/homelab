@@ -74,3 +74,8 @@ argo_resume:
 # Check ArgoCD status
 argo_status:
   @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status
+
+# Check Shell Operator status
+shell_operator_status:
+  @kubectl get pods -n shell-operator
+  @kubectl logs -n shell-operator -l app=shell-operator --tail=20

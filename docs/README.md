@@ -20,25 +20,31 @@ flowchart LR
 ## Directory Structure
 
 ```
-.
-├── apps/                    # Application manifests
-│   ├── homepage.yaml       # Homepage dashboard
-│   ├── minio.yaml         # MinIO object storage
-│   ├── portainer.yaml     # Portainer management
-│   └── velero.yaml        # Backup solution
-├── gitops/
+/home/decoder/dev/homelab
+├── docs/                    # Essential documentation
+│   ├── CLAUDE.md           # Claude AI context
+│   ├── README.md           # This file
+│   └── secrets-management.md
+├── gitops/                  # All Kubernetes manifests
+│   ├── apps/               # Application deployments
+│   │   ├── homepage.yaml   # Homepage dashboard
+│   │   ├── minio.yaml      # MinIO object storage
+│   │   ├── portainer.yaml  # Portainer UI
+│   │   └── velero.yaml     # Backup solution
 │   ├── clusters/
-│   │   └── homelab/       # Cluster-specific ArgoCD apps
-│   │       ├── apps.yaml          # App of Apps for applications
-│   │       └── infrastructure.yaml # App of Apps for infrastructure
-│   └── infra/             # Infrastructure components
-│       ├── eso-*.yaml     # External Secrets Operator
-│       ├── metallb-*.yaml # MetalLB load balancer
-│       └── monitoring/    # Prometheus, Grafana
-├── terraform/              # Infrastructure as Code
-│   └── argocd/           # ArgoCD deployment via Terraform
-├── docs/                  # Documentation
-└── justfile              # Task automation (see 'just --list')
+│   │   └── homelab/        # ArgoCD root applications
+│   │       ├── apps.yaml
+│   │       └── infrastructure.yaml
+│   └── infra/              # Infrastructure components
+│       ├── eso-*.yaml      # External Secrets Operator
+│       ├── metallb-*.yaml  # Load balancer
+│       └── prometheus.yaml # Monitoring stack
+├── scripts/                 # Utility scripts
+│   └── check-metallb-health.sh
+├── terraform/               # Infrastructure as Code
+│   └── argocd/             # ArgoCD Terraform deployment
+├── devbox.json             # Development environment
+└── justfile                # Task automation
 ```
 
 ## Quick Start

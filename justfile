@@ -73,19 +73,15 @@ launch_portainer:
   echo "Note: First time setup required - create admin user"
   nohup {{browse}} https://$PORTAINER_IP:9443 >/dev/null 2>&1 &
 
-# ArgoCD sync management - simple approach
-# Disable automated sync policy for all applications
+# Disable ArgoCD automated sync for all applications
 argo_suspend:
   #!/usr/bin/env bash
-  echo "🛑 Disabling automated sync for all ArgoCD applications..."
+  echo "Disabling ArgoCD automated sync..."
   for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    echo "  Removing automated sync from: $app"
-    # Remove the automated sync policy
     kubectl patch application $app -n argocd --type='json' \
       -p='[{"op":"remove","path":"/spec/syncPolicy/automated"}]' 2>/dev/null || true
   done
-  echo "✅ Automated sync disabled for all applications."
-  echo "📝 Apps can still be synced manually but won't auto-sync."
+  echo "Done. Apps can be synced manually."
 
 # Watch for new apps and suspend them automatically
 argo_suspend_watch:
@@ -104,18 +100,15 @@ argo_suspend_watch:
     sleep 5
   done
 
-# Re-enable automated sync for all applications
+# Re-enable ArgoCD automated sync for all applications
 argo_resume:
   #!/usr/bin/env bash
-  echo "▶️  Re-enabling automated sync for all ArgoCD applications..."
+  echo "Re-enabling ArgoCD automated sync..."
   for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    echo "  Enabling automated sync for: $app"
-    # Add automated sync policy with prune and self-heal
     kubectl patch application $app -n argocd --type='merge' \
       -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
   done
-  echo "✅ Automated sync re-enabled for all applications."
-  echo "🔄 Applications will now sync automatically from Git."
+  echo "Done. Automated sync enabled."
 
 # Alternative: Use compare-options to ignore differences
 argo_ignore_diffs:

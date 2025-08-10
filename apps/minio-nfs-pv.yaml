@@ -12,7 +12,9 @@ spec:
   storageClassName: nfs-storage
   mountOptions:
     - hard
-    - nfsvers=3
+    - nfsvers=4
+    - nolock
+    - rw
   nfs:
     server: 192.168.178.60  # Synology NAS IP
     path: /volume1/Kubernetes/***REMOVED***  # Synology NAS path (note capital K)

@@ -61,7 +61,7 @@ spec:
       volumes:
       - name: storage
         persistentVolumeClaim:
-          claimName: ***REMOVED***-pvc
+          claimName: ***REMOVED***-nfs-pvc
 ---
 apiVersion: v1
 kind: Service

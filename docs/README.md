@@ -96,8 +96,10 @@ kubectl apply -f gitops/clusters/homelab/
 ## Useful Commands
 
 See `just --list` for all available commands:
-- `just launch_argo` - Open ArgoCD UI
-- `just launch_vault` - Open Vault UI  
+- `just launch_argo` - Open ArgoCD UI with password in clipboard
 - `just launch_homepage` - Open Homepage dashboard
-- `just argo_suspend` - Disable auto-sync for development
-- `just argo_resume` - Re-enable auto-sync
+- `just argo_suspend` - Disable auto-sync for all apps
+- `just argo_resume` - Re-enable auto-sync for all apps
+- `just argo_stop` - Stop ArgoCD controller completely
+- `just argo_start` - Start ArgoCD controller
+- `just argo_status` - Check sync status of all applications

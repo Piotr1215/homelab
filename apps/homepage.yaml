@@ -84,16 +84,11 @@ data:
           showStats: true
           namespace: kube-system
           podSelector: k8s-app=hubble-ui
-    - Network:
-      - FRITZ!Box:
-          description: Router & Internet Gateway
-          href: http://fritz.box
-          icon: router.svg
-          showStats: true
-          widget:
-            type: fritzbox
-            url: http://192.168.178.1
-            fields: ["connectionStatus", "uptime", "maxDown", "maxUp"]
+      - Glances:
+          description: System Monitoring
+          href: http://192.168.178.75:61208
+          icon: glances.svg
+          showStats: false
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management  
@@ -117,6 +112,65 @@ data:
             username: homepage_stats
             password: ***REMOVED***
             volume: volume_1
+    - Proxmox Monitoring:
+      - System Info:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: info
+            refreshInterval: 60000
+      - CPU Usage:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: cpu
+            refreshInterval: 5000
+            pointsLimit: 15
+      - Memory Usage:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: memory
+            refreshInterval: 5000
+      - Disk I/O:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: disk:nvme0n1
+            diskUnits: bytes
+            refreshInterval: 5000
+      - Network Traffic:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: network:enp87s0
+            refreshInterval: 5000
+      - Top Processes:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: process
+            refreshInterval: 5000
+      - CPU Temperature:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: sensor:Package id 0
+            refreshInterval: 5000
+      - Root Filesystem:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: fs:/
+            refreshInterval: 30000
     - Virtual Machines:
       - Kube Main:
           description: Control Plane VM 101
@@ -181,11 +235,11 @@ data:
         columns: 2
       Services:
         style: row
-        columns: 3
-      Network:
-        style: row
-        columns: 1
+        columns: 4
       Infrastructure:
+        style: row
+        columns: 2
+      Proxmox Monitoring:
         style: row
         columns: 2
       Virtual Machines:
@@ -193,17 +247,6 @@ data:
         columns: 3
     
   widgets.yaml: |
-    - glances:
-        url: http://192.168.178.75:61208
-        version: 3
-        cpu: true
-        mem: true
-        uptime: true
-        disk:
-          - /
-          - /var/lib/vz
-        expanded: true
-        label: "Proxmox Host (i7-13620H • 32GB RAM • 1TB NVMe)"
     - kubernetes:
         cluster:
           show: true
@@ -212,7 +255,10 @@ data:
           showLabel: true
           label: "Kubernetes Cluster"
         nodes:
-          show: false
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
     - search:
         provider: duckduckgo
         target: _blank

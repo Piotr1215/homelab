@@ -1,52 +1,103 @@
 # Homelab GitOps Repository
 
-## Directory Structure
-
-```
-gitops/
-├── apps/                     # Application deployments
-│   └── */                    # Individual applications
-├── clusters/
-│   └── homelab/             # Cluster-specific configurations
-│       ├── apps.yaml        # App of Apps for applications
-│       └── infrastructure.yaml # App of Apps for infrastructure
-├── terraform/               # Terraform configurations for ArgoCD
-│   └── argocd/             # ArgoCD Helm deployment
-└── gitops/
-    └── infra/              # Infrastructure components (ESO, MetalLB, etc.)
-```
-
-## Deployment Strategy
-
-1. **App of Apps Pattern**: Root applications in `clusters/homelab/` that deploy everything else
-2. **Separation of Concerns**: 
-   - Infrastructure (operators, controllers)
-   - Configs (CRDs, custom resources)
-   - Apps (actual applications)
-
-## Getting Started
-
-1. Install ArgoCD:
-```bash
-cd /home/decoder/dev/homelab/terraform/argocd
-terraform init
-terraform apply
-```
-
-2. Get admin password:
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
-
-3. Access ArgoCD UI at LoadBalancer IP on port 80
-
-4. Apply root app:
-```bash
-kubectl apply -f gitops/clusters/homelab/
-```
-
 ## Video Tutorial
 
 [![Homelab GitOps Setup](https://img.youtube.com/vi/5YFmYcic8XQ/0.jpg)](https://www.youtube.com/watch?v=5YFmYcic8XQ)
 
 Watch the complete homelab setup walkthrough on YouTube.
+
+## Architecture Overview
+
+```mermaid
+flowchart LR
+    Proxmox --> K8s
+    K8s --> Services
+    
+    Proxmox -.-> NAS
+    Services -.-> NAS
+```
+
+## Directory Structure
+
+```
+.
+├── apps/                    # Application manifests
+│   ├── homepage.yaml       # Homepage dashboard
+│   ├── minio.yaml         # MinIO object storage
+│   ├── portainer.yaml     # Portainer management
+│   └── velero.yaml        # Backup solution
+├── gitops/
+│   ├── clusters/
+│   │   └── homelab/       # Cluster-specific ArgoCD apps
+│   │       ├── apps.yaml          # App of Apps for applications
+│   │       └── infrastructure.yaml # App of Apps for infrastructure
+│   └── infra/             # Infrastructure components
+│       ├── eso-*.yaml     # External Secrets Operator
+│       ├── metallb-*.yaml # MetalLB load balancer
+│       └── monitoring/    # Prometheus, Grafana
+├── terraform/              # Infrastructure as Code
+│   └── argocd/           # ArgoCD deployment via Terraform
+├── docs/                  # Documentation
+└── justfile              # Task automation (see 'just --list')
+```
+
+## Quick Start
+
+### Prerequisites
+- Kubernetes cluster (1.28+)
+- `kubectl` configured
+- Terraform installed
+- `just` command runner (optional but recommended)
+
+### Available Tools (via devbox)
+```bash
+devbox shell  # Enters shell with all tools
+```
+Provides: `kubectl`, `helm`, `terraform`, `argocd`, `istioctl`, `kn`, `fluxcd`
+
+## Deployment
+
+### 1. Bootstrap ArgoCD with Terraform
+```bash
+cd terraform/argocd
+terraform init
+terraform apply
+```
+
+### 2. Access ArgoCD
+```bash
+# Using justfile recipes
+just launch_argo  # Opens UI and copies password
+
+# Or manually:
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+### 3. Deploy Applications
+```bash
+kubectl apply -f gitops/clusters/homelab/
+```
+
+## Key Features
+
+- **GitOps with ArgoCD**: All deployments via Git commits
+- **Secret Management**: HashiCorp Vault + External Secrets Operator
+- **Load Balancing**: MetalLB for bare-metal LoadBalancer services
+- **Monitoring**: Prometheus + Grafana stack
+- **Backup**: Velero with MinIO backend
+- **Dashboard**: Homepage with service integration
+
+## Useful Commands
+
+See `just --list` for all available commands:
+- `just launch_argo` - Open ArgoCD UI
+- `just launch_vault` - Open Vault UI  
+- `just launch_homepage` - Open Homepage dashboard
+- `just argo_suspend` - Disable auto-sync for development
+- `just argo_resume` - Re-enable auto-sync
+
+## Notes
+
+- **App of Apps Pattern**: Root applications in `gitops/clusters/homelab/` deploy everything else
+- **Future**: Will migrate to ApplicationSets for better scalability
+- **Security**: All secrets managed via Vault, no hardcoded values

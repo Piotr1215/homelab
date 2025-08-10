@@ -11,11 +11,22 @@ spec:
       containers:
       - name: mc
         image: ***REMOVED***/mc:latest
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: ***REMOVED***-secrets
+              key: root-user
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ***REMOVED***-secrets
+              key: root-password
         command:
         - /bin/sh
         - -c
         - |
-          mc alias set ***REMOVED*** http://***REMOVED***.***REMOVED***.svc.cluster.local:9000 ***REMOVED*** ***REMOVED***
+          mc alias set ***REMOVED*** http://***REMOVED***.***REMOVED***.svc.cluster.local:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
           mc mb --ignore-existing ***REMOVED***/velero-backups
           mc anonymous set download ***REMOVED***/velero-backups
           echo "Bucket setup complete!"

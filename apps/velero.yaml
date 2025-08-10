@@ -44,11 +44,7 @@ spec:
         credentials:
           useSecret: true
           name: velero-credentials
-          secretContents:
-            cloud: |
-              [default]
-              aws_access_key_id=***REMOVED***
-              aws_secret_access_key=***REMOVED***
+          # Secret created by ExternalSecret from Vault
         backupsEnabled: true
         snapshotsEnabled: false
         deployNodeAgent: true

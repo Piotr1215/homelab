@@ -161,12 +161,6 @@ data:
           showStats: true
           namespace: vault
           podSelector: app.kubernetes.io/name=vault
-      - Shell Operator:
-          description: Event-Driven Kubernetes Scripts
-          icon: kubernetes.svg
-          showStats: true
-          namespace: shell-operator
-          podSelector: app=shell-operator
       - MinIO:
           description: S3-Compatible Object Storage
           href: http://192.168.178.97:9001

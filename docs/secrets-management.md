@@ -12,6 +12,10 @@ cp .envrc.example .envrc
 direnv allow
 ```
 
+For a detailed guide on using direnv for managing environment variables, watch this tutorial:
+
+[![Direnv Tutorial](https://img.youtube.com/vi/uaYJb_oROeo/0.jpg)](https://www.youtube.com/watch?v=uaYJb_oROeo)
+
 Only the following secrets are needed locally:
 - `VAULT_TOKEN` - For Vault CLI operations
 - `VAULT_ADDR` - Vault server address  

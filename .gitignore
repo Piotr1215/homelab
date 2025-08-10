@@ -57,6 +57,9 @@ secrets/
 *-secret.yaml
 *-secrets.yaml
 vault-token
+.envrc
+*-with-secrets.yaml
+create-secrets-local.sh
 
 # Devbox
 .devbox/

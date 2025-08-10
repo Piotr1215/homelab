@@ -4,8 +4,6 @@ kind: Namespace
 metadata:
   name: ***REMOVED***
 ---
-# Using NFS PVC defined in ***REMOVED***-nfs-pv.yaml
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,9 +29,15 @@ spec:
         - ":9001"
         env:
         - name: MINIO_ROOT_USER
-          value: "***REMOVED***"
+          valueFrom:
+            secretKeyRef:
+              name: ***REMOVED***-secrets
+              key: root-user
         - name: MINIO_ROOT_PASSWORD
-          value: "***REMOVED***"
+          valueFrom:
+            secretKeyRef:
+              name: ***REMOVED***-secrets
+              key: root-password
         ports:
         - containerPort: 9000
           name: api
@@ -52,12 +56,12 @@ spec:
           httpGet:
             path: /***REMOVED***/health/ready
             port: 9000
-          initialDelaySeconds: 30
-          periodSeconds: 20
+          initialDelaySeconds: 10
+          periodSeconds: 10
       volumes:
       - name: storage
         persistentVolumeClaim:
-          claimName: ***REMOVED***-nfs-pvc
+          claimName: ***REMOVED***-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -68,26 +72,11 @@ spec:
   selector:
     app: ***REMOVED***
   ports:
-    - port: 9000
-      targetPort: 9000
-      protocol: TCP
-      name: api
-    - port: 9001
-      targetPort: 9001
-      protocol: TCP
-      name: console
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ***REMOVED***-console
-  namespace: ***REMOVED***
-spec:
-  selector:
-    app: ***REMOVED***
-  ports:
-    - port: 80
-      targetPort: 9001
-      protocol: TCP
+  - name: api
+    port: 9000
+    targetPort: 9000
+  - name: console
+    port: 9001
+    targetPort: 9001
   type: LoadBalancer
+  loadBalancerIP: 192.168.178.95

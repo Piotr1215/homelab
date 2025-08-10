@@ -4,67 +4,20 @@ kind: Namespace
 metadata:
   name: homepage
 ---
-# SecretStore to connect to Vault
-apiVersion: external-secrets.io/v1
-kind: SecretStore
-metadata:
-  name: vault-backend
-  namespace: homepage
-spec:
-  provider:
-    vault:
-      server: "http://192.168.178.92:8200"
-      path: "secret"
-      version: "v2"
-      auth:
-        tokenSecretRef:
-          name: "vault-token"
-          key: "token"
----
-# ExternalSecret to pull Homepage secrets from Vault
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: homepage-secrets
-  namespace: homepage
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: vault-backend
-    kind: SecretStore
-  target:
-    name: homepage-secrets
-    creationPolicy: Owner
-  data:
-  - secretKey: proxmox-password
-    remoteRef:
-      key: homepage/config
-      property: proxmox_password
-  - secretKey: argocd-token
-    remoteRef:
-      key: homepage/config
-      property: argocd_token
-  - secretKey: portainer-key
-    remoteRef:
-      key: homepage/config
-      property: portainer_key
-  - secretKey: grafana-password
-    remoteRef:
-      key: homepage/config
-      property: grafana_password
----
+# Source: homepage/templates/common.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: homepage
   namespace: homepage
+  labels:
+    helm.sh/chart: homepage-2.1.0
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/managed-by: Helm
+    
 data:
-  kubernetes.yaml: |
-    mode: cluster
-  proxmox.yaml: |
-    url: https://192.168.178.75:8006
-    username: homepage@pve!homepage-token
-    password: {{HOMEPAGE_FILE_PROXMOX_PASSWORD}}
   bookmarks.yaml: |
     - Developer:
       - Github:
@@ -80,6 +33,13 @@ data:
       - ArgoCD Docs:
         - abbr: Argo
           href: https://argo-cd.readthedocs.io/
+  docker.yaml: ""
+  proxmox.yaml: |
+    url: https://192.168.178.75:8006
+    username: homepage@pve!homepage-token
+    password: ***REMOVED***
+  kubernetes.yaml: |
+    mode: cluster
   services.yaml: |
     - Management:
       - ArgoCD:
@@ -90,7 +50,7 @@ data:
           widget:
             type: argocd
             url: http://192.168.178.93
-            key: {{HOMEPAGE_FILE_ARGOCD_TOKEN}}
+            key: ***REMOVED***
       - Portainer:
           description: Container Management Platform
           href: https://192.168.178.96:9443
@@ -101,7 +61,7 @@ data:
             url: https://192.168.178.96:9443
             env: 1
             kubernetes: true
-            key: {{HOMEPAGE_FILE_PORTAINER_KEY}}
+            key: ***REMOVED***
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
@@ -118,157 +78,411 @@ data:
             type: grafana
             url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local:80
             username: admin
-            password: {{HOMEPAGE_FILE_GRAFANA_PASSWORD}}
-  docker.yaml: ""
-  settings.yaml: ""
-  widgets.yaml: ""
-  custom.css: ""
-  custom.js: ""
+            password: ***REMOVED***
+      - Node Health:
+          description: Kubernetes Nodes Status
+          icon: kubernetes.svg
+          widget:
+            type: prometheusmetric
+            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+            refreshInterval: 5000
+            metrics:
+              - label: Node Exporter Up
+                query: sum(up{job="node-exporter"})
+                format:
+                  type: number
+              - label: Disk Free
+                query: min(node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100
+                format:
+                  type: number
+                  suffix: "%"
+                  options:
+                    maximumFractionDigits: 1
+              - label: Load Average
+                query: avg(node_load1)
+                format:
+                  type: number
+                  options:
+                    maximumFractionDigits: 2
+      - Cluster Metrics:
+          description: Key Performance Indicators
+          icon: kubernetes.svg
+          widget:
+            type: prometheusmetric
+            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+            refreshInterval: 10000
+            metrics:
+              - label: CPU Usage
+                query: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100
+                format:
+                  type: number
+                  suffix: "%"
+                  options:
+                    maximumFractionDigits: 1
+              - label: Memory Usage
+                query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
+                format:
+                  type: number
+                  suffix: "%"
+                  options:
+                    maximumFractionDigits: 1
+              - label: Active Pods
+                query: sum(kubelet_running_pods)
+                format:
+                  type: number
+      - MetalLB Metrics:
+          description: Load Balancer Status
+          icon: kubernetes.svg
+          widget:
+            type: prometheusmetric
+            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+            refreshInterval: 10000
+            metrics:
+              - label: Controller Up
+                query: up{namespace="metallb-system",pod=~"controller.*"}
+                format:
+                  type: number
+              - label: Speakers Up
+                query: sum(up{namespace="metallb-system",pod=~"speaker.*"})
+                format:
+                  type: number
+              - label: Speaker Memory
+                query: sum(container_memory_usage_bytes{namespace="metallb-system", pod=~"speaker.*"}) / 1024 / 1024
+                format:
+                  type: number
+                  suffix: " MB"
+                  options:
+                    maximumFractionDigits: 0
+    - Services:
+      - Vault:
+          description: Secrets Management
+          href: http://192.168.178.92:8200
+          icon: vault.svg
+          showStats: true
+          namespace: vault
+          podSelector: app.kubernetes.io/name=vault
+      - MinIO:
+          description: S3-Compatible Object Storage
+          href: http://192.168.178.97
+          icon: ***REMOVED***.svg
+          showStats: true
+          namespace: ***REMOVED***
+          podSelector: app=***REMOVED***
+      - Hubble UI:
+          description: eBPF Network Observability
+          href: http://192.168.178.95
+          icon: cilium.svg
+          showStats: true
+          namespace: kube-system
+          podSelector: k8s-app=hubble-ui
+      - Glances:
+          description: System Monitoring
+          href: http://192.168.178.75:61208
+          icon: glances.svg
+          showStats: false
+    - Infrastructure:
+      - Proxmox:
+          description: Hypervisor Management  
+          href: https://192.168.178.75:8006
+          icon: proxmox.svg
+          showStats: true
+          widget:
+            type: proxmox
+            url: https://192.168.178.75:8006
+            username: homepage@pve!homepage-token
+            password: ***REMOVED***
+            node: pve
+      - Synology NAS:
+          description: Network Attached Storage
+          href: http://192.168.178.60:5000
+          icon: synology.svg
+          showStats: true
+          widget:
+            type: diskstation
+            url: http://192.168.178.60:5000
+            username: homepage_stats
+            password: ***REMOVED***
+            volume: volume_1
+    - Proxmox Monitoring:
+      - System Info:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: info
+            refreshInterval: 60000
+      - CPU Usage:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: cpu
+            refreshInterval: 5000
+            pointsLimit: 15
+      - Memory Usage:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: memory
+            refreshInterval: 5000
+      - Disk I/O:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: disk:nvme0n1
+            diskUnits: bytes
+            refreshInterval: 5000
+      - Network Traffic:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: network:enp87s0
+            refreshInterval: 5000
+      - Top Processes:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: process
+            refreshInterval: 5000
+      - CPU Temperature:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: sensor:Package id 0
+            refreshInterval: 5000
+      - Root Filesystem:
+          widget:
+            type: glances
+            url: http://192.168.178.75:61208
+            version: 4
+            metric: fs:/
+            refreshInterval: 30000
+    - Virtual Machines:
+      - Kube Main:
+          description: Control Plane VM 101
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/101/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
+      - Kube Worker1:
+          description: Worker Node VM 102
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/102/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
+      - Kube Worker2:
+          description: Worker Node VM 103
+          icon: kubernetes.svg
+          showStats: true
+          widget:
+            type: customapi
+            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/103/status/current
+            headers:
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+            mappings:
+              - field: data.cpu
+                label: CPU
+                format: float
+                scale: 100
+                suffix: "%"
+              - field: data.mem
+                label: Memory
+                format: bytes
+  settings.yaml: |
+    title: Homelab Dashboard
+    headerStyle: boxed
+    layout:
+      Management:
+        style: row
+        columns: 2
+      Observability:
+        style: row
+        columns: 3
+        rows: 2
+      Services:
+        style: row
+        columns: 4
+      Infrastructure:
+        style: row
+        columns: 2
+      Proxmox Monitoring:
+        style: row
+        columns: 2
+      Virtual Machines:
+        style: row
+        columns: 3
+    
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "Kubernetes Cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - search:
+        provider: duckduckgo
+        target: _blank
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: homepage
-  namespace: homepage
-  labels:
-    app.kubernetes.io/name: homepage
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/service-account-token
-metadata:
-  name: homepage
-  namespace: homepage
-  labels:
-    app.kubernetes.io/name: homepage
-  annotations:
-    kubernetes.io/service-account.name: homepage
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: homepage
-rules:
-  - apiGroups: [""]
-    resources: ["namespaces", "pods", "nodes", "services"]
-    verbs: ["get", "list"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
-    verbs: ["get", "list"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get", "list"]
-  - apiGroups: ["metrics.k8s.io"]
-    resources: ["nodes", "pods"]
-    verbs: ["get", "list"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: homepage
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: homepage
-subjects:
-  - kind: ServiceAccount
-    name: homepage
-    namespace: homepage
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: homepage
-  namespace: homepage
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: homepage
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: homepage
-    spec:
-      serviceAccountName: homepage
-      automountServiceAccountToken: true
-      containers:
-      - name: homepage
-        image: ghcr.io/gethomepage/homepage:latest
-        imagePullPolicy: Always
-        env:
-          - name: HOMEPAGE_ALLOWED_HOSTS
-            value: "*"
-          # Point to the mounted secret files
-          - name: HOMEPAGE_FILE_PROXMOX_PASSWORD
-            value: /secrets/proxmox-password
-          - name: HOMEPAGE_FILE_ARGOCD_TOKEN
-            value: /secrets/argocd-token
-          - name: HOMEPAGE_FILE_PORTAINER_KEY
-            value: /secrets/portainer-key
-          - name: HOMEPAGE_FILE_GRAFANA_PASSWORD
-            value: /secrets/grafana-password
-        ports:
-        - name: http
-          containerPort: 3000
-          protocol: TCP
-        volumeMounts:
-        # Mount config files
-        - mountPath: /app/config/kubernetes.yaml
-          name: homepage-config
-          subPath: kubernetes.yaml
-        - mountPath: /app/config/proxmox.yaml
-          name: homepage-config
-          subPath: proxmox.yaml
-        - mountPath: /app/config/bookmarks.yaml
-          name: homepage-config
-          subPath: bookmarks.yaml
-        - mountPath: /app/config/services.yaml
-          name: homepage-config
-          subPath: services.yaml
-        - mountPath: /app/config/docker.yaml
-          name: homepage-config
-          subPath: docker.yaml
-        - mountPath: /app/config/settings.yaml
-          name: homepage-config
-          subPath: settings.yaml
-        - mountPath: /app/config/widgets.yaml
-          name: homepage-config
-          subPath: widgets.yaml
-        - mountPath: /app/config/custom.css
-          name: homepage-config
-          subPath: custom.css
-        - mountPath: /app/config/custom.js
-          name: homepage-config
-          subPath: custom.js
-        # Mount secrets as files (managed by ESO)
-        - mountPath: /secrets
-          name: homepage-secrets
-          readOnly: true
-        - mountPath: /app/config/logs
-          name: logs
-      volumes:
-      - name: homepage-config
-        configMap:
-          name: homepage
-      - name: homepage-secrets
-        secret:
-          secretName: homepage-secrets  # This secret is created by ESO
-      - name: logs
-        emptyDir: {}
----
+# Source: homepage/templates/common.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: homepage
   namespace: homepage
+  labels:
+    app.kubernetes.io/service: homepage
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/version: v1.2.0
+    helm.sh/chart: homepage-2.1.0
+  annotations:
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.178.94
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: http
       protocol: TCP
       name: http
   selector:
+    app.kubernetes.io/instance: homepage
     app.kubernetes.io/name: homepage
+---
+# Source: homepage/templates/common.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app.kubernetes.io/instance: homepage
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: homepage
+    app.kubernetes.io/version: v1.2.0
+    helm.sh/chart: homepage-2.1.0
+  annotations:
+    values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: homepage
+      app.kubernetes.io/instance: homepage
+  template:
+    metadata:
+      annotations:
+        
+        values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
+      labels:
+        app.kubernetes.io/name: homepage
+        app.kubernetes.io/instance: homepage
+    spec:
+      
+      serviceAccountName: homepage
+      automountServiceAccountToken: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      containers:
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:latest
+          imagePullPolicy: 
+          env:
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: "192.168.178.94"
+            - name: LOG_LEVEL
+              value: "debug"
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - name: homepage-base-config
+              mountPath: /app/config
+            - name: homepage-config
+              subPath: bookmarks.yaml
+              mountPath: /app/config/bookmarks.yaml
+            - name: homepage-config
+              subPath: docker.yaml
+              mountPath: /app/config/docker.yaml
+            - name: homepage-config
+              subPath: kubernetes.yaml
+              mountPath: /app/config/kubernetes.yaml
+            - name: homepage-config
+              subPath: services.yaml
+              mountPath: /app/config/services.yaml
+            - name: homepage-config
+              subPath: settings.yaml
+              mountPath: /app/config/settings.yaml
+            - name: homepage-config
+              subPath: widgets.yaml
+              mountPath: /app/config/widgets.yaml
+            - name: logs
+              mountPath: /app/config/logs
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+          startupProbe:
+            failureThreshold: 30
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            tcpSocket:
+              port: 3000
+            timeoutSeconds: 1
+      volumes:
+        - name: homepage-base-config
+          emptyDir: {}
+        - name: homepage-config
+          configMap:
+            name: homepage
+        - name: logs
+          emptyDir:
+            {}

@@ -1,0 +1,53 @@
+---
+# SecretStore to connect to Vault
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: vault-backend
+  namespace: homepage
+spec:
+  provider:
+    vault:
+      server: "http://192.168.178.92:8200"
+      path: "secret"
+      version: "v2"
+      auth:
+        tokenSecretRef:
+          name: "vault-token"
+          key: "token"
+---
+# ExternalSecret to pull Homepage secrets from Vault
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: homepage-secrets
+  namespace: homepage
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: homepage-secrets
+    creationPolicy: Owner
+  data:
+  - secretKey: proxmox-password
+    remoteRef:
+      key: homepage/config
+      property: proxmox_password
+  - secretKey: argocd-token
+    remoteRef:
+      key: homepage/config
+      property: argocd_token
+  - secretKey: portainer-key
+    remoteRef:
+      key: homepage/config
+      property: portainer_key
+  - secretKey: grafana-password
+    remoteRef:
+      key: homepage/config
+      property: grafana_password
+  - secretKey: synology-password
+    remoteRef:
+      key: synology/config
+      property: password

@@ -230,6 +230,9 @@ data:
     title: Homelab Dashboard
     headerStyle: boxed
     layout:
+      Network Infrastructure:
+        style: row
+        columns: 2
       Core Infrastructure:
         style: row
         columns: 2

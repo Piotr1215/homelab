@@ -163,7 +163,7 @@ data:
           podSelector: app.kubernetes.io/name=vault
       - MinIO:
           description: S3-Compatible Object Storage
-          href: http://192.168.178.97
+          href: http://192.168.178.97:9001
           icon: ***REMOVED***.svg
           showStats: true
           namespace: ***REMOVED***

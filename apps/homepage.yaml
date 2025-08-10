@@ -37,7 +37,7 @@ data:
   proxmox.yaml: |
     url: https://192.168.178.75:8006
     username: homepage@pve!homepage-token
-    password: ***REMOVED***
+    password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
@@ -50,7 +50,7 @@ data:
           widget:
             type: argocd
             url: http://192.168.178.93
-            key: ***REMOVED***
+            key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
       - Portainer:
           description: Container Management Platform
           href: https://192.168.178.96:9443
@@ -61,7 +61,7 @@ data:
             url: https://192.168.178.96:9443
             env: 1
             kubernetes: true
-            key: ***REMOVED***
+            key: {{HOMEPAGE_VAR_PORTAINER_KEY}}
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
@@ -78,7 +78,7 @@ data:
             type: grafana
             url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local:80
             username: admin
-            password: ***REMOVED***
+            password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg
@@ -190,7 +190,7 @@ data:
             type: proxmox
             url: https://192.168.178.75:8006
             username: homepage@pve!homepage-token
-            password: ***REMOVED***
+            password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
             node: pve
       - Synology NAS:
           description: Network Attached Storage
@@ -201,7 +201,7 @@ data:
             type: diskstation
             url: http://192.168.178.60:5000
             username: homepage_stats
-            password: ***REMOVED***
+            password: {{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}
             volume: volume_1
     - Proxmox Monitoring:
       - System Info:
@@ -271,7 +271,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/101/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU
@@ -289,7 +289,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/102/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU
@@ -307,7 +307,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/103/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token=***REMOVED***"
+              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU
@@ -429,6 +429,31 @@ spec:
               value: "192.168.178.94"
             - name: LOG_LEVEL
               value: "debug"
+            - name: HOMEPAGE_VAR_PROXMOX_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: proxmox-password
+            - name: HOMEPAGE_VAR_ARGOCD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: argocd-token
+            - name: HOMEPAGE_VAR_PORTAINER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: portainer-key
+            - name: HOMEPAGE_VAR_GRAFANA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: grafana-password
+            - name: HOMEPAGE_VAR_SYNOLOGY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: synology-secrets
+                  key: password
           ports:
             - name: http
               containerPort: 3000

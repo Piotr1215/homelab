@@ -53,8 +53,8 @@ This will:
 Deploy the SecretStores and ExternalSecrets:
 
 ```bash
-kubectl apply -f infrastructure/eso/secretstores.yaml
-kubectl apply -f infrastructure/eso/externalsecrets.yaml
+kubectl apply -f gitops/infra/eso-secretstores.yaml
+kubectl apply -f gitops/infra/eso-externalsecrets.yaml
 ```
 
 ### 5. Verify Secrets Creation

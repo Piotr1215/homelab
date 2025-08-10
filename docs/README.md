@@ -10,9 +10,10 @@ gitops/
 │   └── homelab/             # Cluster-specific configurations
 │       ├── apps.yaml        # App of Apps for applications
 │       └── infrastructure.yaml # App of Apps for infrastructure
-└── infrastructure/
-    ├── core/                # Core infrastructure (ESO, Vault, etc.)
-    └── configs/             # Configuration resources (SecretStores, ExternalSecrets)
+├── terraform/               # Terraform configurations for ArgoCD
+│   └── argocd/             # ArgoCD Helm deployment
+└── gitops/
+    └── infra/              # Infrastructure components (ESO, MetalLB, etc.)
 ```
 
 ## Deployment Strategy
@@ -27,7 +28,7 @@ gitops/
 
 1. Install ArgoCD:
 ```bash
-cd /home/decoder/dev/homelab/argocd
+cd /home/decoder/dev/homelab/terraform/argocd
 terraform init
 terraform apply
 ```
@@ -41,5 +42,11 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 4. Apply root app:
 ```bash
-kubectl apply -f clusters/homelab/
+kubectl apply -f gitops/clusters/homelab/
 ```
+
+## Video Tutorial
+
+[![Homelab GitOps Setup](https://img.youtube.com/vi/5YFmYcic8XQ/0.jpg)](https://www.youtube.com/watch?v=5YFmYcic8XQ)
+
+Watch the complete homelab setup walkthrough on YouTube.

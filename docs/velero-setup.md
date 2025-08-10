@@ -102,29 +102,6 @@ velero schedule create daily-backup --schedule="0 2 * * *" --include-namespaces 
 - Pod volume path: `/var/lib/kubelet/pods`
 - Runs with privileged access for volume snapshots
 
-## Security Considerations
-
-⚠️ **Important**: The current setup uses default credentials for demonstration purposes.
-For production use:
-1. Change MinIO credentials to secure values
-2. Store credentials in external secret management (e.g., Vault)
-3. Enable TLS for MinIO
-4. Configure proper RBAC and network policies
-5. Set up retention policies for backups
-
-## Monitoring
-
-Velero exposes Prometheus metrics on port 8085. To enable ServiceMonitor for Prometheus Operator, update the values in `velero.yaml`:
-
-```yaml
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: true
-    additionalLabels:
-      prometheus: kube-prometheus
-```
-
 ## Troubleshooting
 
 ### Check Velero logs

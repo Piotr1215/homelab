@@ -1,0 +1,251 @@
+{
+  "dashboard": {
+    "title": "Homelab Overview",
+    "panels": [
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "id": 1,
+        "targets": [
+          {
+            "expr": "(1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "title": "Cluster CPU Usage",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "id": 2,
+        "targets": [
+          {
+            "expr": "(1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100",
+            "refId": "A"
+          }
+        ],
+        "title": "Cluster Memory Usage",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "id": 3,
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "title": "CPU Usage by Node",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "bytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "id": 4,
+        "targets": [
+          {
+            "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "title": "Memory Usage by Node",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "binBps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "id": 5,
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|cilium.*|lxc.*\"}[5m])",
+            "legendFormat": "{{instance}} - {{device}} RX"
+          }
+        ],
+        "title": "Network Traffic RX",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "binBps"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "id": 6,
+        "targets": [
+          {
+            "expr": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|cilium.*|lxc.*\"}[5m])",
+            "legendFormat": "{{instance}} - {{device}} TX"
+          }
+        ],
+        "title": "Network Traffic TX",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 12, "y": 0},
+        "id": 7,
+        "targets": [
+          {
+            "expr": "sum(up{job=\"kubernetes-nodes\"})",
+            "refId": "A"
+          }
+        ],
+        "title": "Nodes Up",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 15, "y": 0},
+        "id": 8,
+        "targets": [
+          {
+            "expr": "sum(kubelet_running_pods)",
+            "refId": "A"
+          }
+        ],
+        "title": "Running Pods",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 18, "y": 0},
+        "id": 9,
+        "targets": [
+          {
+            "expr": "avg(node_load1)",
+            "refId": "A"
+          }
+        ],
+        "title": "Load Average (1m)",
+        "type": "stat"
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 20},
+                {"color": "green", "value": 40}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 4, "w": 3, "x": 21, "y": 0},
+        "id": 10,
+        "targets": [
+          {
+            "expr": "min(node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100",
+            "refId": "A"
+          }
+        ],
+        "title": "Min Disk Free",
+        "type": "stat"
+      }
+    ],
+    "refresh": "10s",
+    "time": {"from": "now-1h", "to": "now"},
+    "version": 1
+  }
+}

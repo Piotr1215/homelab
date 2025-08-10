@@ -73,54 +73,33 @@ launch_portainer:
   echo "Note: First time setup required - create admin user"
   nohup {{browse}} https://$PORTAINER_IP:9443 >/dev/null 2>&1 &
 
-# ArgoCD sync management for branch development using Sync Windows
-# Create a "deny all" sync window to prevent any syncing
+# ArgoCD sync management using official annotation approach
+# Temporarily disable auto-sync for all applications
 argo_suspend:
   #!/usr/bin/env bash
-  echo "🛑 Creating sync window to suspend ArgoCD reconciliation..."
-  # Create an AppProject with a deny-all sync window if it doesn't exist
-  kubectl apply -f - <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  name: default
-  namespace: argocd
-spec:
-  description: Default project with sync window control
-  sourceRepos:
-  - '*'
-  destinations:
-  - namespace: '*'
-    server: '*'
-  clusterResourceWhitelist:
-  - group: '*'
-    kind: '*'
-  syncWindows:
-  - kind: deny
-    schedule: '* * * * *'
-    duration: 24h
-    timeZone: "UTC"
-    manualSync: false
-EOF
-  echo "✅ Sync window created. ArgoCD will NOT sync automatically."
-  echo "📝 Note: Manual syncs are still disabled. Apps will remain OutOfSync."
+  echo "🛑 Disabling auto-sync for all ArgoCD applications..."
+  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
+    echo "  Disabling auto-sync for: $app"
+    # Add annotation to disable auto-sync temporarily
+    kubectl annotate application $app -n argocd \
+      argocd.argoproj.io/disable-auto-sync="true" --overwrite
+  done
+  echo "✅ Auto-sync disabled for all applications."
+  echo "📝 Apps will show as OutOfSync but won't auto-reconcile."
+  echo "💡 Manual sync is still possible if needed."
 
-# Remove sync window to resume normal operations
+# Resume auto-sync for all applications
 argo_resume:
   #!/usr/bin/env bash
-  echo "▶️  Removing sync window to resume ArgoCD reconciliation..."
-  # Remove the sync windows from the default project
-  kubectl patch appproject default -n argocd --type='json' \
-    -p='[{"op":"remove","path":"/spec/syncWindows"}]' 2>/dev/null || \
-  kubectl patch appproject default -n argocd --type='merge' \
-    -p='{"spec":{"syncWindows":[]}}' 2>/dev/null || true
-  echo "✅ Sync window removed. ArgoCD can now sync normally."
-  echo "🔄 Re-enabling auto-sync for all applications..."
+  echo "▶️  Re-enabling auto-sync for all ArgoCD applications..."
   for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    kubectl patch application $app -n argocd --type='merge' \
-      -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}' 2>/dev/null || true
+    echo "  Enabling auto-sync for: $app"
+    # Remove the disable-auto-sync annotation
+    kubectl annotate application $app -n argocd \
+      argocd.argoproj.io/disable-auto-sync- --overwrite
   done
   echo "✅ Auto-sync re-enabled for all applications."
+  echo "🔄 Applications will now reconcile automatically."
 
 # Alternative: Use compare-options to ignore differences
 argo_ignore_diffs:
@@ -167,3 +146,28 @@ restore_argo:
   @echo "🔄 ArgoCD will now sync from the main branch."
   @echo "🔃 Triggering sync for all apps..."
   @kubectl get applications -n argocd -o name | xargs -I {} kubectl patch {} -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
+
+# Alternative: Stop ArgoCD controller entirely (nuclear option)
+argo_stop:
+  @echo "⏹️  Stopping ArgoCD application controller..."
+  kubectl scale statefulset argocd-application-controller -n argocd --replicas=0
+  @echo "✅ ArgoCD controller stopped. No reconciliation will occur."
+  @echo "📝 Apps will show OutOfSync but won't be reconciled."
+
+# Start ArgoCD controller
+argo_start:
+  @echo "▶️  Starting ArgoCD application controller..."
+  kubectl scale statefulset argocd-application-controller -n argocd --replicas=1
+  @echo "✅ ArgoCD controller started. Reconciliation will resume."
+
+# Check ArgoCD sync status for all applications
+argo_status:
+  @echo "📊 ArgoCD Application Status:"
+  @echo "================================"
+  @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision | column -t
+  @echo ""
+  @echo "🔍 Controller Status:"
+  @kubectl get statefulset argocd-application-controller -n argocd
+  @echo ""
+  @echo "📝 Sync Windows (if any):"
+  @kubectl get appproject default -n argocd -o jsonpath='{.spec.syncWindows}' 2>/dev/null || echo "No sync windows configured"

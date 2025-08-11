@@ -86,3 +86,12 @@ scan_cleanup:
   @kubectl delete jobs --field-selector status.successful=1 -n cluster-scanning 2>/dev/null || echo "No failed jobs to delete"
   @kubectl delete jobs --field-selector status.successful=1 -n metallb-system 2>/dev/null || echo "No failed jobs to delete"
   @echo "Cleanup complete"
+
+# Manual Velero backup with optional description
+backup-velero description="manual-backup":
+  @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"
+  velero backup create "{{description}}-$(date +%Y%m%d-%H%M%S)" \
+    --exclude-namespaces kube-system,kube-public,kube-node-lease \
+    --wait
+  @echo "Backup complete. Listing recent backups:"
+  velero backup get --sort-by=.metadata.creationTimestamp | head -10

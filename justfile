@@ -74,3 +74,15 @@ argo_resume:
 # Check ArgoCD status
 argo_status:
   @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status
+
+# Check scanning jobs status
+scan_status:
+  @kubectl get cronjobs,jobs -n cluster-scanning
+
+# Clean up completed scan jobs
+scan_cleanup:
+  @echo "Cleaning up completed scan jobs..."
+  @kubectl delete jobs --field-selector status.successful=1 -n cluster-scanning 2>/dev/null || echo "No successful jobs to delete"
+  @kubectl delete jobs --field-selector status.successful=1 -n cluster-scanning 2>/dev/null || echo "No failed jobs to delete"
+  @kubectl delete jobs --field-selector status.successful=1 -n metallb-system 2>/dev/null || echo "No failed jobs to delete"
+  @echo "Cleanup complete"

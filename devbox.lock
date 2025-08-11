@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "argocd@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#argocd",
+      "source": "devbox-search",
+      "version": "2.14.11",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zbk9zpj83scbs6jrmvcb288sjwkldyar-argocd-2.14.11",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zbk9zpj83scbs6jrmvcb288sjwkldyar-argocd-2.14.11"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/39h2mgr26x981dm0r554pfs1zc3xn52j-argocd-2.14.11",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/39h2mgr26x981dm0r554pfs1zc3xn52j-argocd-2.14.11"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/y1v89wy5fxll90bx8fvsixmixb1ixw76-argocd-2.14.11",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/y1v89wy5fxll90bx8fvsixmixb1ixw76-argocd-2.14.11"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/n16amhhidqmdp80bym5wfygrxf4wjw9x-argocd-2.14.11",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/n16amhhidqmdp80bym5wfygrxf4wjw9x-argocd-2.14.11"
+        }
+      }
+    },
     "cilium-cli@latest": {
       "last_modified": "2025-08-05T11:35:34Z",
       "resolved": "github:NixOS/nixpkgs/a683adc19ff5228af548c6539dbc3440509bfed3#cilium-cli",

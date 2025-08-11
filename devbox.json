@@ -9,6 +9,7 @@
     "cilium-cli@latest",
     "hubble@latest",
     "velero@latest",
+    "argocd@latest",
   ],
   "shell": {
     "init_hook": [

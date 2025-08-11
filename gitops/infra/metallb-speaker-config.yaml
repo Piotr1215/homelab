@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metallb-memberlist-config
+  namespace: metallb-system
+data:
+  # Configure memberlist to use the primary network interface
+  # and avoid issues with multiple interfaces (Tailscale, Cilium, etc)
+  memberlist.yaml: |
+    bind-addr: 0.0.0.0
+    bind-port: 7946
+    # Explicitly set the advertise address to the node's primary IP
+    # This prevents issues with multiple interfaces
+    advertise-addr: ""
+    # Increase timeouts for more stable coordination
+    gossip-interval: 200ms
+    gossip-nodes: 3
+    retransmit-mult: 4
+    probe-timeout: 1s
+    probe-interval: 5s
+    suspicion-mult: 6
+    # Enable metrics for debugging
+    metrics-port: 7979
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metallb-speaker-memberlist
+  namespace: metallb-system
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: memberlist-tcp
+    port: 7946
+    targetPort: 7946
+    protocol: TCP
+  - name: memberlist-udp
+    port: 7946
+    targetPort: 7946
+    protocol: UDP
+  selector:
+    component: speaker
+---
+# Patch to ensure speakers use host network properly
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: speaker
+  namespace: metallb-system
+spec:
+  template:
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: speaker
+        env:
+        # Force binding to primary interface
+        - name: METALLB_ML_BIND_ADDR
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: METALLB_ML_BIND_PORT
+          value: "7946"
+        # Increase memberlist sync interval for stability
+        - name: METALLB_ML_GOSSIP_INTERVAL
+          value: "200ms"
+        - name: METALLB_ML_PROBE_INTERVAL
+          value: "5s"
+        securityContext:
+          capabilities:
+            add:
+            - NET_RAW
+            - NET_ADMIN
+            - SYS_ADMIN
+          privileged: true

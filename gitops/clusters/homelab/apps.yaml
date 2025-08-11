@@ -13,6 +13,10 @@ spec:
     path: gitops/apps
   destination:
     server: https://kubernetes.default.svc
+  ignoreDifferences:
+  - group: velero.io
+    kind: Backup
+    name: "*"
   syncPolicy:
     automated:
       prune: true
@@ -20,6 +24,7 @@ spec:
       allowEmpty: false
     syncOptions:
     - CreateNamespace=true
+    - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

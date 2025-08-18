@@ -43,37 +43,133 @@ launch_homepage:
 argo_password:
   @kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-# Apply ArgoCD root applications
-argo_sync_apps:
-  kubectl apply -f gitops/clusters/homelab/
+# Login to ArgoCD CLI
+argo_login:
+  #!/usr/bin/env bash
+  ARGO_IP=$(kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+  echo "y" | argocd login $ARGO_IP --username admin --password $ARGO_PASSWORD --insecure
+  echo "✓ Logged in to ArgoCD at $ARGO_IP"
 
-# Stop ArgoCD controller
+# Sync a specific ArgoCD application
+argo_sync app="":
+  #!/usr/bin/env bash
+  if [ -z "{{app}}" ]; then
+    echo "Usage: just argo_sync <app-name>"
+    echo "Available apps:"
+    argocd app list -o name
+  else
+    argocd app sync {{app}} --prune
+  fi
+
+# Sync all ArgoCD applications
+argo_sync_all:
+  #!/usr/bin/env bash
+  for app in $(argocd app list -o name); do
+    echo "Syncing $app..."
+    argocd app sync $app --prune
+  done
+
+# Hard refresh ArgoCD app (with --hard-refresh flag)
+argo_refresh app="":
+  #!/usr/bin/env bash
+  if [ -z "{{app}}" ]; then
+    echo "Usage: just argo_refresh <app-name>"
+    argocd app list -o name
+  else
+    argocd app get {{app}} --hard-refresh
+  fi
+
+# Get ArgoCD app details
+argo_get app="":
+  #!/usr/bin/env bash
+  if [ -z "{{app}}" ]; then
+    argocd app list
+  else
+    argocd app get {{app}}
+  fi
+
+# Show ArgoCD app manifest
+argo_manifest app:
+  argocd app manifests {{app}}
+
+# Show diff between live and desired state
+argo_diff app:
+  argocd app diff {{app}}
+
+# Delete an ArgoCD application
+argo_delete app cascade="true":
+  argocd app delete {{app}} --cascade={{cascade}}
+
+# Rollback ArgoCD app to previous sync
+argo_rollback app:
+  argocd app rollback {{app}}
+
+# Show ArgoCD app history
+argo_history app:
+  argocd app history {{app}}
+
+# Terminate current sync operation
+argo_terminate app:
+  argocd app terminate-op {{app}}
+
+# Wait for app to be healthy
+argo_wait app timeout="600":
+  argocd app wait {{app}} --health --timeout {{timeout}}
+
+# Set app to manual sync
+argo_manual app:
+  argocd app set {{app}} --sync-policy none
+
+# Set app to auto sync
+argo_auto app:
+  argocd app set {{app}} --sync-policy automated --auto-prune --self-heal
+
+# Stop ArgoCD controller (kubectl method)
 argo_stop:
   kubectl scale statefulset argocd-application-controller -n argocd --replicas=0
 
-# Start ArgoCD controller
+# Start ArgoCD controller (kubectl method)
 argo_start:
   kubectl scale statefulset argocd-application-controller -n argocd --replicas=1
 
-# Disable ArgoCD auto-sync for all apps
+# Disable ArgoCD auto-sync for all apps (using ArgoCD CLI)
 argo_suspend:
   #!/usr/bin/env bash
-  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    kubectl patch application $app -n argocd --type='json' \
-      -p='[{"op":"remove","path":"/spec/syncPolicy/automated"}]' 2>/dev/null || true
+  for app in $(argocd app list -o name); do
+    echo "Disabling auto-sync for $app..."
+    argocd app set $app --sync-policy none
   done
 
-# Enable ArgoCD auto-sync for all apps
+# Enable ArgoCD auto-sync for all apps (using ArgoCD CLI)
 argo_resume:
   #!/usr/bin/env bash
-  for app in $(kubectl get applications -n argocd -o jsonpath='{.items[*].metadata.name}'); do
-    kubectl patch application $app -n argocd --type='merge' \
-      -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+  for app in $(argocd app list -o name); do
+    echo "Enabling auto-sync for $app..."
+    argocd app set $app --sync-policy automated --auto-prune --self-heal
   done
 
-# Check ArgoCD status
+# Check ArgoCD app status (detailed)
 argo_status:
-  @kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status
+  argocd app list
+
+# Show out-of-sync resources
+argo_out_of_sync:
+  argocd app list --out-of-sync
+
+# Show apps with errors
+argo_errors:
+  argocd app list --health degraded,missing,unknown
+
+# Create ArgoCD app from manifest in gitops/
+argo_create app path:
+  argocd app create {{app}} \
+    --repo https://github.com/Piotr1215/homelab \
+    --path {{path}} \
+    --dest-server https://kubernetes.default.svc \
+    --sync-policy automated \
+    --auto-prune \
+    --self-heal
 
 # Check scanning jobs status
 scan_status:
@@ -94,4 +190,4 @@ backup-velero description="manual-backup":
     --exclude-namespaces kube-system,kube-public,kube-node-lease \
     --wait
   @echo "Backup complete. Listing recent backups:"
-  velero backup get --sort-by=.metadata.creationTimestamp | head -10
+  velero backup get | head -10

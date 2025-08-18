@@ -341,6 +341,54 @@
         }
       }
     },
+    "sshpass@latest": {
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#sshpass",
+      "source": "devbox-search",
+      "version": "1.10",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/08xs47l5aif1jdlj4vzi2r1vz7rjvm32-sshpass-1.10",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/08xs47l5aif1jdlj4vzi2r1vz7rjvm32-sshpass-1.10"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rgzyv52zwvjk76ckyah6fy6mjc7g512z-sshpass-1.10",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/rgzyv52zwvjk76ckyah6fy6mjc7g512z-sshpass-1.10"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/c5w5252d0c7y84rk7hkifd213fx7zbab-sshpass-1.10",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/c5w5252d0c7y84rk7hkifd213fx7zbab-sshpass-1.10"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6s6j1s4cl56s2zyjcn0wfcpfjsxh74cw-sshpass-1.10",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/6s6j1s4cl56s2zyjcn0wfcpfjsxh74cw-sshpass-1.10"
+        }
+      }
+    },
     "vault@latest": {
       "last_modified": "2025-08-02T08:13:18Z",
       "resolved": "github:NixOS/nixpkgs/c02d05bcf73fb496c604798c2268ed424a09e73e#vault",

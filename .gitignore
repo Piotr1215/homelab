@@ -21,6 +21,7 @@ terraform.tfstate.backup
 
 # Kubernetes
 kubeconfig
+kubeconfig.yaml
 *.kubeconfig
 config
 .kube/

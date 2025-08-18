@@ -10,6 +10,7 @@
     "hubble@latest",
     "velero@latest",
     "argocd@latest",
+    "sshpass@latest",
   ],
   "shell": {
     "init_hook": [

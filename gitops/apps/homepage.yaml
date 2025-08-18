@@ -82,14 +82,10 @@ data:
       - Loki Logs:
           description: Log Aggregation & Search
           href: http://192.168.178.98/explore?left=%7B%22datasource%22:%22Loki%22%7D
-          icon: loki.svg
-          widget:
-            type: customapi
-            url: http://loki-stack.loki.svc.cluster.local:3100/ready
-            mappings:
-              - field: 
-                label: Status
-                format: Ready
+          icon: si-grafana-loki
+          showStats: true
+          namespace: loki
+          podSelector: app=loki
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg

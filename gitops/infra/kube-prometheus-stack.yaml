@@ -41,15 +41,6 @@ spec:
           value: local-path
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage
           value: 1Gi
-        # Disable ServiceMonitors for components that don't expose metrics
-        - name: kubeProxy.enabled
-          value: "false"
-        - name: kubeControllerManager.enabled
-          value: "false"
-        - name: kubeScheduler.enabled
-          value: "false"
-        - name: kubeEtcd.enabled
-          value: "false"
   destination:
     server: https://kubernetes.default.svc
     namespace: prometheus

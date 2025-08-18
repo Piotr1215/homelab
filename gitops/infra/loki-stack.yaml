@@ -53,6 +53,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: loki
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      name: loki-stack
+      jsonPointers:
+        - /spec/volumeClaimTemplates
   syncPolicy:
     automated:
       prune: true

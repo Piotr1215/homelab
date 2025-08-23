@@ -128,7 +128,7 @@ agents:
         cpu: 200m
         memory: 512Mi
   helm-agent:
-    enabled: true
+    enabled: false
     resources:
       requests:
         cpu: 50m

@@ -4,5 +4,5 @@ kind: Kustomization
 
 namespace: kagent
 
-resources:
-  - loadbalancer-patch.yaml
+# Currently empty - all resources managed by Helm chart
+resources: []

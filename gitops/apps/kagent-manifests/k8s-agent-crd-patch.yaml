@@ -13,20 +13,6 @@ spec:
     requests:
       cpu: 50m
       memory: 256Mi
-  livenessProbe:
-    httpGet:
-      path: /health
-      port: 8080
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 3
-    failureThreshold: 2
-  readinessProbe:
-    httpGet:
-      path: /health
-      port: 8080
-    initialDelaySeconds: 10
-    periodSeconds: 5
   env:
     - name: PYTHONUNBUFFERED
       value: "1"

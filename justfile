@@ -183,6 +183,11 @@ scan_cleanup:
   @kubectl delete jobs --field-selector status.successful=1 -n metallb-system 2>/dev/null || echo "No failed jobs to delete"
   @echo "Cleanup complete"
 
+# Restart stuck kagent pods
+restart-kagent:
+    @echo "Restarting kagent pods..."
+    kubectl rollout restart deployment k8s-agent -n kagent
+
 # Manual Velero backup with optional description
 backup-velero description="manual-backup":
   @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"

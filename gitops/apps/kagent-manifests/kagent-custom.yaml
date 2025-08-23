@@ -1,20 +1,6 @@
 ---
 # Custom Kagent Configuration for Ollama-only setup
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: kagent
----
-# Secret for API key (dummy for Ollama-only usage)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: kagent-openai
-  namespace: kagent
-type: Opaque
-stringData:
-  OPENAI_API_KEY: "sk-ollama-only-no-openai"
----
+# (Namespace and Secret are already in kagent-base.yaml)
 # Default ModelConfig - Points to Ollama
 apiVersion: kagent.dev/v1alpha2
 kind: ModelConfig

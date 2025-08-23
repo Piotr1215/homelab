@@ -32,7 +32,7 @@ controller:
       cpu: 100m
       memory: 256Mi
     limits:
-      cpu: 2000m
+      cpu: 500m
       memory: 512Mi
   service:
     type: LoadBalancer
@@ -97,16 +97,54 @@ kagent-tools:
 # AGENTS - Disable unnecessary ones to save memory
 # ==============================================================================
 
+# Global agent resource limits (applies to all agents)
+agentDefaults:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
 agents:
   # Core agents - KEEP ENABLED
   k8s-agent:
     enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
   observability-agent:
     enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
   helm-agent:
     enabled: true
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
   promql-agent:
     enabled: true  # Required by observability-agent
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        cpu: 200m
+        memory: 512Mi
   
   # DISABLE unnecessary agents to save memory
   argo-rollouts-agent:

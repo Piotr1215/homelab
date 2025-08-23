@@ -8,11 +8,39 @@ agents:
     replicas: 1
     resources:
       limits:
-        cpu: 500m
+        cpu: 200m  # Reduced from 500m - hard limit to prevent runaway CPU
         memory: 512Mi
       requests:
-        cpu: 100m
+        cpu: 50m   # Reduced from 100m
         memory: 256Mi
+    # Aggressive liveness probe to kill stuck pods quickly
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 2  # Restart after 2 failures (20 seconds)
+    # Keep existing readiness probe
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+    # Add environment variables to control asyncio behavior and retry logic
+    env:
+      - name: PYTHONUNBUFFERED
+        value: "1"
+      - name: ASYNCIO_DEBUG
+        value: "0"
+      - name: RETRY_MAX_ATTEMPTS
+        value: "3"  # Limit retries when Ollama is failing
+      - name: RETRY_BACKOFF_FACTOR
+        value: "2"   # Exponential backoff to reduce load
+      - name: REQUEST_TIMEOUT
+        value: "30"  # Timeout requests to prevent hanging
   
   # Disable resource-intensive agents
   observability-agent:

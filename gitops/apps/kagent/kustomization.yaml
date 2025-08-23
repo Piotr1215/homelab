@@ -6,4 +6,3 @@ namespace: kagent
 
 resources:
   - loadbalancer-patch.yaml
-  - resource-limiter-job.yaml

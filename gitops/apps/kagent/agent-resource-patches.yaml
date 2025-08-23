@@ -93,22 +93,3 @@ spec:
           limits:
             cpu: 200m
             memory: 512Mi
----
-# Patch for grafana deployment (MCP server)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grafana
-  namespace: kagent
-spec:
-  template:
-    spec:
-      containers:
-      - name: grafana
-        resources:
-          requests:
-            cpu: 50m
-            memory: 256Mi
-          limits:
-            cpu: 200m
-            memory: 512Mi

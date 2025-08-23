@@ -41,6 +41,10 @@ agents:
         value: "2"   # Exponential backoff to reduce load
       - name: REQUEST_TIMEOUT
         value: "30"  # Timeout requests to prevent hanging
+      - name: OLLAMA_TIMEOUT
+        value: "60"  # Give Ollama more time for complex queries
+      - name: OLLAMA_KEEP_ALIVE
+        value: "5m"  # Keep models loaded in memory
   
   # Disable resource-intensive agents
   observability-agent:

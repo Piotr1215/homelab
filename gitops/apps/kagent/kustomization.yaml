@@ -6,6 +6,3 @@ namespace: kagent
 
 resources:
   - loadbalancer-patch.yaml
-
-patchesStrategicMerge:
-  - agent-resource-patches.yaml

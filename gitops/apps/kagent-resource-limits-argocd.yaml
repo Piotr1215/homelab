@@ -1,0 +1,38 @@
+---
+# Kagent Resource Limits Patcher
+# This app monitors and patches agent deployments to enforce resource limits
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent-resource-limits
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/Piotr1215/homelab
+    targetRevision: HEAD
+    path: gitops/apps/kagent
+    directory:
+      include: agent-resource-patches.yaml
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  
+  syncPolicy:
+    automated:
+      prune: false  # Don't prune, we're just patching
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

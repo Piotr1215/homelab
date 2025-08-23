@@ -1,0 +1,54 @@
+---
+# Kagent Resource Limit Enforcer
+# Continuously applies resource patches to agent deployments
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent-resource-enforcer
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"  # Apply after main kagent app
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/Piotr1215/homelab
+    targetRevision: HEAD
+    path: gitops/apps/kagent
+    # Use raw manifest directory to avoid kustomize
+    directory:
+      recurse: false
+      include: 'agent-resource-patches.yaml'
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  
+  syncPolicy:
+    automated:
+      prune: false  # Don't delete deployments
+      selfHeal: true  # Keep reapplying patches
+      allowEmpty: false
+    syncOptions:
+      - RespectIgnoreDifferences=true
+      - ApplyOutOfSyncOnly=false  # Always apply even if "synced"
+      - ServerSideApply=true
+      - Replace=false  # Don't replace, just patch
+      - Validate=false  # Don't validate since deployments might not exist initially
+    retry:
+      limit: -1  # Keep retrying forever
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+  
+  ignoreDifferences:
+    # Ignore other fields that might differ
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+        - /metadata/labels
+        - /metadata/annotations

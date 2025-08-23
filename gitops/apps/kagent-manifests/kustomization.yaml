@@ -9,11 +9,6 @@ resources:
   - loadbalancer-services.yaml  # LoadBalancer services for UI and Controller
 
 patches:
-  - path: k8s-agent-crd-patch.yaml
-    target:
-      kind: Agent
-      name: k8s-agent
-      namespace: kagent
   - path: default-model-config-patch.yaml
     target:
       kind: ModelConfig

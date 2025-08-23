@@ -50,10 +50,10 @@ metadata:
   name: kgateway-agent
   namespace: kagent
 ---
-# Remove PromQL agent
-$patch: delete
-apiVersion: kagent.dev/v1alpha2
-kind: Agent
-metadata:
-  name: promql-agent
-  namespace: kagent
+# KEEP PromQL agent - it's required by observability-agent
+# $patch: delete
+# apiVersion: kagent.dev/v1alpha2
+# kind: Agent
+# metadata:
+#   name: promql-agent
+#   namespace: kagent

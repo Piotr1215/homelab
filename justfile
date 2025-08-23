@@ -196,3 +196,8 @@ backup-velero description="manual-backup":
     --wait
   @echo "Backup complete. Listing recent backups:"
   velero backup get | head -10
+
+# Unseal Vault after restarts
+unseal-vault:
+  @echo "Unsealing Vault..."
+  kubectl exec -n vault vault-0 -- vault operator unseal $(VAULT_UNSEAL_KEY)

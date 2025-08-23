@@ -1,12 +1,9 @@
 ---
-# Custom Kagent Configuration for Ollama-only setup
-# Only resources NOT in the Helm chart
-
-# Additional Ollama ModelConfig
+# Patch to configure default-model-config for Ollama
 apiVersion: kagent.dev/v1alpha2
 kind: ModelConfig
 metadata:
-  name: gpt-oss-model-config
+  name: default-model-config
   namespace: kagent
 spec:
   apiKeySecret: kagent-openai

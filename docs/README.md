@@ -92,6 +92,7 @@ kubectl apply -f gitops/clusters/homelab/
 - **Monitoring**: Prometheus + Grafana stack
 - **Backup**: Velero with MinIO backend
 - **Dashboard**: Homepage with service integration
+- **AI Platform**: Kagent with local Ollama integration
 
 ## Useful Commands
 

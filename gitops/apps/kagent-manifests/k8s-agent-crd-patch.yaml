@@ -1,0 +1,44 @@
+---
+# Patch for k8s-agent Agent CRD to fix CPU limits
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: k8s-agent
+  namespace: kagent
+spec:
+  resources:
+    limits:
+      cpu: 200m  # Reduced from 2000m to prevent runaway CPU
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 2
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: ASYNCIO_DEBUG
+      value: "0"
+    - name: RETRY_MAX_ATTEMPTS
+      value: "3"
+    - name: RETRY_BACKOFF_FACTOR
+      value: "2"
+    - name: REQUEST_TIMEOUT
+      value: "30"
+    - name: OLLAMA_TIMEOUT
+      value: "60"
+    - name: OLLAMA_KEEP_ALIVE
+      value: "5m"

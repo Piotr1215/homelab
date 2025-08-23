@@ -1,0 +1,114 @@
+---
+# Patch for k8s-agent deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-agent
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: kagent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+---
+# Patch for k8s-helper deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-helper
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: kagent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+---
+# Patch for helm-agent deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helm-agent
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: kagent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+---
+# Patch for observability-agent deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: observability-agent
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: kagent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+---
+# Patch for promql-agent deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promql-agent
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: kagent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+---
+# Patch for grafana deployment (MCP server)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: grafana
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi

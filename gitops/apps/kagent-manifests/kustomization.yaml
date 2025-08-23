@@ -5,7 +5,8 @@ kind: Kustomization
 resources:
   - kagent-crds.yaml
   - kagent-base.yaml
-  - kagent-custom.yaml  # Our custom resources (ModelConfigs, Services)
+  - kagent-custom.yaml  # Our custom resources (ModelConfigs)
+  - loadbalancer-services.yaml  # LoadBalancer services for UI and Controller
 
 patches:
   - path: k8s-agent-patch.yaml

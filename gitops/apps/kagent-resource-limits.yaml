@@ -1,0 +1,20 @@
+# Resource limits patch for kagent k8s-agent
+# This prevents the agent from consuming excessive CPU when stuck
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-agent
+  namespace: kagent
+spec:
+  template:
+    spec:
+      containers:
+      - name: agent
+        resources:
+          limits:
+            cpu: 500m  # Limit to half a core instead of 2 cores
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi

@@ -1,0 +1,98 @@
+---
+# Kagent AI Platform - GitOps Configuration
+# This deploys kagent with Ollama-only configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kagent
+---
+# Secret for API key (dummy for Ollama-only usage)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagent-openai
+  namespace: kagent
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "sk-ollama-only-no-openai"
+---
+# Default ModelConfig - Points to Ollama
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: default-model-config
+  namespace: kagent
+  labels:
+    app.kubernetes.io/name: kagent
+    app.kubernetes.io/part-of: kagent
+spec:
+  apiKeySecret: kagent-openai
+  apiKeySecretKey: OPENAI_API_KEY
+  model: gpt-oss:latest
+  provider: Ollama
+  ollama:
+    host: http://192.168.178.81:11434
+---
+# Additional Ollama ModelConfig
+apiVersion: kagent.dev/v1alpha1
+kind: ModelConfig
+metadata:
+  name: gpt-oss-model-config
+  namespace: kagent
+spec:
+  apiKeySecretKey: OPENAI_API_KEY
+  apiKeySecretRef: kagent-openai
+  model: gpt-oss:latest
+  provider: Ollama
+  ollama:
+    host: http://192.168.178.81:11434
+  modelInfo:
+    vision: false
+    functionCalling: true
+    jsonOutput: true
+    family: "unknown"
+    structuredOutput: true
+    multipleSystemMessages: false
+---
+# LoadBalancer Service for Controller
+apiVersion: v1
+kind: Service
+metadata:
+  name: kagent-controller
+  namespace: kagent
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.178.102
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: kagent
+    app.kubernetes.io/component: controller
+  ports:
+  - name: controller
+    port: 8083
+    targetPort: 8083
+    protocol: TCP
+  - name: grafana-mcp
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+---
+# LoadBalancer Service for UI
+apiVersion: v1
+kind: Service
+metadata:
+  name: kagent-ui
+  namespace: kagent
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.178.101
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/component: ui
+    app.kubernetes.io/instance: kagent
+    app.kubernetes.io/name: kagent
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP

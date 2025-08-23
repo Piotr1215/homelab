@@ -161,6 +161,13 @@ data:
                   options:
                     maximumFractionDigits: 0
     - Services:
+      - Kagent AI:
+          description: Cloud Native Agentic AI Platform
+          href: http://192.168.178.101
+          icon: si-openai
+          showStats: true
+          namespace: kagent
+          podSelector: app.kubernetes.io/component=ui
       - Vault:
           description: Secrets Management
           href: http://192.168.178.92:8200

@@ -40,3 +40,4 @@ spec:
     - portainer
     - vault
     - kube-system
+    - kagent

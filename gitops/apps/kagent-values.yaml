@@ -1,0 +1,79 @@
+# Kagent Helm Values - Optimized for Low Resource Usage
+# Disables CPU-intensive agents that aren't needed
+
+agents:
+  # Core agent for general K8s operations
+  k8s-agent:
+    enabled: true
+    replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  
+  # Disable resource-intensive agents
+  observability-agent:
+    enabled: false
+  cilium-debug-agent:
+    enabled: false
+  cilium-manager-agent:
+    enabled: false
+  cilium-policy-agent:
+    enabled: false
+  argo-rollouts-conversion-agent:
+    enabled: false
+  istio-agent:
+    enabled: false
+  helm-agent:
+    enabled: false
+  kgateway-agent:
+    enabled: false
+  promql-agent:
+    enabled: false
+
+# Core components with resource limits
+controller:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+ui:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+querydoc:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+tools:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Use Ollama exclusively
+modelConfig:
+  provider: Ollama
+  model: gpt-oss:latest
+  ollama:
+    host: http://192.168.178.81:11434

@@ -1,0 +1,59 @@
+---
+# Remove unnecessary agents to save memory
+# Keep only: k8s-agent, observability-agent, helm-agent, and grafana (via MCPServer)
+
+# Remove Argo Rollouts agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: argo-rollouts-conversion-agent
+  namespace: kagent
+---
+# Remove Cilium Debug agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: cilium-debug-agent
+  namespace: kagent
+---
+# Remove Cilium Manager agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: cilium-manager-agent
+  namespace: kagent
+---
+# Remove Cilium Policy agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: cilium-policy-agent
+  namespace: kagent
+---
+# Remove Istio agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: istio-agent
+  namespace: kagent
+---
+# Remove KGateway agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: kgateway-agent
+  namespace: kagent
+---
+# Remove PromQL agent
+$patch: delete
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: promql-agent
+  namespace: kagent

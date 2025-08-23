@@ -36,8 +36,6 @@ controller:
       memory: 512Mi
   service:
     type: LoadBalancer
-    annotations:
-      metallb.universe.tf/loadBalancerIPs: "192.168.178.102"
     ports:
       port: 8083
       targetPort: 8083
@@ -57,8 +55,6 @@ ui:
       memory: 1Gi
   service:
     type: LoadBalancer
-    annotations:
-      metallb.universe.tf/loadBalancerIPs: "192.168.178.101"
     ports:
       port: 80
       targetPort: 8080

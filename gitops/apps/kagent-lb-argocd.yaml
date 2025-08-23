@@ -1,0 +1,35 @@
+---
+# Kagent LoadBalancer Patches
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent-lb-patches
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/Piotr1215/homelab
+    targetRevision: HEAD
+    path: gitops/apps/kagent
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

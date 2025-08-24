@@ -345,7 +345,7 @@ spec:
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "192.168.178.94"
+              value: "20.67.75.221"
             - name: LOG_LEVEL
               value: "debug"
             - name: HOMEPAGE_VAR_ARGOCD_TOKEN

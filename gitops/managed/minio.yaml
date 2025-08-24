@@ -61,7 +61,7 @@ spec:
       volumes:
       - name: storage
         persistentVolumeClaim:
-          claimName: minio-nfs-pvc
+          claimName: minio-pvc
 ---
 apiVersion: v1
 kind: Service

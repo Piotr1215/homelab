@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-discovery
+  namespace: homepage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: service-discovery
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-discovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-discovery
+subjects:
+- kind: ServiceAccount
+  name: service-discovery
+  namespace: homepage
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: service-discovery
+  namespace: homepage
+spec:
+  schedule: "*/2 * * * *"  # Every 2 minutes
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: service-discovery
+          restartPolicy: OnFailure
+          containers:
+          - name: updater
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Get all LoadBalancer IPs
+              HOMEPAGE_IP=$(kubectl get svc homepage -n homepage -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+              GRAFANA_IP=$(kubectl get svc kube-prometheus-stack-grafana -n prometheus -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+              PROMETHEUS_IP=$(kubectl get svc kube-prometheus-stack-prometheus -n prometheus -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+              VAULT_IP=$(kubectl get svc vault-ui -n vault -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+              MINIO_IP=$(kubectl get svc minio -n minio -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+              
+              # Create ConfigMap with discovered IPs
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: service-ips
+                namespace: homepage
+              data:
+                homepage-ip: "${HOMEPAGE_IP:-pending}"
+                grafana-ip: "${GRAFANA_IP:-pending}"
+                prometheus-ip: "${PROMETHEUS_IP:-pending}"
+                vault-ip: "${VAULT_IP:-pending}"
+                minio-ip: "${MINIO_IP:-pending}"
+                # URLs for Homepage to use
+                grafana-url: "${GRAFANA_IP:+http://$GRAFANA_IP}"
+                prometheus-url: "${PROMETHEUS_IP:+http://$PROMETHEUS_IP:9090}"
+                vault-url: "${VAULT_IP:+http://$VAULT_IP:8200}"
+                minio-url: "${MINIO_IP:+http://$MINIO_IP:9001}"
+              EOF
+              
+              # Update Homepage deployment if IP changed
+              if [ -n "$HOMEPAGE_IP" ] && [ "$HOMEPAGE_IP" != "pending" ]; then
+                kubectl set env deployment/homepage -n homepage HOMEPAGE_ALLOWED_HOSTS="$HOMEPAGE_IP" || true
+              fi

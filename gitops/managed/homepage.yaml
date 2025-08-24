@@ -253,7 +253,11 @@ spec:
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "20.67.75.221"
+              valueFrom:
+                configMapKeyRef:
+                  name: service-ips
+                  key: homepage-ip
+                  optional: true
             - name: LOG_LEVEL
               value: "debug"
             - name: HOMEPAGE_VAR_ARGOCD_TOKEN
@@ -266,6 +270,31 @@ spec:
                 secretKeyRef:
                   name: homepage-secrets
                   key: grafana-password
+            # Service URLs from ConfigMap
+            - name: HOMEPAGE_VAR_GRAFANA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-ips
+                  key: grafana-url
+                  optional: true
+            - name: HOMEPAGE_VAR_PROMETHEUS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-ips
+                  key: prometheus-url
+                  optional: true
+            - name: HOMEPAGE_VAR_VAULT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-ips
+                  key: vault-url
+                  optional: true
+            - name: HOMEPAGE_VAR_MINIO_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: service-ips
+                  key: minio-url
+                  optional: true
           ports:
             - name: http
               containerPort: 3000

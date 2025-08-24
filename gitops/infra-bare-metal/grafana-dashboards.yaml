@@ -1,0 +1,292 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+data:
+  node-exporter-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Node Exporter Full",
+        "uid": "node-exporter",
+        "panels": [
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "percent"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "id": 1,
+            "targets": [
+              {
+                "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "title": "CPU Usage",
+            "type": "timeseries"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "bytes"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "id": 2,
+            "targets": [
+              {
+                "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "title": "Memory Usage",
+            "type": "timeseries"
+          }
+        ],
+        "version": 1
+      }
+    }
+  metallb-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "MetalLB Overview",
+        "uid": "metallb-overview",
+        "panels": [
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [
+                  {"type": "value", "value": "1", "text": "UP"},
+                  {"type": "value", "value": "0", "text": "DOWN"}
+                ],
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "green", "value": 1}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+            "id": 1,
+            "targets": [
+              {
+                "expr": "up{job=\"metallb\"}",
+                "instant": true
+              }
+            ],
+            "title": "MetalLB Components Status",
+            "type": "stat"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short"
+              }
+            },
+            "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+            "id": 2,
+            "targets": [
+              {
+                "expr": "count(kube_service_info{type=\"LoadBalancer\"})",
+                "instant": true
+              }
+            ],
+            "title": "LoadBalancer Services",
+            "type": "stat"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "align": "left"
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "id": 3,
+            "targets": [
+              {
+                "expr": "kube_service_info{type=\"LoadBalancer\"}",
+                "format": "table",
+                "instant": true
+              }
+            ],
+            "title": "LoadBalancer Services List",
+            "type": "table",
+            "transformations": [
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {
+                    "Time": true,
+                    "__name__": true,
+                    "job": true,
+                    "instance": true
+                  },
+                  "indexByName": {
+                    "namespace": 0,
+                    "service": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "percent"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "id": 4,
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{namespace=\"metallb-system\"}[5m]) * 100",
+                "legendFormat": "{{pod}}"
+              }
+            ],
+            "title": "MetalLB CPU Usage",
+            "type": "timeseries"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "bytes"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "id": 5,
+            "targets": [
+              {
+                "expr": "container_memory_usage_bytes{namespace=\"metallb-system\"}",
+                "legendFormat": "{{pod}}"
+              }
+            ],
+            "title": "MetalLB Memory Usage",
+            "type": "timeseries"
+          }
+        ],
+        "refresh": "10s",
+        "version": 1
+      }
+    }
+  kubernetes-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Kubernetes Cluster Overview",
+        "uid": "kubernetes-overview",
+        "panels": [
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short"
+              }
+            },
+            "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+            "id": 1,
+            "targets": [
+              {
+                "expr": "sum(kube_node_info)",
+                "instant": true
+              }
+            ],
+            "title": "Nodes",
+            "type": "stat"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short"
+              }
+            },
+            "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+            "id": 2,
+            "targets": [
+              {
+                "expr": "sum(kube_pod_info)",
+                "instant": true
+              }
+            ],
+            "title": "Total Pods",
+            "type": "stat"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short"
+              }
+            },
+            "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+            "id": 3,
+            "targets": [
+              {
+                "expr": "count(count by (namespace) (kube_pod_info))",
+                "instant": true
+              }
+            ],
+            "title": "Namespaces",
+            "type": "stat"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "percent"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+            "id": 4,
+            "targets": [
+              {
+                "expr": "100 - (avg by (node) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "legendFormat": "{{node}}"
+              }
+            ],
+            "title": "Node CPU Usage",
+            "type": "timeseries"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "bytes"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+            "id": 5,
+            "targets": [
+              {
+                "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+                "legendFormat": "{{node}}"
+              }
+            ],
+            "title": "Node Memory Usage",
+            "type": "timeseries"
+          }
+        ],
+        "refresh": "10s",
+        "version": 1
+      }
+    }

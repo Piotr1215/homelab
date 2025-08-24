@@ -98,6 +98,141 @@ argo_diff app:
   argocd app diff {{app}}
 
 # Delete an ArgoCD application
+
+# Bootstrap ArgoCD for specific environment (bare-metal or managed)
+bootstrap env="bare-metal":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "🚀 Bootstrapping ArgoCD for {{env}} environment..."
+  
+  # Validate environment
+  if [[ "{{env}}" != "bare-metal" && "{{env}}" != "managed" ]]; then
+    echo "❌ Invalid environment. Use: bare-metal or managed"
+    exit 1
+  fi
+  
+  # Install ArgoCD based on environment
+  if [[ "{{env}}" == "bare-metal" ]]; then
+    echo "📦 Installing ArgoCD with LoadBalancer for bare-metal..."
+    cd terraform/argocd && terraform init && terraform apply -auto-approve
+  else
+    echo "📦 Installing ArgoCD with ClusterIP for managed K8s..."
+    # Create namespace
+    kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+    # Install with ClusterIP instead of LoadBalancer
+    helm repo add argo https://argoproj.github.io/argo-helm
+    helm repo update
+    helm upgrade --install argocd argo/argo-cd \
+      --namespace argocd \
+      --set server.service.type=ClusterIP \
+      --set configs.params."server\.insecure"=true \
+      --wait
+  fi
+  
+  # Wait for ArgoCD to be ready
+  echo "⏳ Waiting for ArgoCD to be ready..."
+  kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
+  
+  # Apply environment-specific applications
+  echo "📝 Applying {{env}} applications..."
+  kubectl apply -f gitops/clusters/{{env}}/
+  
+  echo "✅ Bootstrap complete for {{env}}!"
+  
+  # Show access info
+  if [[ "{{env}}" == "bare-metal" ]]; then
+    ARGO_IP=$(kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    echo "🌐 ArgoCD URL: http://$ARGO_IP"
+  else
+    echo "🌐 ArgoCD access: kubectl port-forward -n argocd svc/argocd-server 8080:80"
+  fi
+  
+  ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+  echo "🔑 Username: admin"
+  echo "🔑 Password: $ARGO_PASSWORD"
+
+# Initialize Vault after it's deployed by ArgoCD
+init-vault nas_password="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "🔐 Initializing Vault..."
+  
+  # Wait for Vault pod
+  kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault --timeout=300s || true
+  
+  # Port forward to Vault
+  kubectl port-forward -n vault svc/vault 8200:8200 &
+  PF_PID=$!
+  sleep 3
+  
+  export VAULT_ADDR="http://127.0.0.1:8200"
+  
+  # Initialize Vault if needed
+  if ! vault status 2>/dev/null | grep -q "Initialized.*true"; then
+    echo "📝 Initializing Vault..."
+    vault operator init -key-shares=1 -key-threshold=1 -format=json > /tmp/vault-init.json
+    UNSEAL_KEY=$(jq -r '.unseal_keys_b64[0]' /tmp/vault-init.json)
+    ROOT_TOKEN=$(jq -r '.root_token' /tmp/vault-init.json)
+    
+    echo "🔓 Unsealing Vault..."
+    vault operator unseal "$UNSEAL_KEY"
+    
+    echo "⚠️  Vault credentials saved to /tmp/vault-init.json - SAVE THESE!"
+    echo "Unseal key: $UNSEAL_KEY"
+    echo "Root token: $ROOT_TOKEN"
+  else
+    echo "✓ Vault already initialized"
+    # Try to unseal if sealed
+    if [[ -f /tmp/vault-init.json ]]; then
+      UNSEAL_KEY=$(jq -r '.unseal_keys_b64[0]' /tmp/vault-init.json)
+      vault operator unseal "$UNSEAL_KEY" || true
+    fi
+  fi
+  
+  # Login to Vault
+  ROOT_TOKEN=$(jq -r '.root_token' /tmp/vault-init.json)
+  export VAULT_TOKEN="$ROOT_TOKEN"
+  
+  # Enable KV v2 if needed
+  vault secrets enable -path=secret kv-2 2>/dev/null || true
+  
+  # Add secrets
+  echo "🔑 Adding secrets to Vault..."
+  
+  # NAS password (prompt if not provided)
+  if [[ -z "{{nas_password}}" ]]; then
+    read -s -p "Enter NAS password: " NAS_PWD
+    echo
+  else
+    NAS_PWD="{{nas_password}}"
+  fi
+  
+  # Store secrets in Vault
+  vault kv put secret/synology/config password="$NAS_PWD"
+  vault kv put secret/minio/config root_user="admin" root_password="$(openssl rand -base64 32)"
+  vault kv put secret/homepage/config \
+    argocd_token="$(openssl rand -base64 32)" \
+    grafana_password="$(openssl rand -base64 32)" \
+    portainer_key="$(openssl rand -base64 32)" \
+    proxmox_password="changeme" \
+    synology_password="$NAS_PWD"
+  
+  # Create ESO token
+  ESO_TOKEN=$(vault token create -policy=default -format=json | jq -r '.auth.client_token')
+  
+  # Create vault-token secret in necessary namespaces
+  for ns in default homepage velero minio external-secrets; do
+    kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create secret generic vault-token \
+      --from-literal=token="$ESO_TOKEN" \
+      --namespace="$ns" \
+      --dry-run=client -o yaml | kubectl apply -f -
+  done
+  
+  kill $PF_PID 2>/dev/null || true
+  echo "✅ Vault initialized and secrets added!"
+
+# Delete an ArgoCD application
 argo_delete app cascade="true":
   argocd app delete {{app}} --cascade={{cascade}}
 

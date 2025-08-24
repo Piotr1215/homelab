@@ -32,13 +32,13 @@ spec:
         - name: grafana.persistence.size
           value: 1Gi
         - name: grafana.persistence.storageClassName
-          value: local-path
+          value: default
         - name: prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName
-          value: local-path
+          value: default
         - name: prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage
           value: 10Gi
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName
-          value: local-path
+          value: default
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage
           value: 1Gi
   destination:

@@ -19,7 +19,7 @@ spec:
         - name: loki.persistence.enabled
           value: "true"
         - name: loki.persistence.storageClassName
-          value: local-path
+          value: default
         - name: loki.persistence.size
           value: 10Gi
         - name: loki.service.type

@@ -39,26 +39,18 @@ data:
     mode: cluster
   services.yaml: |
     - Management:
-      - ArgoCD:
-          description: GitOps Continuous Delivery
-          href: http://192.168.178.93
-          icon: git.svg
-          showStats: true
-          widget:
-            type: argocd
-            url: http://192.168.178.93
-            key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
+      # ArgoCD removed - no LoadBalancer in managed env
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://192.168.178.99:9090
+          href: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
           icon: prometheus.svg
           widget:
             type: prometheus
             url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
       - Grafana:
           description: Visualization & Dashboards
-          href: http://192.168.178.98
+          href: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
           icon: grafana.svg
           widget:
             type: grafana
@@ -67,7 +59,7 @@ data:
             password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
       - Loki Logs:
           description: Log Aggregation & Search
-          href: http://192.168.178.98/explore?left=%7B%22datasource%22:%22Loki%22%7D
+          href: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local/explore?left=%7B%22datasource%22:%22Loki%22%7D
           icon: si-grafana-loki
           showStats: true
           namespace: loki
@@ -149,37 +141,18 @@ data:
     - Services:
       - Kagent AI:
           description: Cloud Native Agentic AI Platform
-          href: http://192.168.178.102
+          href: http://kagent-ui.kagent.svc.cluster.local
           icon: si-openai
           showStats: true
           namespace: kagent
           podSelector: app.kubernetes.io/component=ui
       - Vault:
           description: Secrets Management
-          href: http://192.168.178.92:8200
+          href: http://vault.vault.svc.cluster.local:8200
           icon: vault.svg
           showStats: true
           namespace: vault
           podSelector: app.kubernetes.io/name=vault
-      - MinIO:
-          description: S3-Compatible Object Storage
-          href: http://192.168.178.97:9001
-          icon: minio.svg
-          showStats: true
-          namespace: minio
-          podSelector: app=minio
-      - Hubble UI:
-          description: eBPF Network Observability
-          href: http://192.168.178.95
-          icon: cilium.svg
-          showStats: true
-          namespace: kube-system
-          podSelector: k8s-app=hubble-ui
-      - Glances:
-          description: System Monitoring
-          href: http://192.168.178.75:61208
-          icon: glances.svg
-          showStats: false
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed

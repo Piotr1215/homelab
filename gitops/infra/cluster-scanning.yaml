@@ -11,8 +11,8 @@ metadata:
   namespace: cluster-scanning
 type: Opaque
 stringData:
-  access-key: "minio"
-  secret-key: "minio123"
+  access-key: "REPLACE_WITH_ACTUAL_KEY"
+  secret-key: "REPLACE_WITH_ACTUAL_SECRET"
   endpoint: "http://minio.minio.svc.cluster.local:9000"
 ---
 apiVersion: batch/v1

@@ -163,7 +163,7 @@ data:
     - Services:
       - Kagent AI:
           description: Cloud Native Agentic AI Platform
-          href: http://192.168.178.101
+          href: http://192.168.178.102
           icon: si-openai
           showStats: true
           namespace: kagent

@@ -9,8 +9,8 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Piotr1215/homelab
-    targetRevision: HEAD
-    path: gitops/infra
+    targetRevision: envs
+    path: gitops/infra-managed
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:

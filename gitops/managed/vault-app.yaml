@@ -57,7 +57,7 @@ spec:
         ui:
           enabled: true
           serviceType: LoadBalancer
-          loadBalancerIP: 192.168.178.92
+          # No fixed IP for managed environments - cloud provider assigns
         
         # Resource limits
         resources:

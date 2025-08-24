@@ -29,7 +29,7 @@ spec:
           dataStorage:
             enabled: true
             size: 10Gi
-            storageClass: local-path
+            storageClass: default
             
           # Production configuration
           standalone:

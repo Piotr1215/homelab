@@ -13,6 +13,7 @@ spec:
     path: gitops/managed
   destination:
     server: https://kubernetes.default.svc
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true

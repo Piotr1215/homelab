@@ -34,10 +34,7 @@ data:
         - abbr: Argo
           href: https://argo-cd.readthedocs.io/
   docker.yaml: ""
-  proxmox.yaml: |
-    url: https://192.168.178.75:8006
-    username: homepage@pve!homepage-token
-    password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
+  proxmox.yaml: ""
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
@@ -51,17 +48,6 @@ data:
             type: argocd
             url: http://192.168.178.93
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
-      - Portainer:
-          description: Container Management Platform
-          href: https://192.168.178.96:9443
-          icon: portainer.svg
-          showStats: true
-          widget:
-            type: portainer
-            url: https://192.168.178.96:9443
-            env: 1
-            kubernetes: true
-            key: {{HOMEPAGE_VAR_PORTAINER_KEY}}
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
@@ -195,87 +181,6 @@ data:
           icon: glances.svg
           showStats: false
     - Infrastructure:
-      - Proxmox:
-          description: Hypervisor Management  
-          href: https://192.168.178.75:8006
-          icon: proxmox.svg
-          showStats: true
-          widget:
-            type: proxmox
-            url: https://192.168.178.75:8006
-            username: homepage@pve!homepage-token
-            password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
-            node: pve
-      - Synology NAS:
-          description: Network Attached Storage
-          href: http://192.168.178.60:5000
-          icon: synology.svg
-          showStats: true
-          widget:
-            type: diskstation
-            url: http://192.168.178.60:5000
-            username: homepage_stats
-            password: {{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}
-            volume: volume_1
-    - Proxmox Monitoring:
-      - System Info:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: info
-            refreshInterval: 60000
-      - CPU Usage:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: cpu
-            refreshInterval: 5000
-            pointsLimit: 15
-      - Memory Usage:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: memory
-            refreshInterval: 5000
-      - Disk I/O:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: disk:nvme0n1
-            diskUnits: bytes
-            refreshInterval: 5000
-      - Network Traffic:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: network:enp87s0
-            refreshInterval: 5000
-      - Top Processes:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: process
-            refreshInterval: 5000
-      - CPU Temperature:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: sensor:Package id 0
-            refreshInterval: 5000
-      - Root Filesystem:
-          widget:
-            type: glances
-            url: http://192.168.178.75:61208
-            version: 4
-            metric: fs:/
-            refreshInterval: 30000
     - Virtual Machines:
       - Kube Main:
           description: Control Plane VM 101
@@ -443,31 +348,16 @@ spec:
               value: "192.168.178.94"
             - name: LOG_LEVEL
               value: "debug"
-            - name: HOMEPAGE_VAR_PROXMOX_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: homepage-secrets
-                  key: proxmox-password
             - name: HOMEPAGE_VAR_ARGOCD_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: homepage-secrets
                   key: argocd-token
-            - name: HOMEPAGE_VAR_PORTAINER_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: homepage-secrets
-                  key: portainer-key
             - name: HOMEPAGE_VAR_GRAFANA_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: homepage-secrets
                   key: grafana-password
-            - name: HOMEPAGE_VAR_SYNOLOGY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: synology-secrets
-                  key: password
           ports:
             - name: http
               containerPort: 3000

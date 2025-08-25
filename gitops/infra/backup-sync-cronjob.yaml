@@ -48,7 +48,7 @@ spec:
           - name: nas-mount
             nfs:
               server: 192.168.178.60
-              path: /volume1/Kubernetes/velero-mirror
+              path: /volume1/Kubernetes/minio
           - name: staging
             emptyDir:
               sizeLimit: 10Gi

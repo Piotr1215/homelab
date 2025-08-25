@@ -1,0 +1,54 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: minio-nas-sync
+  namespace: minio
+spec:
+  schedule: "30 4 * * *"  # Run at 4:30am, after daily backup at 2am
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: sync
+            image: minio/mc:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Configure MinIO client
+              mc alias set local http://minio.minio.svc.cluster.local:9000 minio minio123
+              
+              # Check MinIO is accessible
+              mc admin info local
+              
+              # Create backup archive
+              echo "Creating backup archive..."
+              mc mirror --overwrite --remove local/velero-backups /backup-staging/
+              
+              # Sync to NAS using cp
+              echo "Syncing to NAS mount..."
+              cp -r /backup-staging/* /mnt/nas-backup/ 2>/dev/null || true
+              
+              # Clean up old backups on NAS (keep last 30 days)
+              find /mnt/nas-backup/ -type f -mtime +30 -delete 2>/dev/null || true
+              
+              echo "Sync completed at $(date)"
+            volumeMounts:
+            - name: nas-mount
+              mountPath: /mnt/nas-backup
+            - name: staging
+              mountPath: /backup-staging
+          volumes:
+          - name: nas-mount
+            nfs:
+              server: 192.168.178.60
+              path: /volume1/Kubernetes/velero-mirror
+          - name: staging
+            emptyDir:
+              sizeLimit: 10Gi

@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-cleanup-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-cleanup-operator
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-cleanup-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-cleanup-operator
+subjects:
+- kind: ServiceAccount
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-cleanup-operator
+  namespace: kube-cleanup-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-cleanup-operator
+  template:
+    metadata:
+      labels:
+        app: kube-cleanup-operator
+    spec:
+      serviceAccountName: kube-cleanup-operator
+      containers:
+      - name: kube-cleanup-operator
+        image: quay.io/lwolf/kube-cleanup-operator:0.8.4
+        env:
+        # Delete successful jobs after 1 hour
+        - name: DELETE_SUCCESSFUL_AFTER
+          value: "3600"
+        # Delete failed jobs after 1 day
+        - name: DELETE_FAILED_AFTER
+          value: "86400"
+        # Delete pending (stuck) jobs after 1 day
+        - name: DELETE_PENDING_PODS_AFTER
+          value: "86400"
+        # Delete evicted pods immediately
+        - name: DELETE_EVICTED_PODS_AFTER
+          value: "0"
+        # Delete orphaned pods after 1 hour
+        - name: DELETE_ORPHANED_PODS_AFTER
+          value: "3600"
+        # Don't delete jobs created by CronJob by default (we'll use TTL on specific jobs)
+        - name: IGNORE_OWNED_BY_CRONJOB
+          value: "false"
+        # Namespace to operate in (empty = all namespaces)
+        - name: NAMESPACE
+          value: ""
+        # Dry run mode for testing
+        - name: DRY_RUN
+          value: "false"
+        resources:
+          limits:
+            cpu: 50m
+            memory: 50Mi
+          requests:
+            cpu: 10m
+            memory: 20Mi

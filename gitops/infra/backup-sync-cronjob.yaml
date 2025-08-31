@@ -11,6 +11,7 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 86400  # Auto-delete job after 24 hours
       template:
         spec:
           restartPolicy: OnFailure

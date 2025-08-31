@@ -4,36 +4,33 @@ kind: Namespace
 metadata:
   name: cluster-scanning
 ---
+# PVC for Popeye scan reports
 apiVersion: v1
-kind: Secret
+kind: PersistentVolumeClaim
 metadata:
-  name: minio-credentials
-  namespace: cluster-scanning
-type: Opaque
-stringData:
-  access-key: "REPLACE_WITH_ACTUAL_KEY"
-  secret-key: "REPLACE_WITH_ACTUAL_SECRET"
-  endpoint: "http://minio.minio.svc.cluster.local:9000"
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: create-scan-reports-bucket
+  name: popeye-reports
   namespace: cluster-scanning
 spec:
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-      - name: mc
-        image: minio/mc:latest
-        command: ["/bin/sh", "-c"]
-        args:
-        - |
-          mc alias set myminio http://minio.minio.svc.cluster.local:9000 minio minio123
-          mc mb -p myminio/scan-reports || true
-          mc policy set public myminio/scan-reports
-          echo "Bucket scan-reports created and made public"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
+---
+# PVC for Kubescape scan reports
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubescape-reports
+  namespace: cluster-scanning
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: local-path
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -50,16 +47,6 @@ spec:
         spec:
           serviceAccountName: popeye-scanner
           restartPolicy: OnFailure
-          initContainers:
-          - name: mc-setup
-            image: minio/mc:latest
-            command: ["/bin/sh", "-c"]
-            args:
-            - |
-              mc alias set myminio http://minio.minio.svc.cluster.local:9000 minio minio123
-            volumeMounts:
-            - name: mc-config
-              mountPath: /root/.mc
           containers:
           - name: popeye
             image: derailed/popeye:latest
@@ -71,42 +58,18 @@ spec:
               echo "Running Popeye scan at $TIMESTAMP"
               popeye -A --save --out html --output-file /tmp/report.html
               # Popeye creates file at /tmp/popeye/-tmp-report.html
-              cp /tmp/popeye/*report.html /shared/$REPORT_FILE || echo "Failed to copy report"
-              echo "Report saved to: /shared/$REPORT_FILE"
-              ls -la /shared/
+              cp /tmp/popeye/*report.html /reports/$REPORT_FILE || echo "Failed to copy report"
+              echo "Report saved to: /reports/$REPORT_FILE"
+              ls -la /reports/
+              # Keep only last 7 reports
+              cd /reports && ls -t *.html 2>/dev/null | tail -n +8 | xargs rm -f 2>/dev/null || true
             volumeMounts:
-            - name: shared-data
-              mountPath: /shared
-          - name: uploader
-            image: minio/mc:latest
-            command: ["/bin/sh", "-c"]
-            args:
-            - |
-              # Wait for scan to complete
-              sleep 30
-              
-              # Setup MinIO
-              mc alias set myminio http://minio.minio.svc.cluster.local:9000 minio minio123
-              
-              # Upload all HTML files from shared volume
-              for file in /shared/*.html; do
-                if [ -f "$file" ]; then
-                  echo "Uploading $file to MinIO"
-                  mc cp "$file" myminio/scan-reports/
-                fi
-              done
-              
-              # List files
-              echo "Files in scan-reports:"
-              mc ls myminio/scan-reports/
-            volumeMounts:
-            - name: shared-data
-              mountPath: /shared
+            - name: reports
+              mountPath: /reports
           volumes:
-          - name: mc-config
-            emptyDir: {}
-          - name: shared-data
-            emptyDir: {}
+          - name: reports
+            persistentVolumeClaim:
+              claimName: popeye-reports
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -123,31 +86,16 @@ spec:
         spec:
           serviceAccountName: kubescape-scanner
           restartPolicy: OnFailure
-          initContainers:
-          - name: mc-setup
-            image: minio/mc:latest
-            command: ["/bin/sh", "-c"]
-            args:
-            - |
-              mc alias set myminio http://minio.minio.svc.cluster.local:9000 minio minio123
-            volumeMounts:
-            - name: mc-config
-              mountPath: /root/.mc
           containers:
           - name: kubescape
             image: alpine:latest
             command: ["/bin/sh", "-c"]
             args:
             - |
-              # Install kubescape and mc
+              # Install kubescape
               apk add --no-cache curl bash jq gzip
               curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
-              curl https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc
-              chmod +x /usr/local/bin/mc
               export PATH=$PATH:/root/.kubescape/bin
-              
-              # Setup MinIO alias
-              mc alias set myminio http://minio.minio.svc.cluster.local:9000 minio minio123
               
               TIMESTAMP=$(date +%Y%m%d-%H%M%S)
               REPORT_FILE="kubescape-${TIMESTAMP}.json"
@@ -155,39 +103,31 @@ spec:
               echo "Running Kubescape scan at $TIMESTAMP"
               
               # Run scan and save compact summary
-              echo "<!DOCTYPE html><html><head><title>Kubescape Report - $TIMESTAMP</title></head><body><pre>" > "/tmp/$REPORT_HTML"
+              echo "<!DOCTYPE html><html><head><title>Kubescape Report - $TIMESTAMP</title></head><body><pre>" > "/reports/$REPORT_HTML"
               kubescape scan framework nsa \
                 --exclude-namespaces kube-system,kube-public,kube-node-lease \
-                --format pretty-printer >> "/tmp/$REPORT_HTML" 2>&1
-              echo "</pre></body></html>" >> "/tmp/$REPORT_HTML"
+                --format pretty-printer >> "/reports/$REPORT_HTML" 2>&1
+              echo "</pre></body></html>" >> "/reports/$REPORT_HTML"
               
-              # Also save detailed JSON (but compressed)
+              # Also save detailed JSON (compressed)
               kubescape scan framework nsa \
                 --exclude-namespaces kube-system,kube-public,kube-node-lease \
                 --format json \
-                --output "/tmp/$REPORT_FILE"
-              gzip "/tmp/$REPORT_FILE"
-              REPORT_FILE="${REPORT_FILE}.gz"
+                --output "/reports/$REPORT_FILE"
+              gzip "/reports/$REPORT_FILE"
               
-              # Upload both to MinIO
-              mc cp /tmp/$REPORT_FILE myminio/scan-reports/kubescape/
-              mc cp /tmp/$REPORT_HTML myminio/scan-reports/kubescape/
+              echo "Reports saved to /reports/"
+              ls -la /reports/
               
               # Keep only last 7 reports of each type
-              mc ls myminio/scan-reports/kubescape/ --json | \
-                jq -r '.key' | \
-                grep '.json$' | \
-                sort -r | \
-                tail -n +8 | \
-                xargs -I {} mc rm "myminio/scan-reports/kubescape/{}" || true
-              
-              echo "Reports uploaded to MinIO: scan-reports/kubescape/"
+              cd /reports && ls -t kubescape-*.* 2>/dev/null | tail -n +15 | xargs rm -f 2>/dev/null || true
             volumeMounts:
-            - name: mc-config
-              mountPath: /root/.mc
+            - name: reports
+              mountPath: /reports
           volumes:
-          - name: mc-config
-            emptyDir: {}
+          - name: reports
+            persistentVolumeClaim:
+              claimName: kubescape-reports
 ---
 apiVersion: v1
 kind: ServiceAccount

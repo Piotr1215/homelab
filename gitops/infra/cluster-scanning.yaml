@@ -42,9 +42,6 @@ spec:
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
-    metadata:
-      annotations:
-        janitor/ttl: 24h  # Auto-cleanup after 24 hours
     spec:
       template:
         spec:
@@ -84,9 +81,6 @@ spec:
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
-    metadata:
-      annotations:
-        janitor/ttl: 24h  # Auto-cleanup after 24 hours
     spec:
       template:
         spec:

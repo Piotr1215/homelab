@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  project: default
+  project: applications
   source:
     repoURL: https://github.com/Piotr1215/homelab
     targetRevision: HEAD

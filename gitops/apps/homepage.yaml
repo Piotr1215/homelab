@@ -379,7 +379,6 @@ metadata:
     metallb.universe.tf/ip-allocated-from-pool: app-services-pool
 spec:
   type: LoadBalancer
-  loadBalancerIP: 192.168.178.93
   ports:
     - port: 80
       targetPort: http

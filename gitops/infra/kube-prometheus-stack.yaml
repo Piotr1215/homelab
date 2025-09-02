@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  project: default
+  project: infrastructure
   source:
     chart: kube-prometheus-stack
     repoURL: https://prometheus-community.github.io/helm-charts
@@ -25,14 +25,10 @@ spec:
           value: prometheus
         - name: grafana.service.type
           value: LoadBalancer
-        - name: grafana.service.loadBalancerIP
-          value: "192.168.178.96"
         - name: grafana.service.annotations.metallb\.universe\.tf/loadBalancerIPs
           value: "192.168.178.96"
         - name: prometheus.service.type
           value: LoadBalancer
-        - name: prometheus.service.loadBalancerIP
-          value: "192.168.178.90"
         - name: prometheus.service.annotations.metallb\.universe\.tf/loadBalancerIPs
           value: "192.168.178.90"
         - name: grafana.persistence.enabled

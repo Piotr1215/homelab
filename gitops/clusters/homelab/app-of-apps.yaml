@@ -1,20 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps
+  name: app-of-apps
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/Piotr1215/homelab
     targetRevision: HEAD
-    path: gitops/apps
+    path: gitops/clusters/homelab
   destination:
     server: https://kubernetes.default.svc
-  ignoreDifferences:
-  - group: velero.io
-    kind: Backup
-    name: "*"
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
@@ -22,7 +19,6 @@ spec:
       allowEmpty: false
     syncOptions:
     - CreateNamespace=true
-    - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

@@ -44,39 +44,28 @@ data:
     - Management:
       - ArgoCD:
           description: GitOps Continuous Delivery
-          href: http://192.168.178.93
+          href: http://192.168.178.96
           icon: git.svg
           showStats: true
           widget:
             type: argocd
-            url: http://192.168.178.93
+            url: https://argocd-server.argocd.svc.cluster.local
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
-      - Portainer:
-          description: Container Management Platform
-          href: https://192.168.178.96:9443
-          icon: portainer.svg
-          showStats: true
-          widget:
-            type: portainer
-            url: https://192.168.178.96:9443
-            env: 1
-            kubernetes: true
-            key: {{HOMEPAGE_VAR_PORTAINER_KEY}}
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://192.168.178.99:9090
+          href: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
           icon: prometheus.svg
           widget:
             type: prometheus
             url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
       - Grafana:
           description: Visualization & Dashboards
-          href: http://192.168.178.98
+          href: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
           icon: grafana.svg
           widget:
             type: grafana
-            url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local:80
+            url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
             username: admin
             password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
       - Loki Logs:
@@ -163,28 +152,28 @@ data:
     - Services:
       - Kagent AI:
           description: Cloud Native Agentic AI Platform
-          href: http://192.168.178.102
+          href: http://kagent-ui.kagent.svc.cluster.local
           icon: si-openai
           showStats: true
           namespace: kagent
           podSelector: app.kubernetes.io/component=ui
       - Vault:
           description: Secrets Management
-          href: http://192.168.178.92:8200
+          href: http://vault-ui.vault.svc.cluster.local:8200
           icon: vault.svg
           showStats: true
           namespace: vault
           podSelector: app.kubernetes.io/name=vault
       - MinIO:
           description: S3-Compatible Object Storage
-          href: http://192.168.178.97:9001
+          href: http://minio.minio.svc.cluster.local:9001
           icon: minio.svg
           showStats: true
           namespace: minio
           podSelector: app=minio
       - Hubble UI:
           description: eBPF Network Observability
-          href: http://192.168.178.95
+          href: http://hubble-ui-lb.kube-system.svc.cluster.local
           icon: cilium.svg
           showStats: true
           namespace: kube-system
@@ -440,7 +429,10 @@ spec:
           imagePullPolicy: 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "192.168.178.94"
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: allowed-hosts
             - name: LOG_LEVEL
               value: "debug"
             - name: HOMEPAGE_VAR_PROXMOX_PASSWORD
@@ -453,11 +445,6 @@ spec:
                 secretKeyRef:
                   name: homepage-secrets
                   key: argocd-token
-            - name: HOMEPAGE_VAR_PORTAINER_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: homepage-secrets
-                  key: portainer-key
             - name: HOMEPAGE_VAR_GRAFANA_PASSWORD
               valueFrom:
                 secretKeyRef:

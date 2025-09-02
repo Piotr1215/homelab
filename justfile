@@ -216,3 +216,9 @@ check-upgrade:
 unseal-vault:
   @echo "Unsealing Vault..."
   kubectl exec -n vault vault-0 -- vault operator unseal $(VAULT_UNSEAL_KEY)
+
+# ULTIMATE CLUSTER RECOVERY - One command to restore everything!
+recreate:
+	@echo "Starting ultimate cluster recovery..."
+	@chmod +x scripts/cluster-recovery.sh
+	@./scripts/cluster-recovery.sh

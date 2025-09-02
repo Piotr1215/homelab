@@ -70,3 +70,6 @@ devbox.lock
 result
 result-*
 # kubespray/ - now tracked as a submodule
+
+# Backups (contain sensitive data)
+backups/vault/

@@ -376,7 +376,7 @@ metadata:
     helm.sh/chart: homepage-2.1.0
   annotations:
     metallb.universe.tf/loadBalancerIPs: "192.168.178.93"
-    metallb.universe.tf/ip-allocated-from-pool: app-services-pool
+    metallb.universe.tf/ip-allocated-from-pool: core-services-pool
 spec:
   type: LoadBalancer
   ports:

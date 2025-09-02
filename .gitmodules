@@ -1,4 +1,0 @@
-[submodule "kubespray"]
-	path = kubespray
-	url = git@github.com:Piotr1215/kubespray.git
-	branch = homelab-custom

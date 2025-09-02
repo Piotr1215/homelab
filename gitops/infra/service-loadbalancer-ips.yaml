@@ -37,16 +37,3 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.178.96
----
-# Patch for Vault UI to use specific IP
-apiVersion: v1
-kind: Service
-metadata:
-  name: vault-ui
-  namespace: vault
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.92"
-    metallb.universe.tf/ip-allocated-from-pool: core-services-pool
-spec:
-  type: LoadBalancer
-  loadBalancerIP: 192.168.178.92

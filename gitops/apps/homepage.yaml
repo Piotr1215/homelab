@@ -375,8 +375,11 @@ metadata:
     app.kubernetes.io/version: v1.2.0
     helm.sh/chart: homepage-2.1.0
   annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.93"
+    metallb.universe.tf/ip-allocated-from-pool: app-services-pool
 spec:
   type: LoadBalancer
+  loadBalancerIP: 192.168.178.93
   ports:
     - port: 80
       targetPort: http

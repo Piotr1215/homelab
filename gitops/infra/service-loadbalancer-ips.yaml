@@ -1,0 +1,52 @@
+---
+# Patch for ArgoCD Server to use specific IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.98"
+    metallb.universe.tf/ip-allocated-from-pool: core-services-pool
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.98
+---
+# Patch for Prometheus to use specific IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-prometheus-stack-prometheus
+  namespace: prometheus
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.90"
+    metallb.universe.tf/ip-allocated-from-pool: core-services-pool
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.90
+---
+# Patch for Grafana to use specific IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-prometheus-stack-grafana
+  namespace: prometheus
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.96"
+    metallb.universe.tf/ip-allocated-from-pool: app-services-pool
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.96
+---
+# Patch for Vault UI to use specific IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-ui
+  namespace: vault
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.92"
+    metallb.universe.tf/ip-allocated-from-pool: core-services-pool
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.92

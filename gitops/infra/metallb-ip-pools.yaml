@@ -1,0 +1,60 @@
+---
+# Dedicated IP pools for service categories to ensure stable assignments
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: core-services-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.178.90-192.168.178.95
+  autoAssign: false  # Require explicit assignment
+  serviceAllocation:
+    priority: 100
+    namespaces:
+    - argocd
+    - prometheus
+    - vault
+    - kube-system
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: app-services-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.178.96-192.168.178.99
+  autoAssign: false  # Require explicit assignment
+  serviceAllocation:
+    priority: 90
+    namespaces:
+    - homepage
+    - minio
+    - ingress-nginx
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: general-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.178.100-192.168.178.110
+  autoAssign: true  # Auto-assign for everything else
+  serviceAllocation:
+    priority: 50
+---
+# L2 Advertisement remains the same
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2-advert
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - core-services-pool
+  - app-services-pool
+  - general-pool
+  interfaces:
+  - ens18

@@ -13,9 +13,17 @@ spec:
     path: gitops/infra
   destination:
     server: https://kubernetes.default.svc
+  ignoreDifferences:
+  - group: ""
+    kind: PersistentVolumeClaim
+    namespace: cluster-scanning
+    jsonPointers:
+    - /spec
+    - /status
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
     - CreateNamespace=true
+    - RespectIgnoreDifferences=true

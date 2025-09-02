@@ -9,10 +9,10 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: popeye-reports
+  namespace: cluster-scanning
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
     argocd.argoproj.io/compare-options: IgnoreExtraneous
-  namespace: cluster-scanning
 spec:
   accessModes:
     - ReadWriteOnce
@@ -54,28 +54,26 @@ spec:
           serviceAccountName: popeye-scanner
           restartPolicy: OnFailure
           containers:
-          - name: popeye
-            image: derailed/popeye:latest
-            command: ["/bin/sh", "-c"]
-            args: 
-            - |
-              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-              REPORT_FILE="popeye-${TIMESTAMP}.html"
-              echo "Running Popeye scan at $TIMESTAMP"
-              popeye -A --save --out html --output-file /tmp/report.html
-              # Popeye creates file at /tmp/popeye/-tmp-report.html
-              cp /tmp/popeye/*report.html /reports/$REPORT_FILE || echo "Failed to copy report"
-              echo "Report saved to: /reports/$REPORT_FILE"
-              ls -la /reports/
-              # Keep only last 7 reports
-              cd /reports && ls -t *.html 2>/dev/null | tail -n +8 | xargs rm -f 2>/dev/null || true
-            volumeMounts:
-            - name: reports
-              mountPath: /reports
+            - name: popeye
+              image: derailed/popeye:latest
+              command: ["/bin/sh", "-c"]
+              args: 
+                - |
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  REPORT_FILE="popeye-${TIMESTAMP}.html"
+                  echo "Running Popeye scan at $TIMESTAMP"
+                  popeye -A --save --out html --output-file /tmp/report.html
+                  cp /tmp/popeye/*report.html /reports/$REPORT_FILE || echo "Failed to copy report"
+                  echo "Report saved to: /reports/$REPORT_FILE"
+                  ls -la /reports/
+                  cd /reports && ls -t *.html 2>/dev/null | tail -n +8 | xargs rm -f 2>/dev/null || true
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
           volumes:
-          - name: reports
-            persistentVolumeClaim:
-              claimName: popeye-reports
+            - name: reports
+              persistentVolumeClaim:
+                claimName: popeye-reports
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -93,47 +91,42 @@ spec:
           serviceAccountName: kubescape-scanner
           restartPolicy: OnFailure
           containers:
-          - name: kubescape
-            image: alpine:latest
-            command: ["/bin/sh", "-c"]
-            args:
-            - |
-              # Install kubescape
-              apk add --no-cache curl bash jq gzip
-              curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
-              export PATH=$PATH:/root/.kubescape/bin
-              
-              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-              REPORT_FILE="kubescape-${TIMESTAMP}.json"
-              REPORT_HTML="kubescape-${TIMESTAMP}.html"
-              echo "Running Kubescape scan at $TIMESTAMP"
-              
-              # Run scan and save compact summary
-              echo "<!DOCTYPE html><html><head><title>Kubescape Report - $TIMESTAMP</title></head><body><pre>" > "/reports/$REPORT_HTML"
-              kubescape scan framework nsa \
-                --exclude-namespaces kube-system,kube-public,kube-node-lease \
-                --format pretty-printer >> "/reports/$REPORT_HTML" 2>&1
-              echo "</pre></body></html>" >> "/reports/$REPORT_HTML"
-              
-              # Also save detailed JSON (compressed)
-              kubescape scan framework nsa \
-                --exclude-namespaces kube-system,kube-public,kube-node-lease \
-                --format json \
-                --output "/reports/$REPORT_FILE"
-              gzip "/reports/$REPORT_FILE"
-              
-              echo "Reports saved to /reports/"
-              ls -la /reports/
-              
-              # Keep only last 7 reports of each type
-              cd /reports && ls -t kubescape-*.* 2>/dev/null | tail -n +15 | xargs rm -f 2>/dev/null || true
-            volumeMounts:
-            - name: reports
-              mountPath: /reports
+            - name: kubescape
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  apk add --no-cache curl bash jq gzip
+                  curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
+                  export PATH=$PATH:/root/.kubescape/bin
+
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  REPORT_FILE="kubescape-${TIMESTAMP}.json"
+                  REPORT_HTML="kubescape-${TIMESTAMP}.html"
+                  echo "Running Kubescape scan at $TIMESTAMP"
+
+                  echo "<!DOCTYPE html><html><head><title>Kubescape Report - $TIMESTAMP</title></head><body><pre>" > "/reports/$REPORT_HTML"
+                  kubescape scan framework nsa \
+                    --exclude-namespaces kube-system,kube-public,kube-node-lease \
+                    --format pretty-printer >> "/reports/$REPORT_HTML" 2>&1
+                  echo "</pre></body></html>" >> "/reports/$REPORT_HTML"
+
+                  kubescape scan framework nsa \
+                    --exclude-namespaces kube-system,kube-public,kube-node-lease \
+                    --format json \
+                    --output "/reports/$REPORT_FILE"
+                  gzip "/reports/$REPORT_FILE"
+
+                  echo "Reports saved to /reports/"
+                  ls -la /reports/
+                  cd /reports && ls -t kubescape-*.* 2>/dev/null | tail -n +15 | xargs rm -f 2>/dev/null || true
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
           volumes:
-          - name: reports
-            persistentVolumeClaim:
-              claimName: kubescape-reports
+            - name: reports
+              persistentVolumeClaim:
+                claimName: kubescape-reports
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -152,21 +145,21 @@ kind: ClusterRole
 metadata:
   name: popeye-scanner
 rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["get", "list", "watch"]
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kubescape-scanner
 rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["nodes/proxy"]
-  verbs: ["get"]
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -177,9 +170,9 @@ roleRef:
   kind: ClusterRole
   name: popeye-scanner
 subjects:
-- kind: ServiceAccount
-  name: popeye-scanner
-  namespace: cluster-scanning
+  - kind: ServiceAccount
+    name: popeye-scanner
+    namespace: cluster-scanning
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -190,6 +183,6 @@ roleRef:
   kind: ClusterRole
   name: kubescape-scanner
 subjects:
-- kind: ServiceAccount
-  name: kubescape-scanner
-  namespace: cluster-scanning
+  - kind: ServiceAccount
+    name: kubescape-scanner
+    namespace: cluster-scanning

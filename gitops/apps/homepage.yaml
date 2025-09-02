@@ -44,7 +44,7 @@ data:
     - Management:
       - ArgoCD:
           description: GitOps Continuous Delivery
-          href: http://192.168.178.96
+          href: http://192.168.178.98
           icon: git.svg
           showStats: true
           widget:
@@ -54,14 +54,14 @@ data:
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+          href: http://192.168.178.90:9090
           icon: prometheus.svg
           widget:
             type: prometheus
             url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
       - Grafana:
           description: Visualization & Dashboards
-          href: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
+          href: http://192.168.178.96
           icon: grafana.svg
           widget:
             type: grafana
@@ -70,7 +70,7 @@ data:
             password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
       - Loki Logs:
           description: Log Aggregation & Search
-          href: http://192.168.178.98/explore?left=%7B%22datasource%22:%22Loki%22%7D
+          href: http://192.168.178.96/explore?left=%7B%22datasource%22:%22Loki%22%7D
           icon: si-grafana-loki
           showStats: true
           namespace: loki

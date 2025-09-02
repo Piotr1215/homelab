@@ -191,11 +191,26 @@ restart-kagent:
 # Manual Velero backup with optional description
 backup-velero description="manual-backup":
   @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"
-  velero backup create "{{description}}-$(date +%Y%m%d-%H%M%S)" \
+  @NAME=$(echo "{{description}}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')-$(date +%Y%m%d-%H%M%S); \
+  velero backup create "$NAME" \
     --exclude-namespaces kube-system,kube-public,kube-node-lease \
     --wait
   @echo "Backup complete. Listing recent backups:"
   velero backup get | head -10
+
+# Smart Kubernetes cluster upgrade with auto-detection
+upgrade:
+  @echo "🚀 Starting Kubernetes Smart Upgrade..."
+  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh
+
+# Kubernetes upgrade with specific version
+upgrade-to version:
+  @echo "🚀 Upgrading Kubernetes to {{version}}..."
+  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh {{version}}
+
+# Check current Kubernetes version and available upgrades
+check-upgrade:
+  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh --check
 
 # Unseal Vault after restarts
 unseal-vault:

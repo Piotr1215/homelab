@@ -36,7 +36,7 @@ data:
   docker.yaml: ""
   proxmox.yaml: |
     url: https://192.168.178.75:8006
-    username: homepage@pve!homepage-token
+    username: homepage@pve!default
     password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
   kubernetes.yaml: |
     mode: cluster
@@ -192,7 +192,7 @@ data:
           widget:
             type: proxmox
             url: https://192.168.178.75:8006
-            username: homepage@pve!homepage-token
+            username: homepage@pve!default
             password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
             node: pve
       - Synology NAS:
@@ -274,7 +274,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/101/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
+              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU
@@ -292,7 +292,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/102/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
+              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU
@@ -310,7 +310,7 @@ data:
             type: customapi
             url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/103/status/current
             headers:
-              Authorization: "PVEAPIToken=homepage@pve!homepage-token={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
+              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
             mappings:
               - field: data.cpu
                 label: CPU

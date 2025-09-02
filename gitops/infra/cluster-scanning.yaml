@@ -9,6 +9,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: popeye-reports
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
   namespace: cluster-scanning
 spec:
   accessModes:
@@ -26,6 +29,7 @@ metadata:
   namespace: cluster-scanning
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
   accessModes:
     - ReadWriteOnce

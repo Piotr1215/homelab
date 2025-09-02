@@ -10,9 +10,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: popeye-reports
   namespace: cluster-scanning
-  annotations:
-    argocd.argoproj.io/sync-options: Prune=false
-    argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
   accessModes:
     - ReadWriteOnce
@@ -27,9 +24,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: kubescape-reports
   namespace: cluster-scanning
-  annotations:
-    argocd.argoproj.io/sync-options: Prune=false
-    argocd.argoproj.io/compare-options: IgnoreExtraneous
 spec:
   accessModes:
     - ReadWriteOnce

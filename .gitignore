@@ -69,3 +69,4 @@ devbox.lock
 # Nix
 result
 result-*
+kubespray/

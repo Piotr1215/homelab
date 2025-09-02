@@ -8,7 +8,7 @@ metadata:
 spec:
   addresses:
   - 192.168.178.90-192.168.178.95
-  autoAssign: false  # Require explicit assignment
+  autoAssign: true  # Allow assignment with annotations
   serviceAllocation:
     priority: 100
     namespaces:
@@ -25,7 +25,7 @@ metadata:
 spec:
   addresses:
   - 192.168.178.96-192.168.178.99
-  autoAssign: false  # Require explicit assignment
+  autoAssign: true  # Allow assignment with annotations
   serviceAllocation:
     priority: 90
     namespaces:

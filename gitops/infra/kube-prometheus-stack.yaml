@@ -25,8 +25,16 @@ spec:
           value: prometheus
         - name: grafana.service.type
           value: LoadBalancer
+        - name: grafana.service.loadBalancerIP
+          value: "192.168.178.96"
+        - name: grafana.service.annotations.metallb\.universe\.tf/loadBalancerIPs
+          value: "192.168.178.96"
         - name: prometheus.service.type
           value: LoadBalancer
+        - name: prometheus.service.loadBalancerIP
+          value: "192.168.178.90"
+        - name: prometheus.service.annotations.metallb\.universe\.tf/loadBalancerIPs
+          value: "192.168.178.90"
         - name: grafana.persistence.enabled
           value: "true"
         - name: grafana.persistence.size

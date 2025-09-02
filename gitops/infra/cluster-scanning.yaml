@@ -24,6 +24,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: kubescape-reports
   namespace: cluster-scanning
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   accessModes:
     - ReadWriteOnce

@@ -5,6 +5,8 @@ kind: Application
 metadata:
   name: kagent-crds
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -43,6 +45,8 @@ kind: Application
 metadata:
   name: kagent
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

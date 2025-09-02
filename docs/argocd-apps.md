@@ -17,9 +17,8 @@
 
 ### Wave 0: Configuration & Monitoring
 - **external-secrets-config** - ESO SecretStores and ExternalSecrets
-- **observability** - Manages monitoring stack apps
-  - **kube-prometheus-stack** - Prometheus & Grafana (Helm)
-  - **loki-stack** - Log aggregation (Helm)
+- **kube-prometheus-stack** - Prometheus & Grafana (Helm)
+- **loki-stack** - Log aggregation (Helm)
 - **infrastructure** - Raw infrastructure manifests (non-Application resources)
 
 ## Applications (Wave 1+)

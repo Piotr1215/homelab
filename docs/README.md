@@ -4,103 +4,66 @@
 
 [![Homelab GitOps Setup](https://img.youtube.com/vi/5YFmYcic8XQ/0.jpg)](https://www.youtube.com/watch?v=5YFmYcic8XQ)
 
-Watch the complete homelab setup walkthrough on YouTube.
+> Watch the complete homelab setup walkthrough on YouTube.
 
-## Architecture Overview
+GitOps Kubernetes cluster with ArgoCD and Vault. Bootstrap installs core services, ArgoCD handles everything else.
 
-```mermaid
-flowchart LR
-    Proxmox --> K8s
-    K8s --> Services
-    
-    Proxmox -.-> NAS
-    Services -.-> NAS
-```
+## Setup
 
-## Directory Structure
+Clone the repository and ensure you have access to your Kubernetes cluster.
 
-```
-/home/decoder/dev/homelab
-├── docs/                    # Essential documentation
-│   ├── CLAUDE.md           # Claude AI context
-│   ├── README.md           # This file
-│   └── secrets-management.md
-├── gitops/                  # All Kubernetes manifests
-│   ├── apps/               # Application deployments
-│   │   ├── homepage.yaml   # Homepage dashboard
-│   │   ├── minio.yaml      # MinIO object storage
-│   │   ├── portainer.yaml  # Portainer UI
-│   │   └── velero.yaml     # Backup solution
-│   ├── clusters/
-│   │   └── homelab/        # ArgoCD root applications
-│   │       ├── apps.yaml
-│   │       └── infrastructure.yaml
-│   └── infra/              # Infrastructure components
-│       ├── eso-*.yaml      # External Secrets Operator
-│       ├── metallb-*.yaml  # Load balancer
-│       └── prometheus.yaml # Monitoring stack
-├── scripts/                 # Utility scripts
-│   └── check-metallb-health.sh
-├── terraform/               # Infrastructure as Code
-│   └── argocd/             # ArgoCD Terraform deployment
-├── devbox.json             # Development environment
-└── justfile                # Task automation
-```
-
-## Quick Start
-
-### Prerequisites
-- Kubernetes cluster (1.28+)
-- `kubectl` configured
-- Terraform installed
-- `just` command runner (optional but recommended)
-
-### Available Tools (via devbox)
 ```bash
-devbox shell  # Enters shell with all tools
+git clone https://github.com/decodersam/homelab && cd homelab
+# Ensure kubeconfig is available (either in ~/.kube/config or ./kubeconfig)
+export KUBECONFIG=./kubeconfig  # if using local kubeconfig
 ```
-Provides: `kubectl`, `helm`, `terraform`, `argocd`, `istioctl`, `kn`, `fluxcd`
 
-## Deployment
+## Bootstrap
 
-### 1. Bootstrap ArgoCD with Terraform
+Deploy the core infrastructure components using Terraform. This sets up ArgoCD, Vault, and essential operators.
+
+### Fresh install
+Creates a new Vault instance with fresh credentials. Secrets will need to be manually populated after deployment.
+
 ```bash
-cd terraform/argocd
-terraform init
-terraform apply
+terraform init && terraform apply
 ```
 
-### 2. Access ArgoCD
+### Restore from backup
+Restores from an existing Vault backup if the cluster was previously running and you have a backup snapshot.
+
 ```bash
-# Using justfile recipes
-just launch_argo  # Opens UI and copies password
-
-# Or manually:
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+terraform apply -var="vault_snapshot_path=./backup.snap" -var="vault_credentials_path=./vault-init.json"
 ```
 
-### 3. Deploy Applications
+### Required files
+- `kubeconfig` - Required
+- `vault-backup.snap` - Optional, for restore
+- `vault-init.json` - Optional, previous Vault credentials
+
+## Access
+
+Service endpoints and credentials for accessing the deployed components.
+
+- ArgoCD: http://192.168.178.90
+- Vault: http://192.168.178.92:8200
+- Homepage: http://192.168.178.91
+- Credentials: `vault-init.json` (created on fresh install)
+
+## Operations
+
+Common commands for managing and monitoring your GitOps deployment.
+
 ```bash
-kubectl apply -f gitops/clusters/homelab/
+just --list              # Show all commands
+just launch_argo         # Open ArgoCD UI
+kubectl get app -n argocd  # Check app status
 ```
 
-## Key Features
+## Troubleshooting
 
-- **GitOps with ArgoCD**: All deployments via Git commits
-- **Secret Management**: HashiCorp Vault + External Secrets Operator
-- **Load Balancing**: MetalLB for bare-metal LoadBalancer services
-- **Monitoring**: Prometheus + Grafana stack
-- **Backup**: Velero with MinIO backend
-- **Dashboard**: Homepage with service integration
-- **AI Platform**: Kagent with local Ollama integration
+Quick fixes for common issues you might encounter.
 
-## Useful Commands
-
-See `just --list` for all available commands:
-- `just launch_argo` - Open ArgoCD UI with password in clipboard
-- `just launch_homepage` - Open Homepage dashboard
-- `just argo_suspend` - Disable auto-sync for all apps
-- `just argo_resume` - Re-enable auto-sync for all apps
-- `just argo_stop` - Stop ArgoCD controller completely
-- `just argo_start` - Start ArgoCD controller
-- `just argo_status` - Check sync status of all applications
+- Jobs disappear quickly: kube-cleanup-operator deletes after 15min
+- Vault sealed: `kubectl -n vault exec vault-0 -- vault status`
+- ESO not syncing: Check vault paths and token validity

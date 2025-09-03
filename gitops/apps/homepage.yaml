@@ -150,16 +150,9 @@ data:
                   options:
                     maximumFractionDigits: 0
     - Services:
-      - Kagent AI:
-          description: Cloud Native Agentic AI Platform
-          href: http://kagent-ui.kagent.svc.cluster.local
-          icon: si-openai
-          showStats: true
-          namespace: kagent
-          podSelector: app.kubernetes.io/component=ui
       - Vault:
           description: Secrets Management
-          href: http://vault-ui.vault.svc.cluster.local:8200
+          href: http://192.168.178.92:8200
           icon: vault.svg
           showStats: true
           namespace: vault
@@ -173,7 +166,7 @@ data:
           podSelector: app=minio
       - Hubble UI:
           description: eBPF Network Observability
-          href: http://hubble-ui-lb.kube-system.svc.cluster.local
+          href: http://192.168.178.94
           icon: cilium.svg
           showStats: true
           namespace: kube-system

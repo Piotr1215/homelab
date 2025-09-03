@@ -19,38 +19,43 @@ spec:
           enabled: false
         
         server:
-          # CRITICAL: Disable dev mode to use persistent storage
-          dev:
-            enabled: false
+          # CRITICAL: Enable HA with Raft for snapshots
+          ha:
+            enabled: true
+            replicas: 1
+            raft:
+              enabled: true
+              config: |
+                ui = true
+                
+                listener "tcp" {
+                  tls_disable = 1
+                  address = "[::]:8200"
+                  cluster_address = "[::]:8201"
+                }
+                
+                # Use Raft storage for snapshot support
+                storage "raft" {
+                  path = "/vault/data"
+                }
+                
+                service_registration "kubernetes" {}
+                
+                disable_mlock = true
+                api_addr = "http://vault.vault.svc.cluster.local:8200"
+                cluster_addr = "http://vault.vault.svc.cluster.local:8201"
           
-          # Enable persistent storage
+          # Enable persistent storage for Raft
           dataStorage:
             enabled: true
             size: 10Gi
             storageClass: local-path
-            
-          # Production configuration
-          standalone:
+          
+          # Audit storage
+          auditStorage:
             enabled: true
-            config: |
-              ui = true
-              
-              listener "tcp" {
-                tls_disable = 1
-                address = "[::]:8200"
-                cluster_address = "[::]:8201"
-              }
-              
-              # Use file storage for persistence
-              storage "file" {
-                path = "/vault/data"
-              }
-              
-              seal "shamir" {}
-              
-              disable_mlock = true
-              api_addr = "http://vault.vault.svc.cluster.local:8200"
-              cluster_addr = "http://vault.vault.svc.cluster.local:8201"
+            size: 5Gi
+            storageClass: local-path
         
         ui:
           enabled: true

@@ -1,0 +1,32 @@
+---
+# ArgoCD Application for Vault Snapshot Automation
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-snapshots
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Deploy after Vault
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/decoder/homelab  # Update with your repo
+    targetRevision: HEAD
+    path: gitops/infra
+    directory:
+      include: vault-snapshots.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false  # Vault namespace already exists
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

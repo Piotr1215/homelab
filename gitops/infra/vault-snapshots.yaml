@@ -1,0 +1,153 @@
+---
+# ServiceAccount for Vault snapshots
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-snapshot
+  namespace: vault
+---
+# Role for accessing Vault pods and secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-snapshot
+  namespace: vault
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create", "get"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-snapshot
+  namespace: vault
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vault-snapshot
+subjects:
+- kind: ServiceAccount
+  name: vault-snapshot
+  namespace: vault
+---
+# ConfigMap for snapshot script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-snapshot-script
+  namespace: vault
+data:
+  backup.sh: |
+    #!/bin/sh
+    set -e
+    
+    echo "Starting Vault backup at $(date)"
+    
+    # Set variables
+    VAULT_POD="vault-0"
+    BACKUP_DIR="/backup"
+    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+    SNAPSHOT_FILE="vault-snapshot-${TIMESTAMP}.snap"
+    
+    # Check if Vault is initialized and unsealed
+    STATUS=$(kubectl -n vault exec ${VAULT_POD} -- vault status -format=json || echo '{}')
+    INITIALIZED=$(echo "${STATUS}" | grep -o '"initialized":[^,]*' | cut -d: -f2)
+    SEALED=$(echo "${STATUS}" | grep -o '"sealed":[^,]*' | cut -d: -f2)
+    
+    if [ "${INITIALIZED}" != "true" ]; then
+      echo "Error: Vault is not initialized"
+      exit 1
+    fi
+    
+    if [ "${SEALED}" != "false" ]; then
+      echo "Error: Vault is sealed"
+      exit 1
+    fi
+    
+    # Take snapshot (requires VAULT_TOKEN to be set as env var)
+    echo "Taking Vault snapshot..."
+    kubectl -n vault exec ${VAULT_POD} -- sh -c "
+      export VAULT_TOKEN='${VAULT_TOKEN}'
+      vault operator raft snapshot save /tmp/${SNAPSHOT_FILE}
+    "
+    
+    # Copy snapshot to backup volume
+    echo "Copying snapshot to backup volume..."
+    kubectl -n vault cp ${VAULT_POD}:/tmp/${SNAPSHOT_FILE} ${BACKUP_DIR}/${SNAPSHOT_FILE}
+    
+    # Clean up old snapshots (keep last 30 days)
+    echo "Cleaning up old snapshots..."
+    find ${BACKUP_DIR} -name "vault-snapshot-*.snap" -mtime +30 -delete 2>/dev/null || true
+    
+    # List current backups
+    echo "Current backups:"
+    ls -lh ${BACKUP_DIR}/vault-snapshot-*.snap 2>/dev/null | tail -10 || echo "No backups found yet"
+    
+    echo "Backup completed successfully: ${SNAPSHOT_FILE}"
+---
+# PersistentVolumeClaim for storing snapshots
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-snapshots
+  namespace: vault
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-path
+---
+# CronJob for automated snapshots
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vault-snapshot
+  namespace: vault
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app: vault-snapshot
+        spec:
+          serviceAccountName: vault-snapshot
+          restartPolicy: OnFailure
+          containers:
+          - name: snapshot
+            image: bitnami/kubectl:latest
+            command: ["/scripts/backup.sh"]
+            env:
+            - name: VAULT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vault-root-token
+                  key: token
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: backup
+              mountPath: /backup
+          volumes:
+          - name: scripts
+            configMap:
+              name: vault-snapshot-script
+              defaultMode: 0755
+          - name: backup
+            persistentVolumeClaim:
+              claimName: vault-snapshots

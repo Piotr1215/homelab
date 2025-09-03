@@ -1,0 +1,98 @@
+# ArgoCD Helm Values
+global:
+  domain: argocd.local
+
+configs:
+  params:
+    server.insecure: true
+    server.disable.auth: false
+    
+  cm:
+    url: "http://argocd.local"
+    
+    # Enable health assessment for cert-manager
+    resource.customizations.health.cert-manager.io_Certificate: |
+      hs = {}
+      if obj.status ~= nil then
+        if obj.status.conditions ~= nil then
+          for i, condition in ipairs(obj.status.conditions) do
+            if condition.type == "Ready" and condition.status == "True" then
+              hs.status = "Healthy"
+              hs.message = "Certificate is ready"
+              return hs
+            end
+          end
+        end
+      end
+      hs.status = "Progressing"
+      hs.message = "Certificate is not ready"
+      return hs
+
+server:
+  extraArgs:
+    - --insecure
+  
+  service:
+    type: NodePort
+    nodePort: 30080
+  
+  ingress:
+    enabled: false
+  
+  metrics:
+    enabled: true
+    
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+controller:
+  metrics:
+    enabled: true
+    
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+
+repoServer:
+  metrics:
+    enabled: true
+    
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+applicationSet:
+  enabled: true
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+notifications:
+  enabled: false

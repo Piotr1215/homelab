@@ -19,43 +19,38 @@ spec:
           enabled: false
         
         server:
-          # CRITICAL: Enable HA with Raft for snapshots
-          ha:
-            enabled: true
-            replicas: 1
-            raft:
-              enabled: true
-              config: |
-                ui = true
-                
-                listener "tcp" {
-                  tls_disable = 1
-                  address = "[::]:8200"
-                  cluster_address = "[::]:8201"
-                }
-                
-                # Use Raft storage for snapshot support
-                storage "raft" {
-                  path = "/vault/data"
-                }
-                
-                service_registration "kubernetes" {}
-                
-                disable_mlock = true
-                api_addr = "http://vault.vault.svc.cluster.local:8200"
-                cluster_addr = "http://vault.vault.svc.cluster.local:8201"
+          # CRITICAL: Disable dev mode to use persistent storage
+          dev:
+            enabled: false
           
-          # Enable persistent storage for Raft
+          # Enable persistent storage
           dataStorage:
             enabled: true
             size: 10Gi
             storageClass: local-path
-          
-          # Audit storage
-          auditStorage:
+            
+          # Production configuration
+          standalone:
             enabled: true
-            size: 5Gi
-            storageClass: local-path
+            config: |
+              ui = true
+              
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+              
+              # Use file storage for persistence (TEMPORARY - will migrate to Raft)
+              storage "file" {
+                path = "/vault/data"
+              }
+              
+              seal "shamir" {}
+              
+              disable_mlock = true
+              api_addr = "http://vault.vault.svc.cluster.local:8200"
+              cluster_addr = "http://vault.vault.svc.cluster.local:8201"
         
         ui:
           enabled: true

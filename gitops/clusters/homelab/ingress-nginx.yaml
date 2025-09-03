@@ -11,6 +11,13 @@ spec:
     targetRevision: 4.10.0   # pick a stable version
     helm:
       releaseName: ingress-nginx
+      values: |
+        controller:
+          service:
+            type: LoadBalancer
+            loadBalancerIP: "192.168.178.91"
+            annotations:
+              metallb.universe.tf/loadBalancerIPs: "192.168.178.91"
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx

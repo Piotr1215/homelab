@@ -1,153 +1,75 @@
 ---
-# ServiceAccount for Vault snapshots
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: vault-snapshot
-  namespace: vault
----
-# Role for accessing Vault pods and secrets
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: vault-snapshot
-  namespace: vault
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  verbs: ["create", "get"]
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["get"]
----
-# RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: vault-snapshot
-  namespace: vault
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: vault-snapshot
-subjects:
-- kind: ServiceAccount
-  name: vault-snapshot
-  namespace: vault
----
-# ConfigMap for snapshot script
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: vault-snapshot-script
-  namespace: vault
-data:
-  backup.sh: |
-    #!/bin/sh
-    set -e
-    
-    echo "Starting Vault backup at $(date)"
-    
-    # Set variables
-    VAULT_POD="vault-0"
-    BACKUP_DIR="/backup"
-    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-    SNAPSHOT_FILE="vault-snapshot-${TIMESTAMP}.snap"
-    
-    # Check if Vault is initialized and unsealed
-    STATUS=$(kubectl -n vault exec ${VAULT_POD} -- vault status -format=json || echo '{}')
-    INITIALIZED=$(echo "${STATUS}" | grep -o '"initialized":[^,]*' | cut -d: -f2)
-    SEALED=$(echo "${STATUS}" | grep -o '"sealed":[^,]*' | cut -d: -f2)
-    
-    if [ "${INITIALIZED}" != "true" ]; then
-      echo "Error: Vault is not initialized"
-      exit 1
-    fi
-    
-    if [ "${SEALED}" != "false" ]; then
-      echo "Error: Vault is sealed"
-      exit 1
-    fi
-    
-    # Take snapshot (requires VAULT_TOKEN to be set as env var)
-    echo "Taking Vault snapshot..."
-    kubectl -n vault exec ${VAULT_POD} -- sh -c "
-      export VAULT_TOKEN='${VAULT_TOKEN}'
-      vault operator raft snapshot save /tmp/${SNAPSHOT_FILE}
-    "
-    
-    # Copy snapshot to backup volume
-    echo "Copying snapshot to backup volume..."
-    kubectl -n vault cp ${VAULT_POD}:/tmp/${SNAPSHOT_FILE} ${BACKUP_DIR}/${SNAPSHOT_FILE}
-    
-    # Clean up old snapshots (keep last 30 days)
-    echo "Cleaning up old snapshots..."
-    find ${BACKUP_DIR} -name "vault-snapshot-*.snap" -mtime +30 -delete 2>/dev/null || true
-    
-    # List current backups
-    echo "Current backups:"
-    ls -lh ${BACKUP_DIR}/vault-snapshot-*.snap 2>/dev/null | tail -10 || echo "No backups found yet"
-    
-    echo "Backup completed successfully: ${SNAPSHOT_FILE}"
----
-# PersistentVolumeClaim for storing snapshots
+# Simple Vault Raft Backup CronJob
+# Uses root token directly from secret
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: vault-snapshots
+  name: vault-backups
   namespace: vault
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
+      storage: 10Gi
   storageClassName: local-path
 ---
-# CronJob for automated snapshots
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: vault-snapshot
+  name: vault-backup
   namespace: vault
 spec:
   schedule: "0 2 * * *"  # Daily at 2 AM
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      backoffLimit: 3
       template:
-        metadata:
-          labels:
-            app: vault-snapshot
         spec:
-          serviceAccountName: vault-snapshot
           restartPolicy: OnFailure
-          containers:
-          - name: snapshot
-            image: bitnami/kubectl:latest
-            command: ["/scripts/backup.sh"]
-            env:
-            - name: VAULT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: vault-root-token
-                  key: token
-            volumeMounts:
-            - name: scripts
-              mountPath: /scripts
-            - name: backup
-              mountPath: /backup
           volumes:
-          - name: scripts
-            configMap:
-              name: vault-snapshot-script
-              defaultMode: 0755
-          - name: backup
-            persistentVolumeClaim:
-              claimName: vault-snapshots
+            - name: backup
+              persistentVolumeClaim:
+                claimName: vault-backups
+          containers:
+            - name: snapshot
+              image: hashicorp/vault:1.17.2
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  SNAPSHOT_FILE="/backups/vault-snapshot-${TIMESTAMP}.snap"
+                  
+                  echo "Taking Vault snapshot at ${TIMESTAMP}..."
+                  vault operator raft snapshot save "${SNAPSHOT_FILE}"
+                  
+                  if [ -f "${SNAPSHOT_FILE}" ]; then
+                    echo "Snapshot saved successfully: ${SNAPSHOT_FILE}"
+                    ls -lh "${SNAPSHOT_FILE}"
+                    
+                    # Keep only last 30 snapshots
+                    echo "Cleaning old snapshots..."
+                    cd /backups
+                    ls -t vault-snapshot-*.snap 2>/dev/null | tail -n +31 | xargs -r rm -v
+                    
+                    echo "Current snapshots:"
+                    ls -lh vault-snapshot-*.snap | head -10
+                  else
+                    echo "ERROR: Snapshot file not created!"
+                    exit 1
+                  fi
+              env:
+                - name: VAULT_ADDR
+                  value: "http://vault-0.vault-internal:8200"
+                - name: VAULT_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: vault-root-token
+                      key: token
+              volumeMounts:
+                - name: backup
+                  mountPath: /backups

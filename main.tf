@@ -248,33 +248,39 @@ resource "null_resource" "vault_init_or_restore" {
 }
 
 # Deploy ArgoCD root application
-resource "kubernetes_manifest" "argocd_root_app" {
+resource "null_resource" "deploy_argocd_app" {
   depends_on = [helm_release.argocd, null_resource.vault_init_or_restore]
 
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "root"
-      namespace = "argocd"
-    }
-    spec = {
-      project = "default"
-      source = {
-        repoURL        = var.github_repo
-        targetRevision = "HEAD"
-        path           = "gitops/"
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = "argocd"
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-      }
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Waiting for ArgoCD CRDs to be ready..."
+      sleep 15
+      kubectl wait --for=condition=Established crd/applications.argoproj.io --timeout=60s || true
+      
+      echo "Creating ArgoCD root application..."
+      cat <<'EOF' | kubectl apply -f -
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: root
+        namespace: argocd
+      spec:
+        project: default
+        source:
+          repoURL: ${var.github_repo}
+          targetRevision: HEAD
+          path: gitops/
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: argocd
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+      EOF
+    EOT
+    environment = {
+      KUBECONFIG = pathexpand(var.kubeconfig_path)
     }
   }
 }

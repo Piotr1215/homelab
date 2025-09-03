@@ -4,6 +4,8 @@ kind: Service
 metadata:
   name: hubble-ui-lb
   namespace: kube-system
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.94"
 spec:
   type: LoadBalancer
   selector:

@@ -40,136 +40,8 @@ launch_homepage:
   nohup {{browse}} http://$HOMEPAGE_IP >/dev/null 2>&1 &
 
 # Get ArgoCD password
-argo_password:
+argo-password:
   @kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-
-# Login to ArgoCD CLI
-argo_login:
-  #!/usr/bin/env bash
-  ARGO_IP=$(kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-  echo "y" | argocd login $ARGO_IP --username admin --password $ARGO_PASSWORD --insecure
-  echo "✓ Logged in to ArgoCD at $ARGO_IP"
-
-# Sync a specific ArgoCD application
-argo_sync app="":
-  #!/usr/bin/env bash
-  if [ -z "{{app}}" ]; then
-    echo "Usage: just argo_sync <app-name>"
-    echo "Available apps:"
-    argocd app list -o name
-  else
-    argocd app sync {{app}} --prune
-  fi
-
-# Sync all ArgoCD applications
-argo_sync_all:
-  #!/usr/bin/env bash
-  for app in $(argocd app list -o name); do
-    echo "Syncing $app..."
-    argocd app sync $app --prune
-  done
-
-# Hard refresh ArgoCD app (with --hard-refresh flag)
-argo_refresh app="":
-  #!/usr/bin/env bash
-  if [ -z "{{app}}" ]; then
-    echo "Usage: just argo_refresh <app-name>"
-    argocd app list -o name
-  else
-    argocd app get {{app}} --hard-refresh
-  fi
-
-# Get ArgoCD app details
-argo_get app="":
-  #!/usr/bin/env bash
-  if [ -z "{{app}}" ]; then
-    argocd app list
-  else
-    argocd app get {{app}}
-  fi
-
-# Show ArgoCD app manifest
-argo_manifest app:
-  argocd app manifests {{app}}
-
-# Show diff between live and desired state
-argo_diff app:
-  argocd app diff {{app}}
-
-# Delete an ArgoCD application
-argo_delete app cascade="true":
-  argocd app delete {{app}} --cascade={{cascade}}
-
-# Rollback ArgoCD app to previous sync
-argo_rollback app:
-  argocd app rollback {{app}}
-
-# Show ArgoCD app history
-argo_history app:
-  argocd app history {{app}}
-
-# Terminate current sync operation
-argo_terminate app:
-  argocd app terminate-op {{app}}
-
-# Wait for app to be healthy
-argo_wait app timeout="600":
-  argocd app wait {{app}} --health --timeout {{timeout}}
-
-# Set app to manual sync
-argo_manual app:
-  argocd app set {{app}} --sync-policy none
-
-# Set app to auto sync
-argo_auto app:
-  argocd app set {{app}} --sync-policy automated --auto-prune --self-heal
-
-# Stop ArgoCD controller (kubectl method)
-argo_stop:
-  kubectl scale statefulset argocd-application-controller -n argocd --replicas=0
-
-# Start ArgoCD controller (kubectl method)
-argo_start:
-  kubectl scale statefulset argocd-application-controller -n argocd --replicas=1
-
-# Disable ArgoCD auto-sync for all apps (using ArgoCD CLI)
-argo_suspend:
-  #!/usr/bin/env bash
-  for app in $(argocd app list -o name); do
-    echo "Disabling auto-sync for $app..."
-    argocd app set $app --sync-policy none
-  done
-
-# Enable ArgoCD auto-sync for all apps (using ArgoCD CLI)
-argo_resume:
-  #!/usr/bin/env bash
-  for app in $(argocd app list -o name); do
-    echo "Enabling auto-sync for $app..."
-    argocd app set $app --sync-policy automated --auto-prune --self-heal
-  done
-
-# Check ArgoCD app status (detailed)
-argo_status:
-  argocd app list
-
-# Show out-of-sync resources
-argo_out_of_sync:
-  argocd app list --out-of-sync
-
-# Show apps with errors
-argo_errors:
-  argocd app list --health degraded,missing,unknown
-
-# Create ArgoCD app from manifest in gitops/
-argo_create app path:
-  argocd app create {{app}} \
-    --repo https://github.com/Piotr1215/homelab \
-    --path {{path}} \
-    --dest-server https://kubernetes.default.svc \
-    --sync-policy automated \
-    --auto-prune \
-    --self-heal
 
 # Check scanning jobs status
 scan_status:
@@ -183,10 +55,6 @@ scan_cleanup:
   @kubectl delete jobs --field-selector status.successful=1 -n metallb-system 2>/dev/null || echo "No failed jobs to delete"
   @echo "Cleanup complete"
 
-# Restart stuck kagent pods
-restart-kagent:
-    @echo "Restarting kagent pods..."
-    kubectl rollout restart deployment k8s-agent -n kagent
 
 # Manual Velero backup with optional description
 backup-velero description="manual-backup":
@@ -198,27 +66,35 @@ backup-velero description="manual-backup":
   @echo "Backup complete. Listing recent backups:"
   velero backup get | head -10
 
-# Smart Kubernetes cluster upgrade with auto-detection
-upgrade:
-  @echo "🚀 Starting Kubernetes Smart Upgrade..."
-  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh
 
-# Kubernetes upgrade with specific version
-upgrade-to version:
-  @echo "🚀 Upgrading Kubernetes to {{version}}..."
-  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh {{version}}
+# Interactive Kubernetes upgrade - shows versions and lets you choose
+k8s-upgrade:
+  #!/usr/bin/env bash
+  CURRENT=$(kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}')
+  echo "Current version: $CURRENT"
+  echo
+  CURRENT_MINOR=$(echo "$CURRENT" | cut -d. -f2)
+  NEXT_MINOR=$((CURRENT_MINOR + 1))
+  echo "Available upgrades:"
+  VERSIONS=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases | \
+    jq -r '.[] | .tag_name' | grep -E "^v1\.${NEXT_MINOR}\.[0-9]+$" | sort -V | head -5)
+  if [ -z "$VERSIONS" ]; then
+    echo "Already at latest supported version"
+    exit 0
+  fi
+  echo "$VERSIONS" | nl -w2 -s'. '
+  echo
+  read -p "Enter version number or 'q' to quit: " CHOICE
+  [[ "$CHOICE" == "q" ]] && exit 0
+  TARGET=$(echo "$VERSIONS" | sed -n "${CHOICE}p")
+  echo "Upgrading to $TARGET"
+  read -p "Continue? (y/n) " -n1 -r
+  echo
+  [[ $REPLY =~ ^[Yy]$ ]] && ./scripts/k8s-upgrade-minimal.sh "$TARGET"
 
-# Check current Kubernetes version and available upgrades
-check-upgrade:
-  @bash /home/decoder/dev/homelab/ansible-books/scripts/k8s-upgrade.sh --check
 
 # Unseal Vault after restarts
 unseal-vault:
   @echo "Unsealing Vault..."
   kubectl exec -n vault vault-0 -- vault operator unseal $(VAULT_UNSEAL_KEY)
 
-# ULTIMATE CLUSTER RECOVERY - One command to restore everything!
-recreate:
-	@echo "Starting ultimate cluster recovery..."
-	@chmod +x scripts/cluster-recovery.sh
-	@./scripts/cluster-recovery.sh

@@ -26,6 +26,7 @@ spec:
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 3600  # Keep jobs for 1 hour after completion
       template:
         spec:
           restartPolicy: OnFailure

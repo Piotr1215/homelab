@@ -90,7 +90,7 @@ k8s-upgrade:
   echo "Upgrading to $TARGET"
   read -p "Continue? (y/n) " -n1 -r
   echo
-  [[ $REPLY =~ ^[Yy]$ ]] && ./scripts/k8s-upgrade-minimal.sh "$TARGET"
+  [[ $REPLY =~ ^[Yy]$ ]] && ./scripts/k8s-upgrade.sh "$TARGET"
 
 
 # Unseal Vault after restarts

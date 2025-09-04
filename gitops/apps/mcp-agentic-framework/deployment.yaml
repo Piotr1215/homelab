@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-agentic-framework
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-agentic-framework
+  template:
+    metadata:
+      labels:
+        app: mcp-agentic-framework
+    spec:
+      containers:
+      - name: mcp-server
+        image: piotrzan/mcp-agentic-framework:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3113
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3113
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3113
+          initialDelaySeconds: 5
+          periodSeconds: 10

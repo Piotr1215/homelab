@@ -6,9 +6,16 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Piotr1215/homelab
+    repoURL: https://github.com/Piotr1215/mcp-agentic-framework
     targetRevision: HEAD
-    path: gitops/apps/mcp-agentic-framework
+    path: charts/mcp-agentic-framework
+    helm:
+      releaseName: mcp-agentic-framework
+      values: |
+        service:
+          loadBalancer:
+            enabled: true
+            ip: "192.168.178.95"
   destination:
     server: https://kubernetes.default.svc
     namespace: default

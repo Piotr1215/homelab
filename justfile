@@ -98,3 +98,14 @@ unseal-vault:
   @echo "Unsealing Vault..."
   kubectl exec -n vault vault-0 -- vault operator unseal $(VAULT_UNSEAL_KEY)
 
+# Configure Bitwarden secrets after ArgoCD sync
+patch-bitwarden:
+  #!/usr/bin/env bash
+  kubectl create secret generic bitwarden-access-token \
+    --from-literal=token="$BITWARDEN_MACHINE_ACCOUNT_TOKEN" \
+    --namespace=external-secrets \
+    --dry-run=client -o yaml | kubectl apply -f -
+  CA_BUNDLE=$(kubectl get secret bitwarden-sdk-server-tls -n external-secrets -o jsonpath='{.data.ca\.crt}')
+  kubectl patch clustersecretstore bitwarden-secretsmanager --type=json \
+    -p '[{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/organizationID","value":"'$BITWARDEN_ORG_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/projectID","value":"'$BITWARDEN_PROJECT_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/caBundle","value":"'$CA_BUNDLE'"}]'
+

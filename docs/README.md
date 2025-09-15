@@ -60,6 +60,19 @@ just launch_argo         # Open ArgoCD UI
 kubectl get app -n argocd  # Check app status
 ```
 
+## Secrets
+
+External Secrets Operator with [Bitwarden](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) provider.
+
+### Bitwarden setup
+After deployment, configure [Bitwarden Secrets Manager](https://bitwarden.com/help/secrets-manager-overview/) credentials from environment:
+```bash
+export BITWARDEN_ORG_ID=your-org-id
+export BITWARDEN_PROJECT_ID=your-project-id
+export BITWARDEN_MACHINE_ACCOUNT_TOKEN=your-token
+just patch-bitwarden
+```
+
 ## Troubleshooting
 
 Quick fixes for common issues you might encounter.

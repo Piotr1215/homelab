@@ -24,7 +24,9 @@ proxmox:
 
 # Utilities
 get-kubeconfig:
-  scp decoder@${KUBE_MAIN}:/etc/kubernetes/admin.conf ./kubeconfig
+  #!/usr/bin/env bash
+  ssh -o StrictHostKeyChecking=no decoder@${KUBE_MAIN} "sudo cat /etc/kubernetes/admin.conf" > ./kubeconfig
+  sed -i "s|server: https://127.0.0.1:6443|server: https://${KUBE_MAIN}:6443|" ./kubeconfig
 
 # Launch ArgoCD UI
 launch_argo:

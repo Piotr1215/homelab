@@ -22,6 +22,10 @@ kube-worker2:
 proxmox:
   ssh root@${PROXMOX_HOST}
 
+# key based ssh
+nas:
+  ssh nas
+
 # Utilities
 get-kubeconfig:
   #!/usr/bin/env bash

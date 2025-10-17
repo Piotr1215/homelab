@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vcluster-yaml-mcp
+  namespace: default
+  labels:
+    app: vcluster-yaml-mcp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vcluster-yaml-mcp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: vcluster-yaml-mcp
+    spec:
+      containers:
+      - name: mcp-server
+        image: piotrzan/vcluster-yaml-mcp-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: REQUIRE_AUTH
+          value: "false"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vcluster-yaml-mcp
+  namespace: default
+  labels:
+    app: vcluster-yaml-mcp
+spec:
+  selector:
+    app: vcluster-yaml-mcp
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP

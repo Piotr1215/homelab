@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudflare-tunnel
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-vcluster-yaml
+  namespace: cloudflare-tunnel
+data:
+  config.yaml: |
+    tunnel: 263ab958-e3d9-47ce-a586-6735cd13287e
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    metrics: 0.0.0.0:2000
+    ingress:
+      - hostname: vcluster-yaml.cloudrumble.net
+        service: http://vcluster-yaml-mcp.default.svc.cluster.local:3000
+        originRequest:
+          noTLSVerify: false
+          connectTimeout: 30s
+          keepAliveTimeout: 90s
+          http2Origin: false
+      - service: http_status:404
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared-vcluster-yaml
+  namespace: cloudflare-tunnel
+  labels:
+    app: cloudflared-vcluster-yaml
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared-vcluster-yaml
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: cloudflared-vcluster-yaml
+    spec:
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:latest
+        args:
+        - tunnel
+        - --config
+        - /etc/cloudflared/config/config.yaml
+        - --metrics
+        - 0.0.0.0:2000
+        - run
+        ports:
+        - name: metrics
+          containerPort: 2000
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cloudflared/config
+          readOnly: true
+        - name: creds
+          mountPath: /etc/cloudflared/creds
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: cloudflared-vcluster-yaml
+          items:
+          - key: config.yaml
+            path: config.yaml
+      - name: creds
+        secret:
+          secretName: tunnel-credentials-vcluster-yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudflared-vcluster-yaml-metrics
+  namespace: cloudflare-tunnel
+  labels:
+    app: cloudflared-vcluster-yaml
+spec:
+  selector:
+    app: cloudflared-vcluster-yaml
+  ports:
+  - name: metrics
+    port: 2000
+    targetPort: 2000
+    protocol: TCP
+  type: ClusterIP

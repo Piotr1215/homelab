@@ -116,3 +116,19 @@ spec:
     targetPort: 2000
     protocol: TCP
   type: ClusterIP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cloudflared-vcluster-yaml
+  namespace: cloudflare-tunnel
+  labels:
+    app: cloudflared-vcluster-yaml
+spec:
+  selector:
+    matchLabels:
+      app: cloudflared-vcluster-yaml
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics

@@ -59,6 +59,9 @@ spec:
           value: "true"
         - name: loki.tableManager.retention_period
           value: 168h  # 7 days retention
+        # Enable log volume API
+        - name: loki.config.limits_config.volume_enabled
+          value: "true"
   destination:
     server: https://kubernetes.default.svc
     namespace: loki

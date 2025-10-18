@@ -124,6 +124,7 @@ metadata:
   namespace: cloudflare-tunnel
   labels:
     app: cloudflared-vcluster-yaml
+    release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:

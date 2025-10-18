@@ -83,6 +83,7 @@ metadata:
   namespace: default
   labels:
     app: vcluster-yaml-mcp
+    release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:

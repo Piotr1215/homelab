@@ -60,6 +60,24 @@ just launch_argo         # Open ArgoCD UI
 kubectl get app -n argocd  # Check app status
 ```
 
+## Image Updates
+
+ArgoCD Image Updater automatically tracks and updates container images using semantic versioning.
+
+**Requirements:**
+- Application must use **Kustomize** or **Helm** source type (not Directory)
+- Current image tag must be semver-compliant (e.g., `1.0.0`, not `latest`)
+- Tags must match the configured regex pattern
+
+**Example annotations:**
+```yaml
+argocd-image-updater.argoproj.io/image-list: myapp=docker.io/user/image
+argocd-image-updater.argoproj.io/myapp.update-strategy: semver
+argocd-image-updater.argoproj.io/myapp.allow-tags: regexp:^[0-9]+\.[0-9]+\.[0-9]+$
+argocd-image-updater.argoproj.io/write-back-method: git
+argocd-image-updater.argoproj.io/git-branch: main
+```
+
 ## Secrets
 
 External Secrets Operator with [Bitwarden](https://external-secrets.io/latest/provider/bitwarden-secrets-manager/) provider.

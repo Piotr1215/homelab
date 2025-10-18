@@ -115,3 +115,11 @@ patch-bitwarden:
   kubectl patch clustersecretstore bitwarden-secretsmanager --type=json \
     -p '[{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/organizationID","value":"'$BITWARDEN_ORG_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/projectID","value":"'$BITWARDEN_PROJECT_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/caBundle","value":"'$CA_BUNDLE'"}]'
 
+# Restart vCluster YAML MCP Server deployment
+restart-vcluster-yaml:
+  @echo "Restarting vcluster-yaml-mcp deployment..."
+  kubectl rollout restart deployment/vcluster-yaml-mcp -n default
+  @echo "Waiting for rollout to complete..."
+  kubectl rollout status deployment/vcluster-yaml-mcp -n default --timeout=2m
+  @echo "Deployment restarted successfully"
+

@@ -21,7 +21,6 @@ spec:
             - name: Docker Hub
               api_url: https://registry-1.docker.io
               ping: yes
-              credentials: pullsecret:argocd/dockerhub-secret
               default: yes
 
         # Git commit configuration

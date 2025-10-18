@@ -9,6 +9,7 @@ metadata:
     argocd-image-updater.argoproj.io/image-list: vcluster=piotrzan/vcluster-yaml-mcp-server
     argocd-image-updater.argoproj.io/vcluster.update-strategy: semver
     argocd-image-updater.argoproj.io/vcluster.allow-tags: regexp:^[0-9]+\.[0-9]+\.[0-9]+$
+    argocd-image-updater.argoproj.io/vcluster.force-update: "true"
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
 spec:
@@ -16,9 +17,7 @@ spec:
   source:
     repoURL: https://github.com/Piotr1215/homelab
     targetRevision: HEAD
-    path: gitops/apps
-    directory:
-      include: vcluster-yaml-mcp-server.yaml
+    path: gitops/apps/vcluster-yaml-mcp-server
   destination:
     server: https://kubernetes.default.svc
     namespace: default

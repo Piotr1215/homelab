@@ -74,7 +74,7 @@ data:
           icon: si-grafana-loki
           showStats: true
           namespace: loki
-          podSelector: app=loki
+          podSelector: app.kubernetes.io/name=loki
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg

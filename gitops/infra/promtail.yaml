@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: promtail
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"  # Deploy after Loki
+spec:
+  project: default
+  source:
+    chart: promtail
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 6.17.0
+    helm:
+      values: |
+        # Configure Promtail to send logs to Loki
+        config:
+          clients:
+            - url: http://loki:3100/loki/api/v1/push
+
+        # DaemonSet configuration
+        daemonset:
+          enabled: true
+
+        # ServiceAccount
+        serviceAccount:
+          create: true
+          name: promtail
+
+        # RBAC
+        rbac:
+          create: true
+          pspEnabled: false
+
+        # Resource limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+        # ServiceMonitor for Prometheus
+        serviceMonitor:
+          enabled: true
+          labels:
+            release: kube-prometheus-stack
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: loki
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

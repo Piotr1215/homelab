@@ -55,7 +55,7 @@ data:
             "reduceOptions": {
               "values": false,
               "calcs": [
-                "sum"
+                "lastNotNull"
               ],
               "fields": ""
             },
@@ -115,7 +115,7 @@ data:
             "reduceOptions": {
               "values": false,
               "calcs": [
-                "sum"
+                "lastNotNull"
               ],
               "fields": ""
             },
@@ -175,7 +175,7 @@ data:
             "reduceOptions": {
               "values": false,
               "calcs": [
-                "sum"
+                "lastNotNull"
               ],
               "fields": ""
             },
@@ -235,7 +235,7 @@ data:
             "reduceOptions": {
               "values": false,
               "calcs": [
-                "sum"
+                "lastNotNull"
               ],
               "fields": ""
             },
@@ -394,25 +394,26 @@ data:
               "custom": {
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
-                "axisLabel": "",
+                "axisLabel": "Count",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
                 "hideFrom": {
                   "tooltip": false,
                   "viz": false,
                   "legend": false
                 },
-                "lineInterpolation": "linear",
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
                 "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
                 },
-                "showPoints": "never",
-                "spanNulls": false,
+                "showPoints": "auto",
+                "spanNulls": true,
                 "stacking": {
                   "group": "A",
                   "mode": "none"
@@ -485,25 +486,26 @@ data:
               "custom": {
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
-                "axisLabel": "",
+                "axisLabel": "Count",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
+                "fillOpacity": 10,
+                "gradientMode": "opacity",
                 "hideFrom": {
                   "tooltip": false,
                   "viz": false,
                   "legend": false
                 },
-                "lineInterpolation": "linear",
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
                 "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
                 },
-                "showPoints": "never",
-                "spanNulls": false,
+                "showPoints": "auto",
+                "spanNulls": true,
                 "stacking": {
                   "group": "A",
                   "mode": "none"
@@ -580,5 +582,5 @@ data:
       "timezone": "browser",
       "title": "GitHub Repository Metrics",
       "uid": "github-repo-metrics",
-      "version": 5
+      "version": 6
     }

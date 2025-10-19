@@ -49,7 +49,7 @@ data:
           "id": 10,
           "options": {
             "colorMode": "value",
-            "graphMode": "area",
+            "graphMode": "none",
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
@@ -69,7 +69,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(github_repo_stargazers)",
+              "expr": "sum(max by(name) (github_repo_stargazers))",
               "legendFormat": "Total Stars",
               "refId": "A"
             }
@@ -109,7 +109,7 @@ data:
           "id": 11,
           "options": {
             "colorMode": "value",
-            "graphMode": "area",
+            "graphMode": "none",
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
@@ -129,7 +129,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(github_repo_forks)",
+              "expr": "sum(max by(name) (github_repo_forks))",
               "legendFormat": "Total Forks",
               "refId": "A"
             }
@@ -169,7 +169,7 @@ data:
           "id": 12,
           "options": {
             "colorMode": "value",
-            "graphMode": "area",
+            "graphMode": "none",
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
@@ -189,7 +189,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(github_repo_issues)",
+              "expr": "sum(max by(name) (github_repo_issues))",
               "legendFormat": "Total Issues",
               "refId": "A"
             }
@@ -229,7 +229,7 @@ data:
           "id": 13,
           "options": {
             "colorMode": "value",
-            "graphMode": "area",
+            "graphMode": "none",
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
@@ -249,7 +249,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(github_repo_subscribers)",
+              "expr": "sum(max by(name) (github_repo_subscribers))",
               "legendFormat": "Total Subscribers",
               "refId": "A"
             }
@@ -282,32 +282,7 @@ data:
                 ]
               }
             },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Stars"
-                },
-                "properties": [
-                  {
-                    "id": "custom.width",
-                    "value": 100
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Forks"
-                },
-                "properties": [
-                  {
-                    "id": "custom.width",
-                    "value": 100
-                  }
-                ]
-              }
-            ]
+            "overrides": []
           },
           "gridPos": {
             "h": 14,
@@ -335,91 +310,70 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_stargazers",
+              "expr": "max by(name) (github_repo_stargazers)",
               "format": "table",
               "instant": true,
-              "legendFormat": "__auto",
-              "refId": "Stars"
+              "legendFormat": "{{name}}",
+              "refId": "A"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_forks",
+              "expr": "max by(name) (github_repo_forks)",
               "format": "table",
               "instant": true,
-              "hide": false,
-              "legendFormat": "__auto",
-              "refId": "Forks"
+              "legendFormat": "{{name}}",
+              "refId": "B"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_issues",
+              "expr": "max by(name) (github_repo_issues)",
               "format": "table",
               "instant": true,
-              "hide": false,
-              "legendFormat": "__auto",
-              "refId": "Issues"
+              "legendFormat": "{{name}}",
+              "refId": "C"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_subscribers",
+              "expr": "max by(name) (github_repo_subscribers)",
               "format": "table",
               "instant": true,
-              "hide": false,
-              "legendFormat": "__auto",
-              "refId": "Subscribers"
+              "legendFormat": "{{name}}",
+              "refId": "D"
             }
           ],
           "title": "All Repository Metrics",
           "transformations": [
             {
-              "id": "joinByField",
-              "options": {
-                "byField": "name",
-                "mode": "outer"
-              }
+              "id": "merge",
+              "options": {}
             },
             {
               "id": "organize",
               "options": {
                 "excludeByName": {
-                  "Time 1": true,
-                  "Time 2": true,
-                  "Time 3": true,
-                  "Time 4": true,
-                  "__name__ 1": true,
-                  "__name__ 2": true,
-                  "__name__ 3": true,
-                  "__name__ 4": true,
-                  "container": true,
-                  "endpoint": true,
-                  "instance": true,
-                  "job": true,
-                  "namespace": true,
-                  "owner": true,
-                  "pod": true,
-                  "service": true
+                  "Time": true
                 },
                 "indexByName": {
                   "name": 0,
-                  "Value #Stars": 1,
-                  "Value #Forks": 2,
-                  "Value #Issues": 3,
-                  "Value #Subscribers": 4
+                  "Value #A": 1,
+                  "Value #B": 2,
+                  "Value #C": 3,
+                  "Value #D": 4
                 },
                 "renameByName": {
-                  "Value #Stars": "Stars",
-                  "Value #Forks": "Forks",
-                  "Value #Issues": "Issues",
-                  "Value #Subscribers": "Subscribers",
+                  "Value #A": "Stars",
+                  "Value #B": "Forks",
+                  "Value #C": "Issues",
+                  "Value #D": "Subscribers",
                   "name": "Repository"
                 }
               }
@@ -438,28 +392,26 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "tooltip": false,
                   "viz": false,
                   "legend": false
                 },
-                "insertNulls": false,
                 "lineInterpolation": "linear",
                 "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
                 },
-                "showPoints": "auto",
+                "showPoints": "never",
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -478,7 +430,8 @@ data:
                     "value": null
                   }
                 ]
-              }
+              },
+              "unit": "short"
             },
             "overrides": []
           },
@@ -511,7 +464,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_stargazers",
+              "expr": "max by(name) (github_repo_stargazers)",
               "legendFormat": "{{name}}",
               "refId": "A"
             }
@@ -530,28 +483,26 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "tooltip": false,
                   "viz": false,
                   "legend": false
                 },
-                "insertNulls": false,
                 "lineInterpolation": "linear",
                 "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
                 },
-                "showPoints": "auto",
+                "showPoints": "never",
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
@@ -570,7 +521,8 @@ data:
                     "value": null
                   }
                 ]
-              }
+              },
+              "unit": "short"
             },
             "overrides": []
           },
@@ -603,7 +555,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "github_repo_forks",
+              "expr": "max by(name) (github_repo_forks)",
               "legendFormat": "{{name}}",
               "refId": "A"
             }
@@ -628,5 +580,5 @@ data:
       "timezone": "browser",
       "title": "GitHub Repository Metrics",
       "uid": "github-repo-metrics",
-      "version": 3
+      "version": 5
     }

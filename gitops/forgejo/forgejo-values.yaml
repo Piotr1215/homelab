@@ -2,37 +2,45 @@
 # Forgejo Helm Chart Values
 # Based on CONTRACT.md from Phase 1 proof-of-concept
 
-image:
-  repository: codeberg.org/forgejo/forgejo
-  tag: "11"
-  rootless: true  # Security: run as non-root user
-
 gitea:
   admin:
     # Credentials pulled from ExternalSecret (forgejo-admin-credentials)
     existingSecret: forgejo-admin-credentials
 
   config:
-    database:
-      DB_TYPE: sqlite3  # Embedded database, no external dependencies
-
     server:
       DOMAIN: git.homelab.local
       ROOT_URL: http://git.homelab.local
       HTTP_PORT: 3000
       DISABLE_SSH: false
       SSH_PORT: 22
-      LFS_START_SERVER: true  # Enable Large File Storage
+      START_SSH_SERVER: true
+      LFS_START_SERVER: true
+
+    database:
+      DB_TYPE: sqlite3
 
     repository:
       ROOT: /data/git/repositories
       ENABLE_PUSH_CREATE_USER: true
 
+    security:
+      INSTALL_LOCK: true
+
     service:
-      DISABLE_REGISTRATION: false  # Can disable after initial setup
+      DISABLE_REGISTRATION: false
+      REQUIRE_SIGNIN_VIEW: false
 
     metrics:
-      ENABLED: true  # Enable Prometheus metrics endpoint
+      ENABLED: true
+
+# Use Forgejo image instead of Gitea
+image:
+  registry: code.forgejo.org
+  repository: forgejo/forgejo
+  tag: ""
+  pullPolicy: IfNotPresent
+  rootless: true
 
 persistence:
   enabled: true
@@ -46,7 +54,7 @@ service:
     type: LoadBalancer
     port: 3000
   ssh:
-    type: ClusterIP  # SSH not exposed via LoadBalancer per user config
+    type: ClusterIP
     port: 22
 
 resources:
@@ -57,8 +65,16 @@ resources:
     cpu: 100m
     memory: 256Mi
 
+# Ingress disabled - using LoadBalancer
+ingress:
+  enabled: false
+
 # Disable external dependencies (using SQLite)
 postgresql:
   enabled: false
+
 redis-cluster:
+  enabled: false
+
+memcached:
   enabled: false

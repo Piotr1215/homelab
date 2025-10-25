@@ -250,7 +250,7 @@ data:
           "pluginVersion": "10.0.0",
           "targets": [
             {
-              "expr": "container_memory_usage_bytes{namespace=\"git-mirror\",pod=~\"forgejo.*\",container=\"forgejo\"}",
+              "expr": "container_memory_working_set_bytes{namespace=\"git-mirror\",pod=~\"forgejo.*\",container!=\"\",image!=\"\"}",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -333,7 +333,7 @@ data:
           "pluginVersion": "10.0.0",
           "targets": [
             {
-              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"git-mirror\",pod=~\"forgejo.*\",container=\"forgejo\"}[5m])",
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"git-mirror\",pod=~\"forgejo.*\",container!=\"\",image!=\"\"}[5m])",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }

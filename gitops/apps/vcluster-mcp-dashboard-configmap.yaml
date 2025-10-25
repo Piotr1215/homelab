@@ -702,9 +702,10 @@ data:
           "fieldConfig": {
             "defaults": {
               "custom": {
-                "align": "auto",
+                "align": "left",
                 "displayMode": "auto",
-                "inspect": false
+                "inspect": false,
+                "filterable": false
               },
               "mappings": [],
               "thresholds": {
@@ -717,7 +718,32 @@ data:
                 ]
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 8,
@@ -732,7 +758,13 @@ data:
               "show": false,
               "reducer": ["sum"],
               "fields": ""
-            }
+            },
+            "sortBy": [
+              {
+                "displayName": "Time",
+                "desc": true
+              }
+            ]
           },
           "pluginVersion": "9.5.3",
           "targets": [
@@ -741,18 +773,66 @@ data:
                 "type": "loki",
                 "uid": "loki"
               },
-              "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST request from\" | regexp `from (?P<client_ip>[\\d.]+)` | line_format \"{{.client_ip}}\"",
+              "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST request from\" | regexp `from (?P<client_ip>[\\d.]+)`",
               "refId": "A"
             }
           ],
-          "title": "Client IPs",
+          "title": "Client IPs (Recent Requests)",
           "type": "table",
           "transformations": [
             {
               "id": "extractFields",
               "options": {
                 "format": "auto",
-                "source": "Line"
+                "source": "labels",
+                "replace": false
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "labels": true,
+                  "tsNs": true,
+                  "id": true,
+                  "Line": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "client_ip": 1
+                },
+                "renameByName": {
+                  "client_ip": "Client IP",
+                  "Time": "Last Seen"
+                }
+              }
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "Client IP": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "groupby"
+                  },
+                  "Last Seen": {
+                    "aggregations": ["max"],
+                    "operation": "aggregate"
+                  }
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "Client IP": 0,
+                  "Last Seen (max)": 1
+                },
+                "renameByName": {
+                  "Last Seen (max)": "Last Seen"
+                }
               }
             }
           ]

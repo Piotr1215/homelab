@@ -32,7 +32,7 @@ data:
 
     # Check required environment variables
     check_env() {
-      missing=0
+      local missing=0
       if [ -z "$SOURCE_URL" ]; then
         error "Missing required environment variable: SOURCE_URL"
         missing=1
@@ -54,8 +54,9 @@ data:
         missing=1
       fi
       if [ $missing -eq 1 ]; then
-        exit 1
+        return 1
       fi
+      return 0
     }
 
     # Acquire lock to prevent concurrent syncs
@@ -65,10 +66,11 @@ data:
       if [ -f "${LOCK_FILE}" ]; then
         error "Lock file exists: ${LOCK_FILE}"
         error "Another sync might be in progress for ${MIRROR_NAME}"
-        exit 1
+        return 1
       fi
       touch "${LOCK_FILE}"
       log "Lock acquired"
+      return 0
     }
 
     # Release lock
@@ -94,7 +96,54 @@ data:
         return 1
       else
         error "Unexpected HTTP status: ${http_code}"
-        exit 1
+        return 2  # Return error code instead of exiting
+      fi
+    }
+
+    # Compare commits between GitHub and Forgejo to skip if already synced
+    is_already_synced() {
+      log "Checking if repository is already synced..."
+
+      # Get default branch from Forgejo
+      api_url="${FORGEJO_URL}/api/v1/repos/${FORGEJO_USER}/${MIRROR_NAME}"
+      forgejo_response=$(curl -s -u "${FORGEJO_USER}:${FORGEJO_PASSWORD}" "${api_url}")
+      default_branch=$(echo "$forgejo_response" | grep -o '"default_branch":"[^"]*"' | cut -d'"' -f4)
+
+      if [ -z "$default_branch" ]; then
+        log "Could not determine default branch, will sync to be safe"
+        return 1
+      fi
+
+      log "Default branch: ${default_branch}"
+
+      # Get latest commit from Forgejo
+      forgejo_commit_url="${FORGEJO_URL}/api/v1/repos/${FORGEJO_USER}/${MIRROR_NAME}/branches/${default_branch}"
+      forgejo_commit=$(curl -s -u "${FORGEJO_USER}:${FORGEJO_PASSWORD}" "${forgejo_commit_url}" | grep -o '"sha":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+      if [ -z "$forgejo_commit" ]; then
+        log "Could not get Forgejo commit SHA, will sync to be safe"
+        return 1
+      fi
+
+      log "Forgejo latest commit: ${forgejo_commit}"
+
+      # Get latest commit from GitHub using git ls-remote (lightweight, no clone needed)
+      github_commit=$(git ls-remote "${SOURCE_URL}" "refs/heads/${default_branch}" 2>/dev/null | awk '{print $1}')
+
+      if [ -z "$github_commit" ]; then
+        log "Could not get GitHub commit SHA, will sync to be safe"
+        return 1
+      fi
+
+      log "GitHub latest commit: ${github_commit}"
+
+      # Compare commits
+      if [ "$forgejo_commit" = "$github_commit" ]; then
+        log "✓ Repository already synced, commits match - SKIPPING"
+        return 0
+      else
+        log "Commits differ, sync needed"
+        return 1
       fi
     }
 
@@ -125,7 +174,7 @@ data:
         return 0
       else
         error "Failed to create repository (HTTP ${http_code}): ${body}"
-        exit 1
+        return 1
       fi
     }
 
@@ -152,13 +201,11 @@ data:
           log "Mirror pushed to Forgejo successfully"
         else
           error "Failed to push mirror to Forgejo"
-          release_lock
-          exit 1
+          return 1
         fi
       else
         error "Initial mirror clone failed or timed out"
-        release_lock
-        exit 1
+        return 1
       fi
     }
 
@@ -168,8 +215,7 @@ data:
 
       cd "${MIRROR_DIR}" || {
         error "Mirror directory does not exist: ${MIRROR_DIR}"
-        release_lock
-        exit 1
+        return 1
       }
 
       # Fetch updates from GitHub with timeout (per CONTRACT)
@@ -183,13 +229,11 @@ data:
           log "Updates pushed to Forgejo successfully"
         else
           error "Failed to push updates to Forgejo"
-          release_lock
-          exit 1
+          return 1
         fi
       else
         error "Incremental sync failed or timed out"
-        release_lock
-        exit 1
+        return 1
       fi
     }
 
@@ -199,26 +243,41 @@ data:
       log "Source: ${SOURCE_URL}"
       log "Mirror: ${MIRROR_NAME}"
 
-      check_env
-      acquire_lock
+      check_env || return 1
+      acquire_lock || return 1
 
       # Set trap to release lock on exit
       trap release_lock EXIT
 
       # Check if repository exists in Forgejo
-      if ! check_repo_exists; then
+      repo_check_result=0
+      check_repo_exists || repo_check_result=$?
+
+      if [ $repo_check_result -eq 2 ]; then
+        error "Failed to check repository existence (API error)"
+        return 1
+      elif [ $repo_check_result -eq 1 ]; then
         log "First-time setup required"
-        create_repo
-        initial_mirror
+        create_repo || return 1
+        initial_mirror || return 1
       else
+        log "Repository exists, checking if sync needed..."
+
+        # Check if already synced (compare commits)
+        if is_already_synced; then
+          log "Repository already up-to-date, skipping sync"
+          return 0
+        fi
+
+        # Sync needed
         log "Repository exists, performing incremental sync"
 
         # Check if local mirror exists
         if [ ! -d "${MIRROR_DIR}" ]; then
           log "Local mirror missing, performing initial clone"
-          initial_mirror
+          initial_mirror || return 1
         else
-          incremental_sync
+          incremental_sync || return 1
         fi
       fi
 

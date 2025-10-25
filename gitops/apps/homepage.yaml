@@ -150,6 +150,13 @@ data:
                   options:
                     maximumFractionDigits: 0
     - Services:
+      - Forgejo:
+          description: Self-hosted Git Server
+          href: http://192.168.178.101:3000
+          icon: gitea.svg
+          showStats: true
+          namespace: git-mirror
+          podSelector: app.kubernetes.io/name=gitea
       - Vault:
           description: Secrets Management
           href: http://192.168.178.92:8200

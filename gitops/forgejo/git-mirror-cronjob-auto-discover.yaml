@@ -8,7 +8,7 @@ metadata:
     app: git-mirror-sync
     type: auto-discover
 spec:
-  schedule: "0 0 * * *"  # Daily at midnight UTC
+  schedule: "0 19 * * *"  # Daily at 21:00 CET (19:00 UTC)
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   concurrencyPolicy: Forbid  # Prevent concurrent runs

@@ -6,12 +6,16 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: https://github.com/Piotr1215/homelab.git
+  sources:
+  - repoURL: oci://code.forgejo.org/forgejo-helm
+    chart: forgejo
+    targetRevision: 11.0.1
+    helm:
+      valueFiles:
+      - $values/gitops/forgejo/forgejo-values.yaml
+  - repoURL: https://github.com/Piotr1215/homelab.git
     targetRevision: HEAD
-    path: gitops/infra
-    directory:
-      include: '{git-mirror-namespace.yaml,forgejo*.yaml}'
+    ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: git-mirror

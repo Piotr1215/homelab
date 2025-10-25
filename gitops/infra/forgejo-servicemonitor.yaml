@@ -1,0 +1,17 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: forgejo
+  namespace: git-mirror
+  labels:
+    release: kube-prometheus-stack  # Required: Prometheus selector
+spec:
+  selector:
+    matchLabels:
+      app: forgejo
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scheme: http

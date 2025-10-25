@@ -156,7 +156,7 @@ data:
           icon: gitea.svg
           showStats: true
           namespace: git-mirror
-          podSelector: app.kubernetes.io/name=gitea
+          podSelector: app.kubernetes.io/name=forgejo
       - Vault:
           description: Secrets Management
           href: http://192.168.178.92:8200

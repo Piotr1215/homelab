@@ -9,9 +9,7 @@ spec:
   source:
     repoURL: https://github.com/Piotr1215/homelab.git
     targetRevision: HEAD
-    path: gitops/infra
-    directory:
-      include: '{git-mirror-namespace.yaml,forgejo*.yaml}'
+    path: gitops/forgejo
   destination:
     server: https://kubernetes.default.svc
     namespace: git-mirror

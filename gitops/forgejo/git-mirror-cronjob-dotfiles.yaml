@@ -1,0 +1,67 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mirror-dotfiles
+  namespace: git-mirror
+  labels:
+    app: git-mirror-sync
+    mirror: dotfiles
+spec:
+  schedule: "0 0 * * *"  # Daily at midnight UTC
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid  # Prevent concurrent runs
+  jobTemplate:
+    spec:
+      backoffLimit: 3  # Retry 3 times on failure
+      template:
+        metadata:
+          labels:
+            app: git-mirror-sync
+            mirror: dotfiles
+        spec:
+          serviceAccountName: git-mirror-sync
+          restartPolicy: OnFailure
+          containers:
+          - name: git-sync
+            image: bitnami/git:latest
+            command: ["/bin/bash", "/scripts/mirror-sync.sh"]
+            env:
+            - name: SOURCE_URL
+              value: "https://github.com/Piotr1215/dotfiles.git"
+            - name: MIRROR_NAME
+              value: "dotfiles"
+            - name: FORGEJO_URL
+              value: "http://forgejo-http:3000"
+            - name: FORGEJO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-admin-credentials
+                  key: username
+            - name: FORGEJO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-admin-credentials
+                  key: password
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: mirror-data
+              mountPath: /mirrors
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          volumes:
+          - name: scripts
+            configMap:
+              name: git-mirror-sync-script
+              defaultMode: 0755
+          - name: mirror-data
+            persistentVolumeClaim:
+              claimName: git-mirror-storage

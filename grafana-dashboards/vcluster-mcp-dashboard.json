@@ -683,6 +683,69 @@
       ],
       "title": "Cloudflared Tunnel Status",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 9,
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "fields": ""
+        }
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST request from\" | regexp `from (?P<client_ip>[\\d.]+)` | line_format \"{{.client_ip}}\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Client IPs",
+      "type": "table",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "format": "auto",
+            "source": "Line"
+          }
+        }
+      ]
     }
   ],
   "refresh": "10s",

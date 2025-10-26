@@ -178,7 +178,7 @@
     "**/.claude/**"
   ],
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{configDescription}}}{{{controls}}}{{{footer}}}",
-  "prCreation": "not-pending",
+  "prCreation": "immediate",
   "rebaseWhen": "behind-base-branch",
   "suppressNotifications": [
     "prIgnoreNotification"

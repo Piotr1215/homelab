@@ -15,8 +15,7 @@
     "dependencies",
     "renovate"
   ],
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
   "assignees": [

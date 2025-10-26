@@ -45,6 +45,8 @@ spec:
           value: local-path
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage
           value: 1Gi
+        - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
+          value: "true"
   destination:
     server: https://kubernetes.default.svc
     namespace: prometheus

@@ -50,6 +50,15 @@ spec:
             enabled: true
             remoteWriteUrl: "http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090/api/v1/write"
 
+          # Overrides for TraceQL metrics
+          overrides:
+            defaults:
+              metrics_generator:
+                processors: [service-graphs, span-metrics, local-blocks]
+                processor:
+                  local_blocks:
+                    flush_to_storage: true
+
         # Persistence for traces
         persistence:
           enabled: true

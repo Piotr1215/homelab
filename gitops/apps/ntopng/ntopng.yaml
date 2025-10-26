@@ -93,7 +93,13 @@ spec:
       - name: ntopng
         image: ntop/ntopng:latest
         command: ["/bin/bash"]
-        args: ["/scripts/fritzdump.sh"]
+        args:
+          - "-c"
+          - |
+            echo "Installing dependencies..."
+            apt-get update && apt-get install -y curl perl wget
+            echo "Starting fritzdump script..."
+            /scripts/fritzdump.sh
         env:
         - name: FRITZ_USER
           valueFrom:

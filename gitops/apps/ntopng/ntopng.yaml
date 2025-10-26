@@ -107,7 +107,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: redis:7-alpine
+        image: redis:8-alpine
         command: ["redis-server"]
         args: ["--appendonly", "yes", "--dir", "/data"]
         ports:

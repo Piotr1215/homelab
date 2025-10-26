@@ -111,13 +111,9 @@
       "commitMessageTopic": "Terraform providers"
     },
     {
-      "description": "Pin stable images to exact versions (no floating tags)",
+      "description": "Separate minor and patch updates for stable images",
       "matchDatasources": [
         "docker"
-      ],
-      "matchUpdateTypes": [
-        "major",
-        "minor"
       ],
       "matchPackageNames": [
         "hashicorp/vault",

@@ -13,6 +13,7 @@ spec:
   - https://grafana.github.io/helm-charts
   - https://metallb.github.io/metallb
   - https://kubernetes-sigs.github.io/metrics-server/
+  - https://docs.renovatebot.com/helm-charts
   destinations:
   - namespace: metallb-system
     server: https://kubernetes.default.svc
@@ -23,6 +24,8 @@ spec:
   - namespace: cluster-scanning
     server: https://kubernetes.default.svc
   - namespace: kube-system
+    server: https://kubernetes.default.svc
+  - namespace: renovate
     server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'

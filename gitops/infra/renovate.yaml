@@ -16,6 +16,10 @@ spec:
         cronjob:
           schedule: "0 */2 * * *"  # Run every 2 hours
 
+        # Increase Node.js heap size for large repos
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
         renovate:
           # Use existing renovate.json config from repository
           config: |
@@ -32,11 +36,11 @@ spec:
         # Resource limits
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 500m
+            cpu: 200m
             memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
 
         # Security context
         securityContext:

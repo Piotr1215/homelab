@@ -36,7 +36,7 @@ spec:
                 claimName: vault-backups
           containers:
             - name: snapshot
-              image: hashicorp/vault:1.17.2
+              image: hashicorp/vault:1.17.6
               command:
                 - /bin/sh
                 - -c

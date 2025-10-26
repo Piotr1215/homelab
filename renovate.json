@@ -127,14 +127,14 @@
       "matchUpdateTypes": [
         "patch"
       ],
-      "matchPackagePatterns": [
-        "prometheus",
-        "grafana",
-        "loki"
-      ],
       "automerge": true,
       "automergeType": "pr",
-      "automergeStrategy": "squash"
+      "automergeStrategy": "squash",
+      "matchPackageNames": [
+        "/prometheus/",
+        "/grafana/",
+        "/loki/"
+      ]
     },
     {
       "description": "Hold back major updates for manual review",
@@ -158,18 +158,18 @@
     }
   ],
   "argocd": {
-    "fileMatch": [
-      "gitops/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/gitops/.+\\.ya?ml$/"
     ]
   },
   "kubernetes": {
-    "fileMatch": [
-      "gitops/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/gitops/.+\\.ya?ml$/"
     ]
   },
   "terraform": {
-    "fileMatch": [
-      "terraform/.+\\.tf$"
+    "managerFilePatterns": [
+      "/terraform/.+\\.tf$/"
     ]
   },
   "ignorePaths": [

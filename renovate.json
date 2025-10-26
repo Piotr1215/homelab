@@ -19,19 +19,10 @@
   "semanticCommits": "enabled",
   "commitMessagePrefix": "chore(deps):",
   "assignees": [
-    "@Piotr1215"
-  ],
-  "reviewers": [
-    "@Piotr1215"
+    "Piotr1215"
   ],
   "vulnerabilityAlerts": {
-    "enabled": true,
-    "labels": [
-      "security"
-    ],
-    "assignees": [
-      "@Piotr1215"
-    ]
+    "enabled": false
   },
   "packageRules": [
     {
@@ -176,6 +167,9 @@
     "**/vendor/**",
     "**/.terraform/**",
     "**/.claude/**"
+  ],
+  "ignoreDeps": [
+    "code.forgejo.org/forgejo-helm/forgejo/forgejo"
   ],
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{configDescription}}}{{{controls}}}{{{footer}}}",
   "prCreation": "immediate",

@@ -52,7 +52,9 @@ spec:
 
           # Enable local-blocks processor for TraceQL metrics
           overrides:
-            metrics_generator_processors: [local-blocks]
+            defaults:
+              metrics_generator:
+                processors: [local-blocks]
 
         # Persistence for traces
         persistence:

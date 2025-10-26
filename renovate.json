@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended"
   ],
+  "dependencyDashboard": true,
   "description": "Renovate configuration for homelab GitOps repository",
   "timezone": "Europe/Berlin",
   "schedule": [

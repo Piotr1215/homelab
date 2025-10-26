@@ -795,7 +795,7 @@ spec:
       automountServiceAccountToken: true
       containers:
       - name: frontend
-        image: "mcr.microsoft.com/oss/cilium/hubble-ui:v0.12.2"
+        image: "quay.io/cilium/hubble-ui:v0.13.3"
         imagePullPolicy: Always
         ports:
         - name: http
@@ -816,7 +816,7 @@ spec:
           mountPath: /tmp
         terminationMessagePolicy: FallbackToLogsOnError
       - name: backend
-        image: "mcr.microsoft.com/oss/cilium/hubble-ui-backend:v0.12.2"
+        image: "quay.io/cilium/hubble-ui-backend:v0.13.3"
         imagePullPolicy: Always
         env:
         - name: EVENTS_SERVER_PORT

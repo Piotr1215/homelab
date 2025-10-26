@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
       - name: ntopng
-        image: ntop/ntopng:stable
+        image: ntop/ntopng:latest
         command: ["/bin/bash"]
         args: ["/scripts/fritzdump.sh"]
         env:

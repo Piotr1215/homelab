@@ -72,6 +72,19 @@ spec:
     requests:
       storage: 10Gi
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+  namespace: ntopng
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -92,9 +105,14 @@ spec:
       containers:
       - name: redis
         image: redis:7-alpine
+        command: ["redis-server"]
+        args: ["--appendonly", "yes", "--dir", "/data"]
         ports:
         - containerPort: 6379
           name: redis
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
         resources:
           requests:
             memory: "64Mi"
@@ -151,6 +169,9 @@ spec:
       - name: ntopng-data
         persistentVolumeClaim:
           claimName: ntopng-data
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data
       - name: fritzdump-script
         configMap:
           name: fritzdump-script

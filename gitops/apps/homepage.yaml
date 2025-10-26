@@ -166,18 +166,18 @@ data:
           podSelector: app.kubernetes.io/name=vault
       - MinIO:
           description: S3-Compatible Object Storage
-          href: http://minio.minio.svc.cluster.local:9001
+          href: http://192.168.178.97:9001
           icon: minio.svg
           showStats: true
           namespace: minio
           podSelector: app=minio
-      - Hubble UI:
-          description: eBPF Network Observability
-          href: http://192.168.178.94
+      - Retina Network Observability:
+          description: eBPF Network Flow Logs & Metrics
+          href: http://192.168.178.95
           icon: cilium.svg
           showStats: true
-          namespace: kube-system
-          podSelector: k8s-app=hubble-ui
+          namespace: retina
+          podSelector: app=retina-agent
       - Glances:
           description: System Monitoring
           href: http://192.168.178.75:61208

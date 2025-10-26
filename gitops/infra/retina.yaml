@@ -1,0 +1,169 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: retina
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: retina
+  namespace: retina
+---
+# Retina ConfigMap for additional configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: retina-config
+  namespace: retina
+data:
+  config.yaml: |
+    apiVersion: retina.sh/v1alpha1
+    kind: RetinaConfiguration
+    metricsInterval: 10s
+    enablePodLevel: true
+    enableAnnotations: true
+---
+# Retina DaemonSet - eBPF agent running on each node
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: retina-agent
+  namespace: retina
+  labels:
+    app: retina-agent
+spec:
+  selector:
+    matchLabels:
+      app: retina-agent
+  template:
+    metadata:
+      labels:
+        app: retina-agent
+    spec:
+      hostNetwork: true
+      serviceAccountName: retina
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: retina-agent
+        image: ghcr.io/microsoft/retina/retina-agent:v0.0.15
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: RETINA_CONFIG_PATH
+          value: /config/config.yaml
+        - name: ENABLE_POD_LEVEL
+          value: "true"
+        - name: ENABLE_ANNOTATIONS
+          value: "true"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: bpf
+          mountPath: /sys/fs/bpf
+        - name: cgroup
+          mountPath: /sys/fs/cgroup
+        resources:
+          limits:
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+      volumes:
+      - name: config
+        configMap:
+          name: retina-config
+      - name: bpf
+        hostPath:
+          path: /sys/fs/bpf
+          type: Directory
+      - name: cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+---
+# ServiceMonitor for Prometheus integration
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: retina-agent
+  namespace: retina
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: retina-agent
+  endpoints:
+  - port: metrics
+    interval: 30s
+---
+# Service for metrics collection
+apiVersion: v1
+kind: Service
+metadata:
+  name: retina-agent
+  namespace: retina
+  labels:
+    app: retina-agent
+spec:
+  selector:
+    app: retina-agent
+  ports:
+  - name: metrics
+    port: 10093
+    protocol: TCP
+  - name: hubble
+    port: 4244
+    protocol: TCP
+  type: ClusterIP
+---
+# LoadBalancer for external access to flow logs
+apiVersion: v1
+kind: Service
+metadata:
+  name: retina-hubble-lb
+  namespace: retina
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.95"
+spec:
+  type: LoadBalancer
+  selector:
+    app: retina-agent
+  ports:
+  - name: hubble
+    port: 4244
+    targetPort: 4244
+    protocol: TCP
+---
+# RBAC for Retina
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: retina-agent
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "namespaces", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets", "deployments", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: retina-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: retina-agent
+subjects:
+- kind: ServiceAccount
+  name: retina
+  namespace: retina

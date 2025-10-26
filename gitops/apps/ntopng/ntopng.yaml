@@ -90,6 +90,18 @@ spec:
         app: ntopng
     spec:
       containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
       - name: ntopng
         image: ntop/ntopng:latest
         command: ["/bin/bash"]
@@ -98,6 +110,8 @@ spec:
           - |
             echo "Installing dependencies..."
             apt-get update && apt-get install -y curl perl wget
+            echo "Waiting for Redis..."
+            sleep 5
             echo "Starting fritzdump script..."
             /scripts/fritzdump.sh
         env:

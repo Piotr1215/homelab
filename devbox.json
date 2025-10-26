@@ -3,7 +3,7 @@
   "packages": [
     "istioctl@latest",
     "kn@latest",
-    "fluxcd@latest",
+    "fluxcd@2.7.2",
     "ollama@latest",
     "vault@latest",
     "cilium-cli@latest",

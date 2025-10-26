@@ -18,3 +18,9 @@ data:
       isDefault: false
       jsonData:
         maxLines: 1000
+        # Enable logs to traces correlation
+        derivedFields:
+          - datasourceUid: tempo
+            matcherRegex: "trace_id=(\\w+)"
+            name: "TraceID"
+            url: "$${__value.raw}"

@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-datasource
+  namespace: prometheus
+  labels:
+    grafana_datasource: "1"
+    app: kube-prometheus-stack-grafana
+data:
+  tempo-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: "Tempo"
+      type: tempo
+      uid: tempo
+      url: http://tempo.tempo.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+      jsonData:
+        # Enable trace to logs correlation
+        tracesToLogsV2:
+          datasourceUid: loki
+          tags:
+            - key: service.name
+              value: service_name
+            - key: service.namespace
+              value: namespace
+          filterByTraceID: true
+          filterBySpanID: false
+
+        # Enable trace to metrics correlation
+        tracesToMetrics:
+          datasourceUid: prometheus
+          tags:
+            - key: service.name
+              value: service
+            - key: service.namespace
+              value: namespace
+
+        # Enable service graph
+        serviceMap:
+          datasourceUid: prometheus
+
+        # Search configuration
+        search:
+          hide: false
+
+        # Node graph
+        nodeGraph:
+          enabled: true
+
+        # Loki search - search traces by log content
+        lokiSearch:
+          datasourceUid: loki

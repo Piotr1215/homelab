@@ -142,8 +142,11 @@ spec:
             memory: "2Gi"
             cpu: "1000m"
         securityContext:
-          privileged: false
           runAsUser: 0  # ntopng needs root for network operations
+          capabilities:
+            add:
+            - NET_RAW      # Required for ICMP ping (active monitoring)
+            - NET_ADMIN    # Required for network operations
       volumes:
       - name: ntopng-data
         persistentVolumeClaim:

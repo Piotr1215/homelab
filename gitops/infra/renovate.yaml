@@ -26,12 +26,8 @@ spec:
               "requireConfig": "optional"
             }
 
-        # GitHub App/Token authentication
-        secrets:
-          GITHUB_COM_TOKEN:
-            secretRef:
-              name: renovate-github-token
-              key: token
+        # Use existing secret for GitHub token
+        existingSecret: renovate-github-token
 
         # Resource limits
         resources:

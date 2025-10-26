@@ -10,13 +10,13 @@ spec:
   source:
     chart: tempo
     repoURL: https://grafana.github.io/helm-charts
-    targetRevision: 1.10.1
+    targetRevision: 1.23.3
     helm:
       values: |
         # Deploy Tempo in monolithic mode (perfect for homelab)
         tempo:
           repository: grafana/tempo
-          tag: 2.6.1
+          tag: 2.8.2
 
           # Storage configuration
           storage:
@@ -45,12 +45,12 @@ spec:
             zipkin:
               endpoint: 0.0.0.0:9411
 
-          # Metrics configuration
+          # Metrics configuration with TraceQL metrics (local-blocks)
           metricsGenerator:
             enabled: true
             remoteWriteUrl: "http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090/api/v1/write"
 
-          # Enable TraceQL metrics processors (correct top-level format)
+          # Enable local-blocks processor for TraceQL metrics
           overrides:
             metrics_generator_processors: [local-blocks]
 

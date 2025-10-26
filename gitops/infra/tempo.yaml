@@ -45,13 +45,10 @@ spec:
             zipkin:
               endpoint: 0.0.0.0:9411
 
-          # Metrics configuration - TraceQL metrics with local-blocks
+          # Metrics configuration
           metricsGenerator:
             enabled: true
             remoteWriteUrl: "http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090/api/v1/write"
-            processors:
-              localBlocks:
-                flushToStorage: true
 
         # Persistence for traces
         persistence:

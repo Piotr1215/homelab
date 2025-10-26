@@ -178,6 +178,13 @@ data:
           showStats: true
           namespace: kube-system
           podSelector: app.kubernetes.io/name=hubble-ui
+      - ntopng:
+          description: Network Traffic Analysis
+          href: http://192.168.178.104:3000
+          icon: https://www.ntop.org/wp-content/uploads/2019/06/ntopng_logo_square.png
+          showStats: true
+          namespace: ntopng
+          podSelector: app=ntopng
       - Glances:
           description: System Monitoring
           href: http://192.168.178.75:61208

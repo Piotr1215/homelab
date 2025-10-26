@@ -171,13 +171,13 @@ data:
           showStats: true
           namespace: minio
           podSelector: app=minio
-      - Retina Network Observability:
-          description: eBPF Network Flow Logs & Metrics
-          href: http://192.168.178.102:10093/metrics
+      - Hubble UI:
+          description: Network Flow Visualization
+          href: http://192.168.178.94
           icon: cilium.svg
           showStats: true
           namespace: kube-system
-          podSelector: k8s-app=retina
+          podSelector: app.kubernetes.io/name=hubble-ui
       - Glances:
           description: System Monitoring
           href: http://192.168.178.75:61208

@@ -9,7 +9,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    k8s-app: hubble-ui
+    app.kubernetes.io/name: hubble-ui
   ports:
     - name: http
       port: 80

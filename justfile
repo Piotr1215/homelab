@@ -123,3 +123,37 @@ restart-vcluster-yaml:
   kubectl rollout status deployment/vcluster-yaml-mcp -n default --timeout=2m
   @echo "Deployment restarted successfully"
 
+# Query ntopng high-score flows (default: score >= 50)
+ntopng-alerts score="50" limit="20":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  echo "Fetching ntopng alerts database..."
+  POD=$(kubectl get pod -n ntopng -l app=ntopng -o jsonpath='{.items[0].metadata.name}')
+  kubectl cp ntopng/$POD:/var/lib/ntopng/0/alerts/alert_store_v11.db /tmp/ntopng_alerts.db -c ntopng 2>/dev/null
+  echo "Querying flows with score >= {{score}} (limit {{limit}})..."
+  echo
+  sqlite3 -header -column /tmp/ntopng_alerts.db "
+    SELECT
+      datetime(tstamp, 'unixepoch', 'localtime') as time,
+      printf('%3d', score) as score,
+      printf('%-15s', cli_ip) as source_ip,
+      printf('%-15s', srv_ip) as dest_ip,
+      printf('%5d', srv_port) as port,
+      CASE
+        WHEN alert_id = 42 THEN 'HTTP Suspicious UA'
+        WHEN alert_id = 101 THEN 'TCP Probe'
+        WHEN alert_id = 69 THEN 'Known Proto Wrong Port'
+        WHEN alert_id = 30 THEN 'Known Proto Non-Std Port'
+        WHEN alert_id = 53 THEN 'DNS Issue'
+        ELSE 'Alert-' || alert_id
+      END as alert_type,
+      substr(info, 1, 30) as info
+    FROM flow_alerts
+    WHERE score >= {{score}}
+    ORDER BY tstamp DESC
+    LIMIT {{limit}};
+  "
+  echo
+  echo "Total alerts in database: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts;')"
+  echo "High-score (>={{score}}) count: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts WHERE score >= {{score}};')"
+

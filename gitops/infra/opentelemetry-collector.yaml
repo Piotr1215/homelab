@@ -65,9 +65,9 @@ spec:
               tls:
                 insecure: true
 
-            # Export metrics to Prometheus (optional)
-            prometheus:
-              endpoint: 0.0.0.0:8889
+            # Debug exporter for troubleshooting (optional)
+            debug:
+              verbosity: normal
 
           service:
             pipelines:
@@ -75,17 +75,11 @@ spec:
               traces:
                 receivers: [otlp, jaeger, zipkin]
                 processors: [memory_limiter, batch]
-                exporters: [otlp]
+                exporters: [otlp, debug]
 
         # Service configuration
         service:
           type: ClusterIP
-
-        # ServiceMonitor for Prometheus metrics
-        serviceMonitor:
-          enabled: true
-          extraLabels:
-            release: kube-prometheus-stack
 
         # Resource limits
         resources:
@@ -95,11 +89,6 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-
-        # Pod annotations
-        podAnnotations:
-          prometheus.io/scrape: "true"
-          prometheus.io/port: "8889"
 
   destination:
     server: https://kubernetes.default.svc

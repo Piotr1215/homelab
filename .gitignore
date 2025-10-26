@@ -55,8 +55,6 @@ tmp/
 *.crt
 *.csr
 secrets/
-*-secret.yaml
-*-secrets.yaml
 vault-token
 .envrc
 *-with-secrets.yaml

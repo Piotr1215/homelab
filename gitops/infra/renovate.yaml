@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: renovate
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: infrastructure
+  source:
+    chart: renovate
+    repoURL: https://docs.renovatebot.com/helm-charts
+    targetRevision: 38.149.3
+    helm:
+      values: |
+        cronjob:
+          schedule: "0 */2 * * *"  # Run every 2 hours
+
+        renovate:
+          # Use existing renovate.json config from repository
+          config: |
+            {
+              "platform": "github",
+              "repositories": ["Piotr1215/homelab"],
+              "onboarding": false,
+              "requireConfig": "optional"
+            }
+
+        # GitHub App/Token authentication
+        secrets:
+          GITHUB_COM_TOKEN:
+            secretRef:
+              name: renovate-github-token
+              key: token
+
+        # Resource limits
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        # Security context
+        securityContext:
+          fsGroup: 1000
+          runAsUser: 1000
+          runAsNonRoot: true
+
+        # Pod annotations for monitoring
+        podAnnotations:
+          prometheus.io/scrape: "false"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: renovate
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

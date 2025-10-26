@@ -1,0 +1,190 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "description": "Renovate configuration for homelab GitOps repository",
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "after 10pm every weekday",
+    "before 5am every weekday",
+    "every weekend"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps):",
+  "assignees": [
+    "@Piotr1215"
+  ],
+  "reviewers": [
+    "@Piotr1215"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security"
+    ],
+    "assignees": [
+      "@Piotr1215"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Group all ArgoCD Helm chart updates by component",
+      "matchManagers": [
+        "argocd"
+      ],
+      "matchDatasources": [
+        "helm"
+      ],
+      "groupName": "ArgoCD Helm Charts - {{packageName}}",
+      "schedule": [
+        "every weekend"
+      ],
+      "semanticCommitType": "infra",
+      "commitMessageTopic": "ArgoCD {{packageName}}"
+    },
+    {
+      "description": "Group observability stack updates together",
+      "matchPackageNames": [
+        "kube-prometheus-stack",
+        "loki",
+        "promtail",
+        "tempo",
+        "grafana"
+      ],
+      "groupName": "Observability Stack",
+      "schedule": [
+        "on the first day of the month"
+      ],
+      "semanticCommitType": "infra",
+      "commitMessageTopic": "observability stack"
+    },
+    {
+      "description": "Group security and platform components",
+      "matchPackageNames": [
+        "cert-manager",
+        "external-secrets-operator",
+        "vault",
+        "ingress-nginx"
+      ],
+      "groupName": "Security & Platform",
+      "schedule": [
+        "on the first day of the month"
+      ],
+      "semanticCommitType": "infra",
+      "commitMessageTopic": "security and platform components"
+    },
+    {
+      "description": "Docker images in Kubernetes manifests",
+      "matchManagers": [
+        "kubernetes"
+      ],
+      "matchDatasources": [
+        "docker"
+      ],
+      "groupName": "Docker Images - {{packageName}}",
+      "schedule": [
+        "every weekend"
+      ],
+      "semanticCommitType": "build",
+      "commitMessageTopic": "Docker image {{packageName}}"
+    },
+    {
+      "description": "Group all Terraform provider updates",
+      "matchManagers": [
+        "terraform"
+      ],
+      "matchDatasources": [
+        "terraform-provider"
+      ],
+      "groupName": "Terraform Providers",
+      "schedule": [
+        "on the 15th day of the month"
+      ],
+      "semanticCommitType": "infra",
+      "commitMessageTopic": "Terraform providers"
+    },
+    {
+      "description": "Pin stable images to exact versions (no floating tags)",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "matchPackageNames": [
+        "hashicorp/vault",
+        "rancher/local-path-provisioner"
+      ],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Auto-merge patch updates for stable infrastructure",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchPackagePatterns": [
+        "prometheus",
+        "grafana",
+        "loki"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Hold back major updates for manual review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true,
+      "labels": [
+        "major-update",
+        "needs-review"
+      ]
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions",
+      "semanticCommitType": "ci",
+      "commitMessageTopic": "GitHub Actions"
+    }
+  ],
+  "argocd": {
+    "fileMatch": [
+      "gitops/.+\\.ya?ml$"
+    ]
+  },
+  "kubernetes": {
+    "fileMatch": [
+      "gitops/.+\\.ya?ml$"
+    ]
+  },
+  "terraform": {
+    "fileMatch": [
+      "terraform/.+\\.tf$"
+    ]
+  },
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/.terraform/**",
+    "**/.claude/**"
+  ],
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{configDescription}}}{{{controls}}}{{{footer}}}",
+  "prCreation": "not-pending",
+  "rebaseWhen": "behind-base-branch",
+  "suppressNotifications": [
+    "prIgnoreNotification"
+  ]
+}

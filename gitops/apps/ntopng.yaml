@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ntopng
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fritzdump-script
+  namespace: ntopng
+data:
+  fritzdump.sh: |
+    #!/bin/bash
+    set -eo pipefail
+
+    # Fritz!Box configuration
+    FRITZIP=http://fritz.box
+    IFACE="2-0"  # WAN interface
+    FRITZUSER="$FRITZ_USER"
+    FRITZPWD="$FRITZ_PASSWORD"
+    SIDFILE="/tmp/fritz.sid"
+
+    echo "Trying to login into $FRITZIP as user $FRITZUSER"
+
+    # Request challenge token from Fritz!Box
+    CHALLENGE=$(curl -k -s $FRITZIP/login_sid.lua | grep -o "<Challenge>[a-z0-9]\{8\}" | cut -d'>' -f 2)
+
+    # Create authentication token by hashing challenge with password
+    HASH=$(perl -MPOSIX -e '
+        use Digest::MD5 "md5_hex";
+        my $ch_Pw = "$ARGV[0]-$ARGV[1]";
+        $ch_Pw =~ s/(.)/$1 . chr(0)/eg;
+        my $md5 = lc(md5_hex($ch_Pw));
+        print $md5;
+      ' -- "$CHALLENGE" "$FRITZPWD")
+
+    curl -k -s "$FRITZIP/login_sid.lua" -d "response=$CHALLENGE-$HASH" -d "username=$FRITZUSER" | \
+      grep -o "<SID>[a-z0-9]\{16\}" | cut -d'>' -f 2 > $SIDFILE
+
+    SID=$(cat $SIDFILE)
+
+    # Check for successful authentication
+    if [[ $SID =~ ^0+$ ]]; then
+      echo "Login failed. Check Fritz!Box credentials."
+      exit 1
+    fi
+
+    echo "Successfully authenticated to Fritz!Box"
+    echo "Starting traffic capture from interface $IFACE"
+
+    # Start capture and pipe to ntopng
+    exec wget --no-check-certificate -qO- \
+      "$FRITZIP/cgi-bin/capture_notimeout?ifaceorminor=$IFACE&snaplen=&capture=Start&sid=$SID" | \
+      ntopng -i - \
+        --scripts-dir /usr/share/ntopng/scripts \
+        -m "192.168.178.0/24,172.17.0.0/16,172.18.0.0/16" \
+        --community \
+        -d /var/lib/ntopng \
+        -w 3000
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntopng-data
+  namespace: ntopng
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntopng
+  namespace: ntopng
+  labels:
+    app: ntopng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntopng
+  template:
+    metadata:
+      labels:
+        app: ntopng
+    spec:
+      containers:
+      - name: ntopng
+        image: ntop/ntopng:stable
+        command: ["/bin/bash"]
+        args: ["/scripts/fritzdump.sh"]
+        env:
+        - name: FRITZ_USER
+          valueFrom:
+            secretKeyRef:
+              name: fritzbox-credentials
+              key: username
+        - name: FRITZ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fritzbox-credentials
+              key: password
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: ntopng-data
+          mountPath: /var/lib/ntopng
+        - name: fritzdump-script
+          mountPath: /scripts
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        securityContext:
+          privileged: false
+          runAsUser: 0  # ntopng needs root for network operations
+      volumes:
+      - name: ntopng-data
+        persistentVolumeClaim:
+          claimName: ntopng-data
+      - name: fritzdump-script
+        configMap:
+          name: fritzdump-script
+          defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntopng
+  namespace: ntopng
+  labels:
+    app: ntopng
+spec:
+  selector:
+    app: ntopng
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.104

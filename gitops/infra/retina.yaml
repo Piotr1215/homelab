@@ -1,169 +1,803 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: retina
----
+# Source: retina/templates/operator.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: retina
-  namespace: retina
+  labels:
+    app.kubernetes.io/name: serviceaccount
+    app.kubernetes.io/instance: retina-operator
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: retina-operator
+  namespace: kube-system
 ---
-# Retina ConfigMap for additional configuration
+# Source: retina/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: rbac
+    k8s-app: retina
+  name: retina-agent
+  namespace: kube-system
+---
+# Source: retina/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  labels:
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: config
+    k8s-app: retina
   name: retina-config
-  namespace: retina
+  namespace: kube-system
 data:
-  config.yaml: |
-    apiVersion: retina.sh/v1alpha1
-    kind: RetinaConfiguration
-    metricsInterval: 10s
-    enablePodLevel: true
-    enableAnnotations: true
+  config.yaml: |-
+    apiServer:
+      host: 0.0.0.0
+      port: 10093
+    logLevel: info
+    enabledPlugin: [dropreason,packetforward,linuxutil,dns]
+    metricsInterval: 10
+    enableTelemetry: false
+    enablePodLevel: false
+    remoteContext: false
+    enableAnnotations: false
+    bypassLookupIPOfInterest: false
+    dataAggregationLevel: low
 ---
-# Retina DaemonSet - eBPF agent running on each node
+# Source: retina/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: config
+    k8s-app: retina
+  name: retina-config-win
+  namespace: kube-system
+data:
+  config.yaml: |-
+    apiServer:
+      host: 0.0.0.0
+      port: 10093
+    logLevel: info
+    enabledPlugin: ["hnsstats"]
+    metricsInterval: 10
+    enableTelemetry: false
+    enablePodLevel: false
+    remoteContext: false
+---
+# Source: retina/templates/operator.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: retina-operator-config
+  namespace: kube-system
+data:
+  operator-config.yaml: |-
+    installCRDs: true
+    enableTelemetry: false
+    remoteContext: false
+    captureDebug: true
+    captureJobNumLimit: 0
+    enableManagedStorageAccount: false
+---
+# Source: retina/templates/operator.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: retina-operator-role
+rules:
+  - apiGroups: 
+      - "apiextensions.k8s.io"
+    resources: 
+      - "customresourcedefinitions"
+    verbs: 
+      - "create"
+      - "get"
+      - "update"
+      - "delete"
+      - "patch"
+  - apiGroups:
+    - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - metricsconfigurations
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - metricsconfigurations/status
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+    - namespaces
+    - pods
+    - nodes
+    verbs:
+    - get
+    - list
+  - apiGroups:
+      - ""
+    resources:
+    - secrets
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+      - batch
+    resources:
+    - jobs
+    verbs:
+    - create
+    - delete
+    - deletecollection
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+      - batch
+    resources:
+    - jobs/status
+    verbs:
+    - get
+  - apiGroups:
+    - retina.sh
+    resources:
+    - captures
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+    - captures/finalizers
+    verbs:
+    - update
+  - apiGroups:
+      - retina.sh
+    resources:
+    - captures/status
+    verbs:
+    - get
+    - patch
+    - update
+---
+# Source: retina/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    k8s-app: retina
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: rbac
+  namespace: kube-system
+  name: retina-cluster-reader
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["pods", "services", "replicationcontrollers", "nodes", "namespaces"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["networking.azure.com"]
+    resources: ["clusterobservers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - metricsconfigurations
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - retina.sh
+    resources:
+      - retinaendpoints/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+# Source: retina/templates/operator.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrolebinding
+    app.kubernetes.io/instance: retina-operator-rolebinding
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: retina-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: retina-operator-role
+subjects:
+- kind: ServiceAccount
+  name: retina-operator
+  namespace: kube-system
+---
+# Source: retina/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    k8s-app: retina
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: rbac
+  name: retina-cluster-reader-binding
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: retina-agent
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: retina-cluster-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: retina/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: retina-svc
+  namespace: kube-system
+  labels:
+    k8s-app: retina
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: networking
+spec:
+  ports:
+    - port: 10093
+      targetPort: 10093
+  selector:
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/component: workload
+---
+# Source: retina/templates/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: retina-agent
-  namespace: retina
+  namespace: kube-system
   labels:
-    app: retina-agent
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: workload
+    k8s-app: retina
 spec:
   selector:
     matchLabels:
-      app: retina-agent
+      app.kubernetes.io/name: retina
+      app.kubernetes.io/instance: retina
+      app.kubernetes.io/component: workload
   template:
     metadata:
       labels:
-        app: retina-agent
+        helm.sh/chart: retina-v0.0.15
+        app.kubernetes.io/name: retina
+        app.kubernetes.io/instance: retina
+        app.kubernetes.io/version: "0.0.1"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: retina
+        app.kubernetes.io/component: workload
+        k8s-app: retina
+      annotations:
+        prometheus.io/port: "10093"
+        prometheus.io/scrape: "true"
+        checksum/config: 94c80029198aa9545b25f9e9372fc9a8ab8377a9855035fe5b63ddd0037c2fed
     spec:
       hostNetwork: true
-      serviceAccountName: retina
-      tolerations:
-      - operator: Exists
+      serviceAccountName: retina-agent
+      initContainers:
+        - name: init-retina
+          image: ghcr.io/microsoft/retina/retina-init:v0.0.2
+          imagePullPolicy: Always
+          args:
+            - --config
+            - "/retina/config/config.yaml"
+          terminationMessagePolicy: FallbackToLogsOnError
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - name: bpf
+            mountPath: /sys/fs/bpf
+            mountPropagation: Bidirectional
+          - name: config
+            mountPath: /retina/config
       containers:
-      - name: retina-agent
-        image: ghcr.io/microsoft/retina/retina-agent:v0.0.15
-        imagePullPolicy: Always
-        securityContext:
-          privileged: true
-        env:
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        - name: RETINA_CONFIG_PATH
-          value: /config/config.yaml
-        - name: ENABLE_POD_LEVEL
-          value: "true"
-        - name: ENABLE_ANNOTATIONS
-          value: "true"
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: bpf
-          mountPath: /sys/fs/bpf
-        - name: cgroup
-          mountPath: /sys/fs/cgroup
-        resources:
-          limits:
-            memory: 300Mi
-          requests:
-            cpu: 100m
-            memory: 200Mi
+        - name: retina 
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 10093
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          image: ghcr.io/microsoft/retina/retina-agent:v0.0.2
+          imagePullPolicy: Always
+          command:
+          - /retina/controller
+          args:
+          - --health-probe-bind-address=:18081
+          - --metrics-bind-address=:18080
+          - "--config"
+          - "/retina/config/config.yaml"
+          ports:
+          - name: retina
+            containerPort: 10093
+          resources:
+            limits:
+              cpu: 500m
+              memory: 300Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: NODE_NAME
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+          securityContext:
+            capabilities:
+              add:
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - NET_ADMIN
+              - IPC_LOCK
+            privileged: false
+          volumeMounts:
+          - name: bpf
+            mountPath: /sys/fs/bpf
+          - name: cgroup
+            mountPath: /sys/fs/cgroup
+          - name: config
+            mountPath: /retina/config
+          - name: debug
+            mountPath: /sys/kernel/debug
+          - name: tmp
+            mountPath: /tmp
+          - name: trace
+            mountPath: /sys/kernel/tracing
+      terminationGracePeriodSeconds: 90 # Allow for retina to cleanup plugin resources.
       volumes:
-      - name: config
-        configMap:
-          name: retina-config
       - name: bpf
         hostPath:
           path: /sys/fs/bpf
-          type: Directory
       - name: cgroup
         hostPath:
           path: /sys/fs/cgroup
-          type: Directory
+      - name: config
+        configMap:
+          name: retina-config
+      - name: debug
+        hostPath:
+          path: /sys/kernel/debug
+      - name: tmp
+        emptyDir: {}
+      - name: trace
+        hostPath:
+          path: /sys/kernel/tracing
+      nodeSelector:
+        kubernetes.io/os: linux
 ---
-# ServiceMonitor for Prometheus integration
+# Source: retina/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+    app.kubernetes.io/component: workload
+    k8s-app: retina
+  name: retina-agent-win
+  namespace: kube-system
+  annotations:
+    prometheus.io/port: "10093"
+    prometheus.io/scrape: "true"
+    checksum/config: 94c80029198aa9545b25f9e9372fc9a8ab8377a9855035fe5b63ddd0037c2fed
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: retina
+      app.kubernetes.io/instance: retina
+      app.kubernetes.io/component: workload
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: retina-v0.0.15
+        app.kubernetes.io/name: retina
+        app.kubernetes.io/instance: retina
+        app.kubernetes.io/version: "0.0.1"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: retina
+        app.kubernetes.io/component: workload
+        k8s-app: retina
+      name: retina
+      namespace: kube-system
+    spec:
+      serviceAccountName: retina-agent
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: NT AUTHORITY\SYSTEM
+        runAsNonRoot: false
+      hostNetwork: true
+      containers:
+        - name: retinawin
+          image: ghcr.io/microsoft/retina/retina-agent:v0.0.2
+          ports:
+          - name: retina
+            containerPort: 10093
+          workingDir: $env:CONTAINER_SANDBOX_MOUNT_POINT
+          command:
+            - controller.exe --config ./retina/config.yaml 
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: NODE_NAME
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+          securityContext:
+            capabilities:
+              add:
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - NET_ADMIN
+              - IPC_LOCK
+            privileged: false
+          volumeMounts:
+            - name: retina-config-win
+              mountPath: retina
+      nodeSelector:
+        kubernetes.io/os: windows
+      volumes:
+        - name: retina-config-win
+          configMap:
+            name: retina-config-win
+---
+# Source: retina/templates/operator.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: retina-operator
+  namespace: kube-system
+  labels:
+    app: retina-operator
+    control-plane: retina-operator
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/instance: retina-operator
+    app.kubernetes.io/component: retina-operator
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  selector:
+    matchLabels:
+      control-plane: retina-operator
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: retina-operator
+      labels:
+        app: retina-operator
+        control-plane: retina-operator
+    spec:
+      # TODO(user): Uncomment the following code to configure the nodeAffinity expression
+      # according to the platforms which are supported by your solution.
+      # It is considered best practice to support multiple architectures. You can
+      # build your manager image using the makefile target docker-buildx.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+                      #- arm64
+                      #- ppc64le
+                      #- s390x
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+                      #- windows
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - image: ghcr.io/microsoft/retina/retina-operator:v0.0.15
+          name: retina-operator
+          command:
+          - /retina-operator
+          args:
+          - "--config"
+          - "/retina/operator-config.yaml"
+          volumeMounts:
+            - name: retina-operator-config
+              mountPath: /retina/
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "ALL"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 128Mi
+      serviceAccountName: retina-operator
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: retina-operator-config
+          configMap:
+            name: retina-operator-config
+---
+# Source: retina/templates/networkobserver.yaml
+# apiVersion: networking.azure.com/v1alpha1
+# kind: ClusterObserver
+# metadata:
+#   name: retina
+#   namespace: retina
+# spec:
+#   ignoreAllowed: true
+#   exportList:
+#     - otelAgent
+#   observeList:
+#     namespaceSelector:
+#       matchLabels:
+#     podSelector:
+#       matchLabels:
+#     direction: 
+#   ignoreList:
+#     namespaceSelector:
+#       matchLabels:
+#     podSelector:
+#       matchLabels:
+---
+# Source: retina/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "retina-svc-test-connection"
+  labels:
+    helm.sh/chart: retina-v0.0.15
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/instance: retina
+    app.kubernetes.io/version: "0.0.1"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: retina
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['retina-svc:10093']
+  restartPolicy: Never
+---
+# LoadBalancer service for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: retina-lb
+  namespace: kube-system
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.102"
+spec:
+  type: LoadBalancer
+  selector:
+    k8s-app: retina
+  ports:
+  - name: metrics
+    port: 10093
+    targetPort: 10093
+    protocol: TCP
+---
+# ServiceMonitor for Prometheus integration  
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: retina-agent
-  namespace: retina
+  namespace: kube-system
   labels:
     release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:
-      app: retina-agent
+      app.kubernetes.io/name: retina
   endpoints:
-  - port: metrics
+  - targetPort: 10093
     interval: 30s
----
-# Service for metrics collection
-apiVersion: v1
-kind: Service
-metadata:
-  name: retina-agent
-  namespace: retina
-  labels:
-    app: retina-agent
-spec:
-  selector:
-    app: retina-agent
-  ports:
-  - name: metrics
-    port: 10093
-    protocol: TCP
-  - name: hubble
-    port: 4244
-    protocol: TCP
-  type: ClusterIP
----
-# LoadBalancer for external access to flow logs
-apiVersion: v1
-kind: Service
-metadata:
-  name: retina-hubble-lb
-  namespace: retina
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.95"
-spec:
-  type: LoadBalancer
-  selector:
-    app: retina-agent
-  ports:
-  - name: hubble
-    port: 4244
-    targetPort: 4244
-    protocol: TCP
----
-# RBAC for Retina
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: retina-agent
-rules:
-- apiGroups: [""]
-  resources: ["pods", "nodes", "namespaces", "services", "endpoints"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["apps"]
-  resources: ["replicasets", "deployments", "daemonsets"]
-  verbs: ["get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: retina-agent
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: retina-agent
-subjects:
-- kind: ServiceAccount
-  name: retina
-  namespace: retina
+    path: /metrics

@@ -173,11 +173,11 @@ data:
           podSelector: app=minio
       - Retina Network Observability:
           description: eBPF Network Flow Logs & Metrics
-          href: http://192.168.178.95
+          href: http://192.168.178.102:10093/metrics
           icon: cilium.svg
           showStats: true
-          namespace: retina
-          podSelector: app=retina-agent
+          namespace: kube-system
+          podSelector: k8s-app=retina
       - Glances:
           description: System Monitoring
           href: http://192.168.178.75:61208

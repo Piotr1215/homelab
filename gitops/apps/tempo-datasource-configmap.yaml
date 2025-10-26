@@ -13,7 +13,7 @@ data:
     - name: "Tempo"
       type: tempo
       uid: tempo
-      url: http://tempo.tempo.svc.cluster.local:3100
+      url: http://tempo.tempo.svc.cluster.local:3200
       access: proxy
       isDefault: false
       jsonData:

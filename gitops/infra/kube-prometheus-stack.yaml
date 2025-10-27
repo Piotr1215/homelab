@@ -63,9 +63,9 @@ spec:
               receiver: 'null'
               routes:
               - matchers:
-                - alertname = VClusterMCPAccessed
+                - alertname = VClusterMCPServerUsed
                 receiver: ntfy-vcluster-mcp
-                group_by: ['ip']
+                group_by: ['pod']
                 group_wait: 5s
                 repeat_interval: 5m
               - matchers:

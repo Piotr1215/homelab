@@ -389,7 +389,7 @@
         }
       }
     },
-    "vault@latest": {
+    "vault@1.20.4": {
       "last_modified": "2025-10-08T10:03:27Z",
       "resolved": "github:NixOS/nixpkgs/fb5cf53218b987f2703a5bbc292a030c0fe33443#vault",
       "source": "devbox-search",

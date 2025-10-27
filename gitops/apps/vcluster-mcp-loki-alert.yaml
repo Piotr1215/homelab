@@ -11,7 +11,7 @@ data:
         rules:
           - alert: VClusterMCPAccessed
             expr: |
-              sum by (ip) (count_over_time({namespace="default", pod=~"vcluster-yaml-mcp.*"} |= "MCP POST request from" | pattern `MCP POST request from <ip>` [10s])) > 0
+              sum by (ip) (rate({namespace="default", pod=~"vcluster-yaml-mcp.*"} |= "MCP POST request from" | pattern `MCP POST request from <ip>` [1m])) > 0
             for: 0s
             labels:
               severity: info

@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: longhorn-prometheus-servicemonitor
+  namespace: longhorn-system
+  labels:
+    app: longhorn
+    release: kube-prometheus-stack  # Required for Prometheus to discover it
+spec:
+  selector:
+    matchLabels:
+      app: longhorn-manager
+  endpoints:
+  - port: manager  # Port name from longhorn-backend service
+    path: /metrics
+    interval: 30s

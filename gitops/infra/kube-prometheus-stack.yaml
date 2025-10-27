@@ -45,12 +45,6 @@ spec:
           value: local-path
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage
           value: 1Gi
-        - name: alertmanager.service.type
-          value: LoadBalancer
-        - name: alertmanager.service.annotations.metallb\.universe\.tf/loadBalancerIPs
-          value: "192.168.178.91"
-        - name: alertmanager.enabled
-          value: "true"
         - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
           value: "true"
   destination:

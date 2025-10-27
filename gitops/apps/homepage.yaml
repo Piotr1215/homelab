@@ -75,13 +75,6 @@ data:
           showStats: true
           namespace: loki
           podSelector: app.kubernetes.io/name=loki
-      - AlertManager:
-          description: Alert Routing & Notifications
-          href: http://192.168.178.91:9093
-          icon: alertmanager.svg
-          showStats: true
-          namespace: prometheus
-          podSelector: app.kubernetes.io/name=alertmanager
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg

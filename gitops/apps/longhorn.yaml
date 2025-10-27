@@ -79,6 +79,14 @@ spec:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
 
+  ignoreDifferences:
+    - group: ""
+      kind: Service
+      name: longhorn-frontend
+      jsonPointers:
+        - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+        - /status/loadBalancer
+
   syncPolicy:
     automated:
       prune: true
@@ -86,6 +94,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 3
       backoff:

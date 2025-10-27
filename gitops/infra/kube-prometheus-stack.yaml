@@ -47,6 +47,31 @@ spec:
           value: 1Gi
         - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
           value: "true"
+      values: |
+        alertmanager:
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['alertname', 'namespace']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: 'null'
+              routes:
+              - match:
+                  alertname: Watchdog
+                receiver: 'null'
+              - match:
+                  component: vcluster-mcp
+                receiver: 'ntfy'
+                continue: true
+            receivers:
+            - name: 'null'
+            - name: 'ntfy'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-vcluster-mcp'
+                send_resolved: true
   destination:
     server: https://kubernetes.default.svc
     namespace: prometheus

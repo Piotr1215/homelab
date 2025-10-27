@@ -55,6 +55,20 @@ spec:
             retention_enabled: true
             delete_request_store: filesystem
 
+          # Ruler configuration for alerting
+          ruler:
+            enable_api: true
+            enable_alertmanager_v2: true
+            alertmanager_url: http://kube-prometheus-stack-alertmanager.prometheus.svc.cluster.local:9093
+            storage:
+              type: local
+              local:
+                directory: /var/loki/rules
+            rule_path: /tmp/rules
+            ring:
+              kvstore:
+                store: inmemory
+
         # SingleBinary configuration
         singleBinary:
           replicas: 1
@@ -69,6 +83,14 @@ spec:
             limits:
               cpu: 1
               memory: 1Gi
+          extraVolumes:
+            - name: loki-rules
+              configMap:
+                name: loki-vcluster-mcp-rules
+          extraVolumeMounts:
+            - name: loki-rules
+              mountPath: /var/loki/rules/fake
+              readOnly: true
 
         # Disable other deployment modes
         backend:

@@ -6,9 +6,10 @@ eval "$(devbox generate direnv --print-envrc)"
 # Essential local configuration
 export KUBECONFIG=/path/to/your/kubeconfig
 
-# Vault CLI access (for managing secrets)
-export VAULT_TOKEN=your-vault-token
-export VAULT_ADDR='http://your-vault-ip:8200'
+# Bitwarden Secrets Manager (for ESO integration)
+export BITWARDEN_ORG_ID=your-org-id
+export BITWARDEN_PROJECT_ID=your-project-id
+export BITWARDEN_MACHINE_ACCOUNT_TOKEN=your-token
 
 # Homelab hosts (optional - used by justfile SSH shortcuts)
 export PROXMOX_HOST=your-proxmox-ip
@@ -17,5 +18,5 @@ export KUBE_MAIN=your-kube-main-ip
 export KUBE_WORKER1=your-kube-worker1-ip
 export KUBE_WORKER2=your-kube-worker2-ip
 
-# Note: All application secrets are managed through Vault and pulled
-# by External Secrets Operator. You don't need to set them locally.
+# Note: All application secrets are managed through Bitwarden Secrets Manager
+# and synced by External Secrets Operator. You don't need to set them locally.

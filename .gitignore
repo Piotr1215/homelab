@@ -55,10 +55,10 @@ tmp/
 *.crt
 *.csr
 secrets/
-vault-token
 .envrc
 *-with-secrets.yaml
 create-secrets-local.sh
+bitwarden-credentials.json
 
 # Devbox
 .devbox/
@@ -70,4 +70,4 @@ result-*
 # kubespray/ - now tracked as a submodule
 
 # Backups (contain sensitive data)
-backups/vault/
+backups/

@@ -23,18 +23,6 @@ variable "kubeconfig_path" {
   default     = "/home/decoder/dev/homelab/kubeconfig"
 }
 
-variable "vault_backup_s3_bucket" {
-  description = "S3 bucket for Vault backups"
-  type        = string
-  default     = "vault-snapshots"
-}
-
-variable "vault_loadbalancer_ip" {
-  description = "LoadBalancer IP for Vault"
-  type        = string
-  default     = "192.168.178.92"
-}
-
 provider "helm" {
   kubernetes {
     config_path = var.kubeconfig_path

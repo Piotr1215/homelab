@@ -61,7 +61,6 @@
       "matchPackageNames": [
         "cert-manager",
         "external-secrets-operator",
-        "vault",
         "ingress-nginx"
       ],
       "groupName": "Security & Platform",
@@ -107,7 +106,6 @@
         "docker"
       ],
       "matchPackageNames": [
-        "hashicorp/vault",
         "rancher/local-path-provisioner"
       ],
       "separateMinorPatch": true

@@ -99,11 +99,6 @@ k8s-upgrade:
   [[ $REPLY =~ ^[Yy]$ ]] && ./scripts/k8s-upgrade.sh "$TARGET"
 
 
-# Unseal Vault after restarts
-unseal-vault:
-  @echo "Unsealing Vault..."
-  kubectl exec -n vault vault-0 -- vault operator unseal $(VAULT_UNSEAL_KEY)
-
 # Configure Bitwarden secrets after ArgoCD sync
 patch-bitwarden:
   #!/usr/bin/env bash

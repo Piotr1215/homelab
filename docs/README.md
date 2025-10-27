@@ -6,7 +6,7 @@
 
 > Watch the complete homelab setup walkthrough on YouTube.
 
-GitOps Kubernetes cluster with ArgoCD and Vault. Bootstrap installs core services, ArgoCD handles everything else.
+GitOps Kubernetes cluster with ArgoCD and External Secrets Operator (ESO) using Bitwarden Secrets Manager. Bootstrap installs core services, ArgoCD handles everything else.
 
 ## Setup
 
@@ -20,35 +20,29 @@ export KUBECONFIG=./kubeconfig  # if using local kubeconfig
 
 ## Bootstrap
 
-Deploy the core infrastructure components using Terraform. This sets up ArgoCD, Vault, and essential operators.
+Deploy the core infrastructure components using Terraform. This sets up ArgoCD and essential operators.
 
 ### Fresh install
-Creates a new Vault instance with fresh credentials. Secrets will need to be manually populated after deployment.
 
 ```bash
 terraform init && terraform apply
 ```
 
-### Restore from backup
-Restores from an existing Vault backup if the cluster was previously running and you have a backup snapshot.
-
-```bash
-terraform apply -var="vault_snapshot_path=./backup.snap" -var="vault_credentials_path=./vault-init.json"
-```
-
 ### Required files
 - `kubeconfig` - Required
-- `vault-backup.snap` - Optional, for restore
-- `vault-init.json` - Optional, previous Vault credentials
+- Bitwarden Secrets Manager credentials (configured after bootstrap)
 
 ## Access
 
-Service endpoints and credentials for accessing the deployed components.
+Service endpoints are available via LoadBalancer IPs. Use these commands to get the URLs:
 
-- ArgoCD: http://192.168.178.90
-- Vault: http://192.168.178.92:8200
-- Homepage: http://192.168.178.91
-- Credentials: `vault-init.json` (created on fresh install)
+```bash
+# Get ArgoCD URL
+kubectl get svc -n argocd argocd-server -o jsonpath='http://{.status.loadBalancer.ingress[0].ip}'
+
+# Get Homepage URL
+kubectl get svc -n homepage homepage -o jsonpath='http://{.status.loadBalancer.ingress[0].ip}'
+```
 
 ## Operations
 
@@ -96,5 +90,4 @@ just patch-bitwarden
 Quick fixes for common issues you might encounter.
 
 - Jobs disappear quickly: kube-cleanup-operator deletes after 15min
-- Vault sealed: `kubectl -n vault exec vault-0 -- vault status`
-- ESO not syncing: Check vault paths and token validity
+- ESO not syncing: Check Bitwarden credentials and secret paths in ExternalSecrets

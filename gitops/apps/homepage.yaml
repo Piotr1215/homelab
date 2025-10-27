@@ -157,13 +157,6 @@ data:
           showStats: true
           namespace: git-mirror
           podSelector: app.kubernetes.io/name=forgejo
-      - Vault:
-          description: Secrets Management
-          href: http://192.168.178.92:8200
-          icon: vault.svg
-          showStats: true
-          namespace: vault
-          podSelector: app.kubernetes.io/name=vault
       - MinIO:
           description: S3-Compatible Object Storage
           href: http://192.168.178.97:9001

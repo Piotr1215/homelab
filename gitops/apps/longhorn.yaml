@@ -79,6 +79,16 @@ spec:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
 
+  # Ignore MetalLB-managed fields to prevent OutOfSync state
+  # See: https://github.com/argoproj/argo-cd/issues/7941
+  ignoreDifferences:
+    - group: ""
+      kind: Service
+      name: longhorn-frontend
+      jsonPointers:
+        - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+        - /status/loadBalancer/ingress
+
   syncPolicy:
     automated:
       prune: true

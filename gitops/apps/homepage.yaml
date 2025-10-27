@@ -171,6 +171,13 @@ data:
           showStats: true
           namespace: minio
           podSelector: app=minio
+      - Longhorn:
+          description: Distributed Block Storage
+          href: http://192.168.178.105
+          icon: si-rancher
+          showStats: true
+          namespace: longhorn-system
+          podSelector: app=longhorn-ui
       - Hubble UI:
           description: Network Flow Visualization
           href: http://192.168.178.94

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vcluster-mcp-alert-rules
+  namespace: prometheus
+  labels:
+    prometheus: kube-prometheus-stack-prometheus
+    role: alert-rules
+data:
+  vcluster-mcp-usage.yaml: |
+    groups:
+    - name: vcluster-mcp-usage
+      interval: 30s
+      rules:
+      - alert: VClusterMCPServerUsed
+        expr: |
+          rate(container_network_receive_bytes_total{namespace="default",pod=~"vcluster-yaml-mcp.*"}[1m]) > 0
+        for: 10s
+        labels:
+          severity: info
+          component: vcluster-mcp
+        annotations:
+          summary: "vCluster YAML MCP Server is being used"
+          description: "Someone is actively using the vcluster-yaml-mcp server (network activity detected on pod {{ $labels.pod }})"

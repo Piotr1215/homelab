@@ -75,6 +75,13 @@ data:
           showStats: true
           namespace: loki
           podSelector: app.kubernetes.io/name=loki
+      - AlertManager:
+          description: Alert Routing & Notifications
+          href: http://192.168.178.91:9093
+          icon: alertmanager.svg
+          showStats: true
+          namespace: prometheus
+          podSelector: app.kubernetes.io/name=alertmanager
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg
@@ -171,6 +178,13 @@ data:
           showStats: true
           namespace: minio
           podSelector: app=minio
+      - Harbor:
+          description: Container Registry & Scanning
+          href: http://192.168.178.100
+          icon: harbor.svg
+          showStats: true
+          namespace: harbor
+          podSelector: component=core
       - Hubble UI:
           description: Network Flow Visualization
           href: http://192.168.178.94

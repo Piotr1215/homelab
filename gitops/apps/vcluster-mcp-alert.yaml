@@ -14,11 +14,11 @@ spec:
     rules:
     - alert: VClusterMCPServerUsed
       expr: |
-        rate(container_network_receive_bytes_total{namespace="default",pod=~"vcluster-yaml-mcp.*"}[1m]) > 0
+        rate(mcp_requests_total{job="vcluster-yaml-mcp"}[1m]) > 0
       for: 10s
       labels:
         severity: warning
         component: vcluster-mcp
       annotations:
         summary: "vCluster YAML MCP Server is being used"
-        description: "Someone is actively using the vcluster-yaml-mcp server (network activity detected on pod {{ $labels.pod }})"
+        description: "Someone is actively using the vcluster-yaml-mcp server ({{ $value }} requests/sec)"

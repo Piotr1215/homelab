@@ -708,7 +708,7 @@ spec:
             runAsGroup: 65532
             runAsNonRoot: true
             runAsUser: 65532
-          image: "mcr.microsoft.com/oss/cilium/hubble-relay:v1.15.0"
+          image: "mcr.microsoft.com/oss/cilium/hubble-relay:1.16.1"
           imagePullPolicy: Always
           command:
             - hubble-relay

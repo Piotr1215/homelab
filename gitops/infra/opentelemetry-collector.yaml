@@ -58,6 +58,15 @@ spec:
               limit_percentage: 80
               spike_limit_percentage: 25
 
+            # Filter processor - drop Prometheus scrape traces
+            filter:
+              error_mode: ignore
+              traces:
+                span:
+                  - 'attributes["http.user_agent"] != nil and IsMatch(attributes["http.user_agent"], "^Prometheus/.*")'
+                  - 'attributes["http.target"] == "/metrics"'
+                  - 'attributes["http.target"] == "/health"'
+
           exporters:
             # Export to Tempo
             otlp:
@@ -74,7 +83,7 @@ spec:
               # Traces pipeline
               traces:
                 receivers: [otlp, jaeger, zipkin]
-                processors: [memory_limiter, batch]
+                processors: [memory_limiter, filter, batch]
                 exporters: [otlp, debug]
 
         # Service configuration

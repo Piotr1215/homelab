@@ -1,0 +1,109 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: filebrowser
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after storage infrastructure
+spec:
+  project: default
+  source:
+    chart: filebrowser
+    repoURL: https://utkuozdemir.org/helm-charts
+    targetRevision: 1.0.0
+    helm:
+      releaseName: filebrowser
+      values: |
+        # Number of replicas (FileBrowser only supports 1)
+        replicaCount: 1
+
+        image:
+          repository: docker.io/filebrowser/filebrowser
+          pullPolicy: IfNotPresent
+          # Using chart appVersion (v2.23.0)
+
+        service:
+          type: LoadBalancer
+          port: 80
+
+        # Root directory configuration - where files are stored
+        rootDir:
+          type: pvc
+          readOnly: false
+          pvc:
+            existingClaim: ""
+            storageClassName: "longhorn"
+            accessModes:
+              - ReadWriteOnce
+            size: 100Gi
+
+        # Database configuration - stores users and settings
+        db:
+          pvc:
+            enabled: true
+            existingClaim: ""
+            storageClassName: "longhorn"
+            accessModes:
+              - ReadWriteOnce
+            size: 256Mi
+
+        # Deployment strategy
+        strategy:
+          type: Recreate
+
+        # Health probes
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+
+        # Resource limits (conservative for homelab)
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+        # FileBrowser application config
+        config:
+          port: 8080
+          baseURL: ""
+          address: ""
+          log: stdout
+          database: /db/database.db
+          root: /rootdir
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: filebrowser
+
+  # Ignore MetalLB-managed fields to prevent OutOfSync state
+  ignoreDifferences:
+    - group: ""
+      kind: Service
+      name: filebrowser
+      jsonPointers:
+        - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+        - /status/loadBalancer/ingress
+        - /spec/ports/0/nodePort
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

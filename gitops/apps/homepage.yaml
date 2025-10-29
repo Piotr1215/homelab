@@ -185,13 +185,6 @@ data:
           showStats: true
           namespace: ntopng
           podSelector: app=ntopng
-      - FileBrowser:
-          description: Web-based File Manager
-          href: http://192.168.178.92
-          icon: si-files
-          showStats: true
-          namespace: filebrowser
-          podSelector: app.kubernetes.io/name=filebrowser
       - Glances:
           description: System Monitoring
           href: http://192.168.178.75:61208

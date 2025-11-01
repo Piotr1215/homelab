@@ -56,6 +56,17 @@ spec:
               metrics_generator:
                 processors: [local-blocks]
 
+          # Search configuration - index custom span attributes
+          search:
+            enabled: true
+            # Index custom MCP span attributes for filtering
+            tag_names:
+              - mcp.method
+              - mcp.tool.name
+              - mcp.resource.uri
+              - http.client_ip
+              - mcp.id
+
         # Persistence for traces
         persistence:
           enabled: true

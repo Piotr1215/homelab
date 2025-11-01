@@ -10,7 +10,7 @@ spec:
   source:
     chart: loki
     repoURL: https://grafana.github.io/helm-charts
-    targetRevision: 6.45.1
+    targetRevision: 6.45.2
     helm:
       values: |
         # Deploy Loki in SingleBinary mode (perfect for homelab)

@@ -31,6 +31,10 @@ spec:
           # Configure storage
           storage:
             type: 'filesystem'
+            bucketNames:
+              chunks: chunks
+              ruler: ruler
+              admin: admin
             filesystem:
               chunks_directory: /var/loki/chunks
               rules_directory: /var/loki/rules

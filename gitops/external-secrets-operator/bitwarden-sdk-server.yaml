@@ -54,3 +54,22 @@ spec:
             path: key.pem
           - key: ca.crt
             path: ca.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitwarden-sdk-server
+  namespace: external-secrets
+  labels:
+    app.kubernetes.io/name: bitwarden-sdk-server
+    app.kubernetes.io/instance: external-secrets-operator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9998
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: bitwarden-sdk-server
+    app.kubernetes.io/instance: external-secrets-operator

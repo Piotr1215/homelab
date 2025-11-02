@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: bitwarden-sdk-server
-        image: ghcr.io/external-secrets/bitwarden-sdk-server:v0.2.0
+        image: ghcr.io/external-secrets/bitwarden-sdk-server:v0.5.1
         ports:
         - containerPort: 9998
           name: http

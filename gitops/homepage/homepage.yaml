@@ -68,13 +68,6 @@ data:
             url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
             username: admin
             password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
-      - Loki Logs:
-          description: Log Aggregation & Search
-          href: http://192.168.178.96/explore?left=%7B%22datasource%22:%22Loki%22%7D
-          icon: si-grafana-loki
-          showStats: true
-          namespace: loki
-          podSelector: app.kubernetes.io/name=loki
       - Uptime Kuma:
           description: Service Uptime Monitoring
           href: http://192.168.178.100
@@ -85,80 +78,6 @@ data:
             slug: homelab
             username: {{HOMEPAGE_VAR_UPTIME_KUMA_USERNAME}}
             password: {{HOMEPAGE_VAR_UPTIME_KUMA_PASSWORD}}
-      - Node Health:
-          description: Kubernetes Nodes Status
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 5000
-            metrics:
-              - label: Node Exporter Up
-                query: sum(up{job="node-exporter"})
-                format:
-                  type: number
-              - label: Disk Free
-                query: min(node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Load Average
-                query: avg(node_load1)
-                format:
-                  type: number
-                  options:
-                    maximumFractionDigits: 2
-      - Cluster Metrics:
-          description: Key Performance Indicators
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 10000
-            metrics:
-              - label: CPU Usage
-                query: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Memory Usage
-                query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Active Pods
-                query: sum(kubelet_running_pods)
-                format:
-                  type: number
-      - MetalLB Metrics:
-          description: Load Balancer Status
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 10000
-            metrics:
-              - label: Controller Up
-                query: up{namespace="metallb-system",pod=~"controller.*"}
-                format:
-                  type: number
-              - label: Speakers Up
-                query: sum(up{namespace="metallb-system",pod=~"speaker.*"})
-                format:
-                  type: number
-              - label: Speaker Memory
-                query: sum(container_memory_usage_bytes{namespace="metallb-system", pod=~"speaker.*"}) / 1024 / 1024
-                format:
-                  type: number
-                  suffix: " MB"
-                  options:
-                    maximumFractionDigits: 0
     - Security:
       - Kubescape Reports:
           description: NSA Framework Security Scans

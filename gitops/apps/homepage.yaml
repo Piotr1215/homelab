@@ -149,6 +149,21 @@ data:
                   suffix: " MB"
                   options:
                     maximumFractionDigits: 0
+    - Security:
+      - Kubescape Reports:
+          description: NSA Framework Security Scans
+          href: http://192.168.178.99/kubescape/
+          icon: si-kubernetes
+          showStats: true
+          namespace: cluster-scanning
+          podSelector: app=scan-reports-viewer
+      - Popeye Reports:
+          description: Cluster Hygiene & Best Practices
+          href: http://192.168.178.99/popeye/
+          icon: si-kubernetes
+          showStats: true
+          namespace: cluster-scanning
+          podSelector: app=scan-reports-viewer
     - Services:
       - Forgejo:
           description: Self-hosted Git Server
@@ -338,6 +353,9 @@ data:
         style: row
         columns: 3
         rows: 2
+      Security:
+        style: row
+        columns: 2
       Services:
         style: row
         columns: 4

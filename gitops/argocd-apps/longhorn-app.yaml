@@ -6,9 +6,14 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"  # Deploy after basic infra
 spec:
-  project: default
-  source:
-    chart: longhorn
+  project: infrastructure
+  sources:
+  # Source 1: Additional manifests (ServiceMonitor)
+  - repoURL: https://github.com/Piotr1215/homelab.git
+    targetRevision: HEAD
+    path: gitops/longhorn
+  # Source 2: Longhorn Helm chart
+  - chart: longhorn
     repoURL: https://charts.longhorn.io
     targetRevision: 1.10.0
     helm:

@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Piotr1215/homelab
     targetRevision: HEAD
-    path: gitops/infra
+    path: gitops/argocd-apps
   destination:
     server: https://kubernetes.default.svc
   ignoreDifferences:

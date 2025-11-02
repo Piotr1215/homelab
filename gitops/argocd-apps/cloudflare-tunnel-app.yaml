@@ -1,30 +1,26 @@
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps
+  name: cloudflare-tunnel
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: applications
+  project: infrastructure
   source:
-    repoURL: https://github.com/Piotr1215/homelab
+    repoURL: https://github.com/Piotr1215/homelab.git
     targetRevision: HEAD
-    path: gitops/argocd-apps
+    path: gitops/cloudflare-tunnel
   destination:
     server: https://kubernetes.default.svc
-  ignoreDifferences:
-  - group: velero.io
-    kind: Backup
-    name: "*"
+    namespace: default
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-      allowEmpty: false
     syncOptions:
     - CreateNamespace=true
-    - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:

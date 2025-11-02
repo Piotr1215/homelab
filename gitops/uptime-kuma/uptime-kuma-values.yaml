@@ -1,0 +1,69 @@
+# Uptime Kuma Helm Values
+# https://github.com/dirsigler/uptime-kuma-helm
+
+image:
+  repository: louislam/uptime-kuma
+  pullPolicy: IfNotPresent
+  tag: "2"
+
+# Use Deployment for easier management
+useDeploy: true
+
+service:
+  type: LoadBalancer
+  port: 3001
+  annotations: {}
+
+# Persistent storage using Longhorn (default storageClass)
+volume:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 4Gi
+  # Use default storageClass (local-path for now, can switch to longhorn later)
+  # storageClassName: longhorn
+
+# Health checks
+livenessProbe:
+  enabled: true
+  failureThreshold: 3
+  initialDelaySeconds: 180
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 2
+  exec:
+    command:
+      - "extra/healthcheck"
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+  successThreshold: 1
+  httpGet:
+    path: /
+    port: 3001
+    scheme: HTTP
+
+# Resource limits (start small, adjust if needed)
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Enable Prometheus ServiceMonitor for metrics
+serviceMonitor:
+  enabled: true
+  interval: 60s
+  scrapeTimeout: 10s
+  additionalLabels:
+    release: kube-prometheus-stack
+  namespace: prometheus
+
+# Recreate strategy for single instance
+strategy:
+  type: Recreate

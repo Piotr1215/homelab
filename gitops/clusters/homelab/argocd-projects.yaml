@@ -16,6 +16,7 @@ spec:
   - https://charts.longhorn.io
   - https://charts.bitnami.com/bitnami
   - https://charts.min.io/
+  - https://helm.irsigler.cloud
   destinations:
   - namespace: metallb-system
     server: https://kubernetes.default.svc
@@ -52,6 +53,8 @@ spec:
   - namespace: git-mirror
     server: https://kubernetes.default.svc
   - namespace: ntopng
+    server: https://kubernetes.default.svc
+  - namespace: monitoring
     server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'

@@ -444,15 +444,35 @@ spec:
         app.kubernetes.io/name: homepage
         app.kubernetes.io/instance: homepage
     spec:
-      
+
       serviceAccountName: homepage
       automountServiceAccountToken: true
       dnsPolicy: ClusterFirst
       enableServiceLinks: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:latest
-          imagePullPolicy: 
+          imagePullPolicy:
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi 
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
               valueFrom:

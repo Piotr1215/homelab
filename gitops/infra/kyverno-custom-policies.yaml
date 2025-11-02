@@ -1,0 +1,255 @@
+---
+# Custom Kyverno Policies for Homelab Security
+# These policies address the specific Kubescape findings
+
+# Policy 1: Add Default Resource Limits
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-default-resources
+  annotations:
+    policies.kyverno.io/title: Add Default Resource Limits
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Automatically adds resource requests and limits to containers
+      that don't have them. Addresses Kubescape C-0270 and C-0271.
+spec:
+  background: true
+  rules:
+  - name: add-default-requests-limits
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - (name): "*"
+            resources:
+              requests:
+                +(memory): "128Mi"
+                +(cpu): "100m"
+              limits:
+                +(memory): "512Mi"
+                +(cpu): "500m"
+---
+# Policy 2: Require Non-Root Containers
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+  annotations:
+    policies.kyverno.io/title: Require Non-Root Containers
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Containers must run as non-root user. Addresses Kubescape C-0013.
+spec:
+  validationFailureAction: Audit  # Start with audit, switch to Enforce later
+  background: true
+  rules:
+  - name: check-runAsNonRoot
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+          - longhorn-system
+    validate:
+      message: >-
+        Running as root is not allowed. Set runAsNonRoot to true in
+        securityContext.
+      pattern:
+        spec:
+          =(securityContext):
+            =(runAsNonRoot): true
+          containers:
+          - =(securityContext):
+              =(runAsNonRoot): true
+---
+# Policy 3: Disallow Privilege Escalation
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privilege-escalation
+  annotations:
+    policies.kyverno.io/title: Disallow Privilege Escalation
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Privilege escalation should be prevented. Addresses Kubescape C-0016.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+  - name: check-allowPrivilegeEscalation
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+          - longhorn-system
+    validate:
+      message: >-
+        Privilege escalation is not allowed. Set allowPrivilegeEscalation to
+        false in container securityContext.
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: false
+---
+# Policy 4: Drop All Capabilities
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: drop-all-capabilities
+  annotations:
+    policies.kyverno.io/title: Drop All Capabilities
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Containers should drop all Linux capabilities. Addresses Kubescape C-0046.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+  - name: check-drop-all
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+          - longhorn-system
+    validate:
+      message: >-
+        All capabilities should be dropped. Add 'drop: [ALL]' to
+        securityContext.capabilities.
+      pattern:
+        spec:
+          containers:
+          - =(securityContext):
+              =(capabilities):
+                drop:
+                - ALL
+---
+# Policy 5: Disable Service Account Auto-Mount
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-automount-sa-token
+  annotations:
+    policies.kyverno.io/title: Restrict Auto-Mount Service Account Tokens
+    policies.kyverno.io/category: Pod Security Standards
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Service account tokens should not be automatically mounted unless
+      explicitly needed. Addresses Kubescape C-0034.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+  - name: check-automountServiceAccountToken
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+          - argocd
+          - prometheus
+    validate:
+      message: >-
+        Service account tokens should not be automatically mounted.
+        Set automountServiceAccountToken: false unless explicitly needed.
+      anyPattern:
+      - spec:
+          automountServiceAccountToken: false
+      - spec:
+          # Allow if explicitly set to true and documented
+          automountServiceAccountToken: true
+---
+# Policy 6: Require Read-Only Root Filesystem
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-ro-rootfs
+  annotations:
+    policies.kyverno.io/title: Require Read-Only Root Filesystem
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Root filesystem should be read-only. Addresses Kubescape C-0017.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+  - name: check-readOnlyRootFilesystem
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kyverno
+          - kube-system
+          - metallb-system
+          - calico-system
+          - longhorn-system
+          - loki
+          - prometheus
+          - git-mirror
+    validate:
+      message: >-
+        Root filesystem should be read-only. Set readOnlyRootFilesystem: true
+        in container securityContext.
+      pattern:
+        spec:
+          containers:
+          - =(securityContext):
+              =(readOnlyRootFilesystem): true

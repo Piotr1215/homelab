@@ -1,0 +1,102 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyverno
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    chart: kyverno
+    repoURL: https://kyverno.github.io/kyverno/
+    targetRevision: 3.3.11  # Latest stable v1.15.2
+    helm:
+      valuesObject:
+        # High Availability Configuration for Homelab
+        admissionController:
+          replicas: 2  # Minimum 2 for HA
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 500m
+            requests:
+              memory: 128Mi
+              cpu: 100m
+
+        backgroundController:
+          replicas: 1  # Single replica sufficient for homelab
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 500m
+            requests:
+              memory: 128Mi
+              cpu: 100m
+
+        cleanupController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 200m
+            requests:
+              memory: 64Mi
+              cpu: 50m
+
+        reportsController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 500m
+            requests:
+              memory: 128Mi
+              cpu: 100m
+
+        # Global settings
+        config:
+          # Exclude kyverno namespace from policy enforcement
+          resourceFilters:
+          - '[*/*,kyverno,*]'
+          - '[*/*,kube-system,*]'
+          - '[*/*,kube-public,*]'
+          - '[*/*,kube-node-lease,*]'
+          # Exclude cert-manager and other critical infrastructure
+          - '[*/*,cert-manager,*]'
+          - '[*/*,metallb-system,*]'
+          - '[*/*,local-path-storage,*]'
+
+        # Enable policy reports for Kubescape integration
+        features:
+          policyExceptions:
+            enabled: true
+          reports:
+            enabled: true
+
+        # Grafana metrics for monitoring
+        grafana:
+          enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -75,6 +75,16 @@ data:
           showStats: true
           namespace: loki
           podSelector: app.kubernetes.io/name=loki
+      - Uptime Kuma:
+          description: Service Uptime Monitoring
+          href: http://192.168.178.100
+          icon: uptime-kuma.svg
+          widget:
+            type: uptimekuma
+            url: http://192.168.178.100
+            slug: homelab
+            username: {{HOMEPAGE_VAR_UPTIME_KUMA_USERNAME}}
+            password: {{HOMEPAGE_VAR_UPTIME_KUMA_PASSWORD}}
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg
@@ -496,6 +506,16 @@ spec:
                 secretKeyRef:
                   name: homepage-secrets
                   key: grafana-password
+            - name: HOMEPAGE_VAR_UPTIME_KUMA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: uptime-kuma-secrets
+                  key: UPTIME_KUMA_USERNAME
+            - name: HOMEPAGE_VAR_UPTIME_KUMA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: uptime-kuma-secrets
+                  key: UPTIME_KUMA_PASSWORD
             - name: HOMEPAGE_VAR_SYNOLOGY_PASSWORD
               valueFrom:
                 secretKeyRef:

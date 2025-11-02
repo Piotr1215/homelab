@@ -11,8 +11,10 @@ useDeploy: true
 
 service:
   type: LoadBalancer
-  port: 3001
+  port: 80
   annotations: {}
+  # Map external port 80 to internal port 3001
+  targetPort: 3001
 
 # Persistent storage using Longhorn (default storageClass)
 volume:

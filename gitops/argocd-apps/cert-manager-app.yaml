@@ -4,14 +4,18 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
-  project: infrastructure
+  project: platform
   source:
-    repoURL: https://github.com/Piotr1215/homelab.git
-    targetRevision: HEAD
-    path: gitops/cert-manager
+    chart: cert-manager
+    repoURL: https://charts.jetstack.io
+    targetRevision: v1.19.1
+    helm:
+      parameters:
+        - name: installCRDs
+          value: "true"
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

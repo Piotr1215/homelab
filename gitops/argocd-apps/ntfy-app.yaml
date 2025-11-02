@@ -14,7 +14,7 @@ spec:
     path: gitops/ntfy
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: ntfy
   syncPolicy:
     automated:
       prune: true

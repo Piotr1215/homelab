@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitwarden-sdk-server
+  namespace: external-secrets
+  labels:
+    app.kubernetes.io/name: bitwarden-sdk-server
+    app.kubernetes.io/instance: external-secrets-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bitwarden-sdk-server
+      app.kubernetes.io/instance: external-secrets-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bitwarden-sdk-server
+        app.kubernetes.io/instance: external-secrets-operator
+    spec:
+      containers:
+      - name: bitwarden-sdk-server
+        image: ghcr.io/external-secrets/bitwarden-sdk-server:v0.2.0
+        ports:
+        - containerPort: 9998
+          name: http
+          protocol: TCP
+        env:
+        - name: BSM_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: bitwarden-access-token
+              key: token
+        volumeMounts:
+        - name: bitwarden-sdk-server-tls
+          mountPath: /certs
+          readOnly: true
+        resources:
+          limits:
+            cpu: 100m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+      volumes:
+      - name: bitwarden-sdk-server-tls
+        secret:
+          secretName: bitwarden-sdk-server-tls
+          items:
+          - key: tls.crt
+            path: cert.pem
+          - key: tls.key
+            path: key.pem
+          - key: ca.crt
+            path: ca.pem

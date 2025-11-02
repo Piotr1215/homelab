@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cloudflare-tunnel
+  name: cloudflare
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cloudflared-vcluster-yaml
-  namespace: cloudflare-tunnel
+  namespace: cloudflare
 data:
   config.yaml: |
     tunnel: 263ab958-e3d9-47ce-a586-6735cd13287e
@@ -27,7 +27,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudflared-vcluster-yaml
-  namespace: cloudflare-tunnel
+  namespace: cloudflare
   labels:
     app: cloudflared-vcluster-yaml
 spec:
@@ -104,7 +104,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cloudflared-vcluster-yaml-metrics
-  namespace: cloudflare-tunnel
+  namespace: cloudflare
   labels:
     app: cloudflared-vcluster-yaml
 spec:
@@ -121,7 +121,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: cloudflared-vcluster-yaml
-  namespace: cloudflare-tunnel
+  namespace: cloudflare
   labels:
     app: cloudflared-vcluster-yaml
     release: kube-prometheus-stack

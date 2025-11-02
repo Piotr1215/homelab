@@ -13,6 +13,10 @@ spec:
   - https://grafana.github.io/helm-charts
   - https://metallb.github.io/metallb
   - https://kubernetes-sigs.github.io/metrics-server/
+  - https://kyverno.github.io/kyverno/
+  - https://charts.longhorn.io
+  - https://charts.bitnami.com/bitnami
+  - https://charts.min.io/
   destinations:
   - namespace: metallb-system
     server: https://kubernetes.default.svc
@@ -23,6 +27,34 @@ spec:
   - namespace: cluster-scanning
     server: https://kubernetes.default.svc
   - namespace: kube-system
+    server: https://kubernetes.default.svc
+  - namespace: cert-manager
+    server: https://kubernetes.default.svc
+  - namespace: external-secrets
+    server: https://kubernetes.default.svc
+  - namespace: argocd
+    server: https://kubernetes.default.svc
+  - namespace: kyverno
+    server: https://kubernetes.default.svc
+  - namespace: local-path-storage
+    server: https://kubernetes.default.svc
+  - namespace: longhorn-system
+    server: https://kubernetes.default.svc
+  - namespace: minio
+    server: https://kubernetes.default.svc
+  - namespace: cloudflare
+    server: https://kubernetes.default.svc
+  - namespace: ntfy
+    server: https://kubernetes.default.svc
+  - namespace: renovate
+    server: https://kubernetes.default.svc
+  - namespace: default
+    server: https://kubernetes.default.svc
+  - namespace: homepage
+    server: https://kubernetes.default.svc
+  - namespace: git-mirror
+    server: https://kubernetes.default.svc
+  - namespace: ntopng
     server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'
@@ -63,6 +95,8 @@ spec:
     server: https://kubernetes.default.svc
   - namespace: argocd
     server: https://kubernetes.default.svc
+  - namespace: kube-system
+    server: https://kubernetes.default.svc
   clusterResourceWhitelist:
   - group: '*'
     kind: '*'
@@ -98,6 +132,10 @@ spec:
   clusterResourceWhitelist:
   - group: ''
     kind: Namespace
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRole
+  - group: 'rbac.authorization.k8s.io'
+    kind: ClusterRoleBinding
   namespaceResourceWhitelist:
   - group: '*'
     kind: '*'

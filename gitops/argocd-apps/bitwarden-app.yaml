@@ -14,7 +14,7 @@ spec:
     path: gitops/bitwarden
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: external-secrets
   syncPolicy:
     automated:
       prune: true

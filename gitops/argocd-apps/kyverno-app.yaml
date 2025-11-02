@@ -18,14 +18,14 @@ spec:
   # Source 2: Kyverno engine Helm chart
   - repoURL: https://kyverno.github.io/kyverno/
     chart: kyverno
-    targetRevision: 3.3.11
+    targetRevision: 3.4.4
     helm:
       valueFiles:
       - $values/gitops/kyverno/kyverno-values.yaml
   # Source 3: Kyverno policies Helm chart
   - repoURL: https://kyverno.github.io/kyverno/
     chart: kyverno-policies
-    targetRevision: 3.3.11
+    targetRevision: 3.4.4
     helm:
       valueFiles:
       - $values/gitops/kyverno/policies-values.yaml

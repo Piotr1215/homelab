@@ -14,7 +14,7 @@ spec:
     path: gitops/cloudflare-tunnel
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: cloudflare
   syncPolicy:
     automated:
       prune: true

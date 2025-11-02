@@ -54,7 +54,7 @@ data:
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://192.168.178.90:9090
+          href: http://192.168.178.92:9090
           icon: prometheus.svg
           widget:
             type: prometheus
@@ -149,25 +149,10 @@ data:
                   suffix: " MB"
                   options:
                     maximumFractionDigits: 0
-    - Security:
-      - Kubescape Reports:
-          description: NSA Framework Security Scans
-          href: http://192.168.178.99/kubescape/
-          icon: si-kubernetes
-          showStats: true
-          namespace: cluster-scanning
-          podSelector: app=scan-reports-viewer
-      - Popeye Reports:
-          description: Cluster Hygiene & Best Practices
-          href: http://192.168.178.99/popeye/
-          icon: si-kubernetes
-          showStats: true
-          namespace: cluster-scanning
-          podSelector: app=scan-reports-viewer
     - Services:
       - Forgejo:
           description: Self-hosted Git Server
-          href: http://192.168.178.101:3000
+          href: http://192.168.178.99:3000
           icon: gitea.svg
           showStats: true
           namespace: git-mirror

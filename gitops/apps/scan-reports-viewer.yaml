@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scan-reports
+  namespace: cluster-scanning
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http
+  selector:
+    app: scan-reports-viewer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scan-reports-viewer
+  namespace: cluster-scanning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scan-reports-viewer
+  template:
+    metadata:
+      labels:
+        app: scan-reports-viewer
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: kubescape-reports
+          mountPath: /usr/share/nginx/html/kubescape
+          readOnly: true
+        - name: popeye-reports
+          mountPath: /usr/share/nginx/html/popeye
+          readOnly: true
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+      volumes:
+      - name: kubescape-reports
+        persistentVolumeClaim:
+          claimName: kubescape-reports
+      - name: popeye-reports
+        persistentVolumeClaim:
+          claimName: popeye-reports
+      - name: nginx-config
+        configMap:
+          name: scan-reports-nginx-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scan-reports-nginx-config
+  namespace: cluster-scanning
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        server_name _;
+
+        location / {
+            root /usr/share/nginx/html;
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_localtime on;
+        }
+
+        location /kubescape {
+            alias /usr/share/nginx/html/kubescape;
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_localtime on;
+        }
+
+        location /popeye {
+            alias /usr/share/nginx/html/popeye;
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_localtime on;
+        }
+    }

@@ -13,7 +13,6 @@ spec:
   - https://grafana.github.io/helm-charts
   - https://metallb.github.io/metallb
   - https://kubernetes-sigs.github.io/metrics-server/
-  - https://kyverno.github.io/kyverno/
   - https://charts.longhorn.io
   - https://charts.bitnami.com/bitnami
   - https://charts.min.io/
@@ -33,8 +32,6 @@ spec:
   - namespace: external-secrets
     server: https://kubernetes.default.svc
   - namespace: argocd
-    server: https://kubernetes.default.svc
-  - namespace: kyverno
     server: https://kubernetes.default.svc
   - namespace: local-path-storage
     server: https://kubernetes.default.svc

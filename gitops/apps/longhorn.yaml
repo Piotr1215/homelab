@@ -20,8 +20,8 @@ spec:
           defaultReplicaCount: "2"
           # Create default StorageClass but don't make it default yet
           createDefaultDiskLabeledNodes: true
-          # Backup target (optional - can configure later via UI)
-          backupTarget: ""
+          # Backup target - NFS on Synology NAS
+          backupTarget: "nfs://192.168.178.60:/volume1/Kubernetes/longhorn-backups"
           # Auto salvage (recover data automatically)
           autoSalvage: true
           # Node selector (empty = all nodes)

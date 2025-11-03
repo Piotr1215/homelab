@@ -11,6 +11,8 @@ spec:
     repoURL: https://github.com/Piotr1215/homelab
     targetRevision: HEAD
     path: gitops/infra
+    directory:
+      recurse: true  # Enable recursive directory scanning for subdirectories
   destination:
     server: https://kubernetes.default.svc
   ignoreDifferences:

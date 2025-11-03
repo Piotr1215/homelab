@@ -54,7 +54,7 @@ data:
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://192.168.178.92:9090
+          href: http://192.168.178.90:9090
           icon: prometheus.svg
           widget:
             type: prometheus

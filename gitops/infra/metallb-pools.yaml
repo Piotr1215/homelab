@@ -1,0 +1,43 @@
+---
+# Static IP Pool - For Homepage services and critical infrastructure
+# autoAssign: false = IPs only assigned when explicitly requested
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: static-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.178.90-192.168.178.105  # 16 IPs for stable services
+  autoAssign: false  # Prevent automatic allocation
+  avoidBuggyIPs: true  # Skip .0, .255, etc.
+---
+# Dynamic IP Pool - For dev/test/non-critical services
+# autoAssign: true = IPs assigned automatically
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: dynamic-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.178.106-192.168.178.110  # 5 IPs for ephemeral services
+  autoAssign: true  # Automatic allocation
+  avoidBuggyIPs: true
+---
+# L2 Advertisement - Announce IPs on Layer 2 network
+# Pinned to kube-worker2 to prevent ARP flapping
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2-advert
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - static-pool
+  - dynamic-pool
+  interfaces:
+  - ens18  # Network interface on nodes
+  nodeSelectors:
+  - matchLabels:
+      kubernetes.io/hostname: kube-worker2  # Pin to single node for stability

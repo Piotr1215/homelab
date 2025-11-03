@@ -68,6 +68,8 @@ kind: Service
 metadata:
   name: minio
   namespace: minio
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.97"
 spec:
   selector:
     app: minio

@@ -195,6 +195,8 @@ metadata:
   namespace: ntopng
   labels:
     app: ntopng
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.104"
 spec:
   selector:
     app: ntopng

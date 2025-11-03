@@ -26,6 +26,8 @@ spec:
           autoSalvage: true
           # Node selector (empty = all nodes)
           systemManagedComponentsNodeSelector: ""
+          # Automatic recurring backup jobs for all volumes
+          recurringJobSelector: '[{"name":"backup-daily", "isGroup":false}]'
 
         # Persistence
         persistence:

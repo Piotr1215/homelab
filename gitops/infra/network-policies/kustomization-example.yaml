@@ -1,0 +1,26 @@
+# Kustomize approach: Define base policy once, generate variants for each namespace
+#
+# Usage: kubectl apply -k gitops/infra/network-policies/
+#
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default  # Base namespace
+
+resources:
+- prometheus-scraping-base.yaml
+
+# Generate the same NetworkPolicy for multiple namespaces
+replicas:
+- name: allow-prometheus-scraping
+  count: 5  # Number of namespaces
+
+# Transform for each namespace
+transformers:
+- |-
+  apiVersion: builtin
+  kind: PrefixSuffixTransformer
+  metadata:
+    name: namespace-transformer
+  prefix: ""
+  suffix: ""

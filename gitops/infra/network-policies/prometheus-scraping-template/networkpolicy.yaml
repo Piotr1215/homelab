@@ -1,0 +1,20 @@
+---
+# Templated NetworkPolicy for Prometheus scraping
+# Deployed by ArgoCD ApplicationSet to multiple namespaces
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: {{ .Values.namespace }}
+  labels:
+    managed-by: argocd-applicationset
+spec:
+  podSelector: {}  # Apply to all pods in this namespace
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: prometheus
+    # Allow Prometheus to scrape all ports

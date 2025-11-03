@@ -15,32 +15,11 @@ spec:
       labels:
         app: nginx
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101  # nginx user
-        fsGroup: 101
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - name: nginx
-        image: nginx:1.27-alpine
+        image: nginx:latest
         ports:
         - containerPort: 80
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false  # nginx needs to write to /var/cache/nginx
-          capabilities:
-            drop:
-            - ALL
-            add:
-            - NET_BIND_SERVICE  # Allow binding to port 80
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
 ---
 apiVersion: v1
 kind: Service

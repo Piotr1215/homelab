@@ -3,10 +3,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: cluster-scanning
-  labels:
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/audit: baseline
-    pod-security.kubernetes.io/warn: baseline
 ---
 # PVC for Popeye scan reports
 apiVersion: v1

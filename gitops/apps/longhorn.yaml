@@ -31,8 +31,8 @@ spec:
 
         # Persistence
         persistence:
-          # Don't make Longhorn the default StorageClass yet
-          defaultClass: false
+          # Make Longhorn the default StorageClass
+          defaultClass: true
           defaultClassReplicaCount: "2"
 
         # Service Configuration

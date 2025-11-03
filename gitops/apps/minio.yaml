@@ -3,6 +3,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: minio
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -19,9 +23,15 @@ spec:
       labels:
         app: minio
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: minio
-        image: minio/minio:latest
+        image: minio/minio:RELEASE.2024-10-13T13-34-11Z
         args:
         - server
         - /data
@@ -43,6 +53,19 @@ spec:
           name: api
         - containerPort: 9001
           name: console
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # MinIO needs to write to /data
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
         volumeMounts:
         - name: storage
           mountPath: /data

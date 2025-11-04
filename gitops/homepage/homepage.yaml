@@ -116,13 +116,6 @@ data:
           showStats: true
           namespace: cluster-scanning
           podSelector: app=scan-reports-viewer
-      - Retina:
-          description: eBPF Network Observability
-          href: http://192.168.178.102:10093
-          icon: https://raw.githubusercontent.com/microsoft/retina/main/docs/images/retina-icon.png
-          showStats: true
-          namespace: kube-system
-          podSelector: k8s-app=retina
       - MCP Framework:
           description: Agentic MCP Framework
           href: http://192.168.178.95:3113
@@ -279,8 +272,7 @@ data:
         columns: 2
       Services:
         style: row
-        columns: 3
-        rows: 3
+        columns: 4
       Infrastructure:
         style: row
         columns: 2

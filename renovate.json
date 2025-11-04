@@ -1,16 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":ignoreUnstable"
   ],
   "dependencyDashboard": true,
   "description": "Renovate configuration for homelab GitOps repository",
   "timezone": "Europe/Berlin",
-  "schedule": [
-    "after 10pm every weekday",
-    "before 5am every weekday",
-    "every weekend"
-  ],
   "labels": [
     "dependencies",
     "renovate"
@@ -34,9 +30,6 @@
         "helm"
       ],
       "groupName": "ArgoCD Helm Charts - {{packageName}}",
-      "schedule": [
-        "every weekend"
-      ],
       "semanticCommitType": "infra",
       "commitMessageTopic": "ArgoCD {{packageName}}"
     },
@@ -50,9 +43,6 @@
         "grafana"
       ],
       "groupName": "Observability Stack",
-      "schedule": [
-        "on the first day of the month"
-      ],
       "semanticCommitType": "infra",
       "commitMessageTopic": "observability stack"
     },
@@ -64,9 +54,6 @@
         "ingress-nginx"
       ],
       "groupName": "Security & Platform",
-      "schedule": [
-        "on the first day of the month"
-      ],
       "semanticCommitType": "infra",
       "commitMessageTopic": "security and platform components"
     },
@@ -79,9 +66,6 @@
         "docker"
       ],
       "groupName": "Docker Images - {{packageName}}",
-      "schedule": [
-        "every weekend"
-      ],
       "semanticCommitType": "build",
       "commitMessageTopic": "Docker image {{packageName}}"
     },
@@ -94,9 +78,6 @@
         "terraform-provider"
       ],
       "groupName": "Terraform Providers",
-      "schedule": [
-        "on the 15th day of the month"
-      ],
       "semanticCommitType": "infra",
       "commitMessageTopic": "Terraform providers"
     },
@@ -111,18 +92,15 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Auto-merge patch updates for stable infrastructure",
+      "description": "Auto-merge ALL minor and patch updates",
       "matchUpdateTypes": [
+        "minor",
         "patch"
       ],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash",
-      "matchPackageNames": [
-        "/prometheus/",
-        "/grafana/",
-        "/loki/"
-      ]
+      "ignoreTests": true
     },
     {
       "description": "Hold back major updates for manual review",

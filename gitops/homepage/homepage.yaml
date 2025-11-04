@@ -41,7 +41,7 @@ data:
   kubernetes.yaml: |
     mode: cluster
   services.yaml: |
-    - Management:
+    - GitOps:
       - ArgoCD:
           description: GitOps Continuous Delivery
           href: http://192.168.178.98
@@ -56,106 +56,16 @@ data:
           description: Metrics & Monitoring
           href: http://192.168.178.90:9090
           icon: prometheus.svg
-          widget:
-            type: prometheus
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+          showStats: true
+          namespace: prometheus
+          podSelector: app.kubernetes.io/name=prometheus
       - Grafana:
           description: Visualization & Dashboards
           href: http://192.168.178.96
           icon: grafana.svg
-          widget:
-            type: grafana
-            url: http://kube-prometheus-stack-grafana.prometheus.svc.cluster.local
-            username: admin
-            password: {{HOMEPAGE_VAR_GRAFANA_PASSWORD}}
-      - Loki Logs:
-          description: Log Aggregation & Search
-          href: http://192.168.178.96/explore?left=%7B%22datasource%22:%22Loki%22%7D
-          icon: si-grafana-loki
           showStats: true
-          namespace: loki
-          podSelector: app.kubernetes.io/name=loki
-      - Falco Security:
-          description: Runtime Security Events
-          href: http://192.168.178.106:2802
-          icon: si-falco
-          showStats: true
-          namespace: falco
-          podSelector: app.kubernetes.io/name=falcosidekick-ui
-      - Node Health:
-          description: Kubernetes Nodes Status
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 5000
-            metrics:
-              - label: Node Exporter Up
-                query: sum(up{job="node-exporter"})
-                format:
-                  type: number
-              - label: Disk Free
-                query: min(node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Load Average
-                query: avg(node_load1)
-                format:
-                  type: number
-                  options:
-                    maximumFractionDigits: 2
-      - Cluster Metrics:
-          description: Key Performance Indicators
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 10000
-            metrics:
-              - label: CPU Usage
-                query: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Memory Usage
-                query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
-                format:
-                  type: number
-                  suffix: "%"
-                  options:
-                    maximumFractionDigits: 1
-              - label: Active Pods
-                query: sum(kubelet_running_pods)
-                format:
-                  type: number
-      - MetalLB Metrics:
-          description: Load Balancer Status
-          icon: kubernetes.svg
-          widget:
-            type: prometheusmetric
-            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
-            refreshInterval: 10000
-            metrics:
-              - label: Controller Up
-                query: up{namespace="metallb-system",pod=~"controller.*"}
-                format:
-                  type: number
-              - label: Speakers Up
-                query: sum(up{namespace="metallb-system",pod=~"speaker.*"})
-                format:
-                  type: number
-              - label: Speaker Memory
-                query: sum(container_memory_usage_bytes{namespace="metallb-system", pod=~"speaker.*"}) / 1024 / 1024
-                format:
-                  type: number
-                  suffix: " MB"
-                  options:
-                    maximumFractionDigits: 0
+          namespace: prometheus
+          podSelector: app.kubernetes.io/name=grafana
     - Services:
       - Forgejo:
           description: Self-hosted Git Server
@@ -192,11 +102,34 @@ data:
           showStats: true
           namespace: ntopng
           podSelector: app=ntopng
-      - Glances:
-          description: System Monitoring
-          href: http://192.168.178.75:61208
-          icon: glances.svg
-          showStats: false
+      - Falco Security:
+          description: Runtime Security Events
+          href: http://192.168.178.106:2802
+          icon: si-falco
+          showStats: true
+          namespace: falco
+          podSelector: app.kubernetes.io/name=falcosidekick-ui
+      - Scan Reports:
+          description: Cluster Security Scanning
+          href: http://192.168.178.100
+          icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/trivy/icon/color/trivy-icon-color.svg
+          showStats: true
+          namespace: cluster-scanning
+          podSelector: app=scan-reports-viewer
+      - Retina:
+          description: eBPF Network Observability
+          href: http://192.168.178.102:10093
+          icon: https://raw.githubusercontent.com/microsoft/retina/main/docs/images/retina-icon.png
+          showStats: true
+          namespace: kube-system
+          podSelector: k8s-app=retina
+      - MCP Framework:
+          description: Agentic MCP Framework
+          href: http://192.168.178.95:3113
+          icon: mdi-robot
+          showStats: true
+          namespace: default
+          podSelector: app.kubernetes.io/name=mcp-agentic-framework
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management  
@@ -338,28 +271,25 @@ data:
     title: Homelab Dashboard
     headerStyle: boxed
     layout:
-      Management:
+      GitOps:
         style: row
-        columns: 2
+        columns: 1
       Observability:
-        style: row
-        columns: 4
-        rows: 2
-      Security:
         style: row
         columns: 2
       Services:
         style: row
-        columns: 4
+        columns: 3
+        rows: 3
       Infrastructure:
-        style: row
-        columns: 2
-      Proxmox Monitoring:
         style: row
         columns: 2
       Virtual Machines:
         style: row
         columns: 3
+      Proxmox Monitoring:
+        style: row
+        columns: 4
     
   widgets.yaml: |
     - kubernetes:

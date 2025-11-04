@@ -72,11 +72,8 @@ spec:
           # Priority levels to log
           priority: debug
 
-          # Rules configuration
-          rules_file:
-            - /etc/falco/falco_rules.yaml
-            - /etc/falco/falco_rules.local.yaml
-            - /etc/falco/rules.d
+          # Disable config file watching to avoid inotify issues
+          watch_config_files: false
 
         # Enable falcoctl for automatic rules updates
         falcoctl:

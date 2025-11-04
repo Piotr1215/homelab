@@ -7,7 +7,7 @@
     "ollama@0.12.3",
     "vault@1.20.4",
     "cilium-cli@0.18.7",
-    "hubble@1.17.2",
+    "hubble@1.18.3",
     "velero@1.17.0",
     "argocd@3.1.8",
     "sshpass@latest",

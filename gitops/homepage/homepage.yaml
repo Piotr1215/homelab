@@ -75,6 +75,13 @@ data:
           showStats: true
           namespace: loki
           podSelector: app.kubernetes.io/name=loki
+      - Falco Security:
+          description: Runtime Security Events
+          href: http://192.168.178.106:2802
+          icon: si-falco
+          showStats: true
+          namespace: falco
+          podSelector: app.kubernetes.io/name=falcosidekick-ui
       - Node Health:
           description: Kubernetes Nodes Status
           icon: kubernetes.svg
@@ -336,7 +343,7 @@ data:
         columns: 2
       Observability:
         style: row
-        columns: 3
+        columns: 4
         rows: 2
       Security:
         style: row

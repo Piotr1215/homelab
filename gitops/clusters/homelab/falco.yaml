@@ -72,22 +72,16 @@ spec:
           # Priority levels to log
           priority: debug
 
-          # Rules configuration
-          rules_file:
-            - /etc/falco/falco_rules.yaml
-            - /etc/falco/falco_rules.local.yaml
-            - /etc/falco/rules.d
+          # Disable config file watching to avoid inotify issues
+          watch_config_files: false
 
-        # Enable falcoctl for automatic rules updates
+        # Disable falcoctl automatic rules updates (use bundled rules)
         falcoctl:
           artifact:
             install:
-              enabled: true
+              enabled: false
             follow:
-              enabled: true
-          indexes:
-            - name: falcosecurity
-              url: https://falcosecurity.github.io/falcoctl/index.yaml
+              enabled: false
 
         # Falcosidekick for event routing and Web UI
         falcosidekick:

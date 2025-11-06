@@ -1,0 +1,2 @@
+scripts/__forgejo_bulk_mirror.sh filter=git-crypt diff=git-crypt
+backups/vault/**/*.json filter=git-crypt diff=git-crypt

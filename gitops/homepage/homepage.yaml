@@ -125,13 +125,13 @@ data:
           podSelector: app.kubernetes.io/name=mcp-agentic-framework
     - Infrastructure:
       - Proxmox:
-          description: Hypervisor Management  
-          href: https://192.168.178.75:8006
+          description: Hypervisor Management
+          href: https://192.168.178.113:8006
           icon: proxmox.svg
           showStats: true
           widget:
             type: proxmox
-            url: https://192.168.178.75:8006
+            url: https://192.168.178.113:8006
             username: homepage@pve!default
             password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
             node: pve

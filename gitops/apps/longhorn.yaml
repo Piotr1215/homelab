@@ -13,78 +13,38 @@ spec:
     targetRevision: 1.10.0
     helm:
       releaseName: longhorn
-      values: |
-        # Default Settings
+      valuesObject:
         defaultSettings:
-          # Replica count: 2 for 3-node cluster (good balance)
-          defaultReplicaCount: "2"
-          # Create default StorageClass but don't make it default yet
-          createDefaultDiskLabeledNodes: true
-          # Backup target - NFS on Synology NAS
+          defaultReplicaCount: "2"  # 2 replicas for 2 healthy nodes
+          replicaSoftAntiAffinity: "true"
           backupTarget: "nfs://192.168.178.60:/volume1/Kubernetes/longhorn-backups"
-          # Auto salvage (recover data automatically)
-          autoSalvage: true
-          # Node selector (empty = all nodes)
-          systemManagedComponentsNodeSelector: ""
-          # Automatic recurring backup jobs for all volumes
-          recurringJobSelector: '[{"name":"backup-daily", "isGroup":false}]'
-
-        # Persistence
+          autoDeletePodWhenVolumeDetachedUnexpectedly: "true"
+          createDefaultDiskLabeledNodes: "true"
+          autoSalvage: "true"
+          guaranteedEngineManagerCPU: "12"
+          guaranteedReplicaManagerCPU: "12"
         persistence:
-          # Make Longhorn the default StorageClass
           defaultClass: true
           defaultClassReplicaCount: "2"
-
-        # Service Configuration
         service:
           ui:
             type: LoadBalancer
             loadBalancerIP: "192.168.178.105"
             annotations:
               metallb.universe.tf/loadBalancerIPs: "192.168.178.105"
-          manager:
-            type: ClusterIP
-
-        # Ingress (disabled - using LoadBalancer)
-        ingress:
-          enabled: false
-
-        # CSI Driver
         csi:
           attacherReplicaCount: "2"
           provisionerReplicaCount: "2"
           resizerReplicaCount: "2"
           snapshotterReplicaCount: "2"
-
-        # Longhorn Manager
         longhornManager:
           priorityClass: system-cluster-critical
-
-        # Longhorn Driver
         longhornDriver:
           priorityClass: system-cluster-critical
-
-        # Resource Limits (conservative for homelab)
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 256Mi
-
-        # Default StorageClass Settings
-        defaultSettings:
-          defaultReplicaCount: "2"
-          guaranteedEngineManagerCPU: "12"  # Percentage
-          guaranteedReplicaManagerCPU: "12"
-
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
 
-  # Ignore MetalLB-managed fields to prevent OutOfSync state
-  # See: https://github.com/argoproj/argo-cd/issues/7941
   ignoreDifferences:
     - group: ""
       kind: Service
@@ -100,11 +60,10 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
-      - SkipHooks=true
+      - SkipDryRunOnMissingResource=true
     retry:
-      limit: 3
+      limit: 5
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 5m

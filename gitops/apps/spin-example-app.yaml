@@ -1,0 +1,101 @@
+---
+# Example SpinApp using the SpinApp CRD
+# This deploys a simple HTTP service written in Rust/WASM
+apiVersion: core.spinkube.dev/v1alpha1
+kind: SpinApp
+metadata:
+  name: hello-spin
+  namespace: default
+  labels:
+    app: hello-spin
+    runtime: spin
+spec:
+  # Pre-built example Spin app (simple HTTP hello world)
+  # You can replace this with your own Spin app image
+  image: ghcr.io/spinkube/containerd-shim-spin/examples/spin-rust-hello:v0.18.0
+
+  # Number of replicas
+  replicas: 2
+
+  # Executor type - use containerd-shim-spin
+  executor: containerd-shim-spin
+
+  # RuntimeClass that specifies the Spin runtime
+  runtimeClassName: wasmtime-spin-v2
+
+  # Environment variables
+  variables:
+    - name: GREETING
+      value: "Hello from Spin on Kubernetes!"
+    - name: ENVIRONMENT
+      value: "homelab"
+
+  # Resource limits (WASM is very efficient)
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "16Mi"
+    limits:
+      cpu: "100m"
+      memory: "64Mi"
+
+  # Enable autoscaling (optional)
+  enableAutoscaling: false
+---
+# Service to expose the SpinApp
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-spin
+  namespace: default
+  labels:
+    app: hello-spin
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-spin
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+---
+# Optional: Expose via LoadBalancer (using MetalLB)
+# Uncomment if you want external access
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: hello-spin-lb
+#   namespace: default
+#   labels:
+#     app: hello-spin
+# spec:
+#   type: LoadBalancer
+#   loadBalancerIP: 192.168.178.115  # Choose an available IP from dynamic-pool
+#   selector:
+#     app: hello-spin
+#   ports:
+#     - port: 80
+#       targetPort: 80
+#       protocol: TCP
+#       name: http
+---
+# Example: More complex Spin app with key-value store
+# Uncomment this section to deploy a Spin app with state
+# apiVersion: core.spinkube.dev/v1alpha1
+# kind: SpinApp
+# metadata:
+#   name: spin-counter
+#   namespace: default
+# spec:
+#   image: ghcr.io/spinkube/containerd-shim-spin/examples/spin-keyvalue:v0.18.0
+#   replicas: 1
+#   executor: containerd-shim-spin
+#   runtimeClassName: wasmtime-spin-v2
+#   resources:
+#     requests:
+#       cpu: "10m"
+#       memory: "32Mi"
+#     limits:
+#       cpu: "200m"
+#       memory: "128Mi"

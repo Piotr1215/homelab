@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spin-operator
+  labels:
+    name: spin-operator
+    app.kubernetes.io/name: spin-operator
+    app.kubernetes.io/component: wasm-runtime

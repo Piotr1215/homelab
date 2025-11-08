@@ -1,0 +1,143 @@
+---
+# DaemonSet to install and configure containerd-shim-spin on nodes
+# This runs on nodes labeled with spin=true
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: spin-node-installer
+  namespace: spin-operator
+  labels:
+    app: spin-node-installer
+spec:
+  selector:
+    matchLabels:
+      app: spin-node-installer
+  template:
+    metadata:
+      labels:
+        app: spin-node-installer
+    spec:
+      hostPID: true
+      hostNetwork: true
+      nodeSelector:
+        spin: "true"
+      tolerations:
+        - key: spin
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      initContainers:
+        # Install containerd-shim-spin
+        - name: install-shim
+          image: alpine:3.19
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "===== Installing containerd-shim-spin ====="
+
+              # Install dependencies
+              apk add --no-cache curl tar
+
+              # Create installation directory
+              mkdir -p /host/usr/local/bin
+
+              # Download and install containerd-shim-spin
+              SHIM_VERSION="v0.22.0"
+              echo "Downloading containerd-shim-spin ${SHIM_VERSION}..."
+              curl -fsSL "https://github.com/spinkube/containerd-shim-spin/releases/download/${SHIM_VERSION}/containerd-shim-spin-v2-linux-x86_64.tar.gz" -o /tmp/shim.tar.gz
+
+              tar -xzf /tmp/shim.tar.gz -C /host/usr/local/bin/
+              chmod +x /host/usr/local/bin/containerd-shim-spin-v2
+
+              echo "✓ containerd-shim-spin installed at /usr/local/bin/containerd-shim-spin-v2"
+
+              # Verify installation
+              if [ -f /host/usr/local/bin/containerd-shim-spin-v2 ]; then
+                echo "✓ Installation verified"
+              else
+                echo "✗ Installation failed"
+                exit 1
+              fi
+
+              # Create marker file
+              touch /host/var/lib/spin-node-ready
+
+              echo "===== Installation Complete ====="
+          volumeMounts:
+            - name: host
+              mountPath: /host
+          securityContext:
+            privileged: true
+      containers:
+        # Keep the pod running to maintain the installation
+        - name: keepalive
+          image: alpine:3.19
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Spin node installer running. Keeping installation active..."
+              while true; do
+                if [ ! -f /host/var/lib/spin-node-ready ]; then
+                  echo "Warning: Installation marker missing!"
+                fi
+                sleep 300
+              done
+          volumeMounts:
+            - name: host
+              mountPath: /host
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+      volumes:
+        - name: host
+          hostPath:
+            path: /
+            type: Directory
+---
+# ConfigMap with containerd configuration snippet
+# This needs to be manually added to /etc/containerd/config.toml on nodes
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: containerd-spin-config
+  namespace: spin-operator
+data:
+  spin-config.toml: |
+    # Add this to /etc/containerd/config.toml under [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.spin]
+      runtime_type = "io.containerd.spin.v2"
+
+  setup-instructions.txt: |
+    Manual Containerd Configuration Steps
+    =====================================
+
+    After the DaemonSet installs containerd-shim-spin, you need to configure containerd:
+
+    1. SSH to the node:
+       ssh decoder@<node-name>
+
+    2. Edit containerd config:
+       sudo nano /etc/containerd/config.toml
+
+    3. Add the runtime under [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]:
+
+       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.spin]
+         runtime_type = "io.containerd.spin.v2"
+
+    4. Restart containerd:
+       sudo systemctl restart containerd
+
+    5. Verify:
+       sudo systemctl status containerd
+       ls -l /usr/local/bin/containerd-shim-spin-v2
+
+    Alternative: Use the automated setup script in scripts/configure-containerd-spin.sh

@@ -1,0 +1,42 @@
+# Example configuration for ArgoCD Application (Helm Chart Source)
+# This creates an ArgoCD Application that deploys a Helm chart
+
+# Required fields
+app_name: prometheus
+chart_name: kube-prometheus-stack
+chart_repo_url: https://prometheus-community.github.io/helm-charts
+chart_version: 79.4.1
+namespace: monitoring
+
+# Optional fields
+project: infrastructure
+auto_prune: true
+auto_self_heal: true
+retry_limit: 5
+retry_duration: 5s
+retry_factor: 2
+retry_max_duration: 5m
+
+# Optional: Set sync wave for ordering
+# sync_wave: "0"
+
+# Optional: Helm release name (defaults to app_name)
+# release_name: prometheus-stack
+
+# Optional: Helm values (YAML block with proper indentation)
+helm_values: |
+  grafana:
+    enabled: true
+    service:
+      type: LoadBalancer
+  prometheus:
+    prometheusSpec:
+      retention: 30d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 50Gi

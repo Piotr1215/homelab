@@ -1,0 +1,39 @@
+---
+# ArgoCD Application Template - Multi-Source (Helm + Values)
+# This template creates an ArgoCD Application with multiple sources (typically Helm chart + values from Git)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{APP_NAME}}
+  namespace: argocd
+spec:
+  project: {{PROJECT|default:default}}
+  sources:
+  # Manifests from Git repository (excluding Helm values)
+  - repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+    targetRevision: {{TARGET_REVISION|default:HEAD}}
+    path: {{SOURCE_PATH}}
+    {{#EXCLUDE_FILES}}
+    directory:
+      exclude: '{{EXCLUDE_FILES}}'
+    {{/EXCLUDE_FILES}}
+  # Helm chart from registry
+  - repoURL: {{CHART_REPO_URL}}
+    chart: {{CHART_NAME}}
+    targetRevision: "{{CHART_VERSION}}"
+    helm:
+      valueFiles:
+      - $values/{{VALUES_FILE_PATH}}
+  # Reference to values repository
+  - repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+    targetRevision: {{TARGET_REVISION|default:HEAD}}
+    ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{NAMESPACE}}
+  syncPolicy:
+    automated:
+      prune: {{AUTO_PRUNE|default:true}}
+      selfHeal: {{AUTO_SELF_HEAL|default:true}}
+    syncOptions:
+    - CreateNamespace=true

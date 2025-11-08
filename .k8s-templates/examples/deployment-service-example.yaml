@@ -1,0 +1,73 @@
+# Example configuration for Deployment + Service
+# This creates a Kubernetes Deployment and Service
+
+# Required fields
+app_name: my-web-app
+image: nginx:latest
+container_port: 80
+
+# Optional: Namespace (default: default)
+namespace: default
+
+# Optional: Replicas (default: 1)
+replicas: 2
+
+# Optional: Container name (defaults to app_name)
+# container_name: web-server
+
+# Optional: Image pull policy
+# image_pull_policy: Always
+
+# Optional: Service configuration
+service_name: my-web-app
+service_type: LoadBalancer
+service_port: 80
+target_port: 80
+# load_balancer_ip: 192.168.178.100
+
+# Optional: Resource limits/requests (default: 100m CPU, 128Mi memory)
+cpu_request: 200m
+memory_request: 256Mi
+cpu_limit: 500m
+memory_limit: 512Mi
+
+# Alternative: Custom resources block (YAML)
+# resources: |
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+# Optional: Environment variables (YAML block)
+# env_vars: |
+#   - name: ENV_VAR_NAME
+#     value: "value"
+#   - name: SECRET_VAR
+#     valueFrom:
+#       secretKeyRef:
+#         name: my-secret
+#         key: password
+
+# Optional: Volume mounts (YAML block)
+# volume_mounts: |
+#   - name: data
+#     mountPath: /data
+
+# Optional: Volumes (YAML block)
+# volumes: |
+#   - name: data
+#     emptyDir: {}
+
+# Optional: Service account
+# service_account: my-service-account
+
+# Optional: Labels (YAML block)
+# labels: |
+#   environment: production
+#   team: platform
+
+# Optional: Pod labels (YAML block)
+# pod_labels: |
+#   version: v1.0.0

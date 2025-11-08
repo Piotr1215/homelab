@@ -1,0 +1,57 @@
+# Example configuration for CronJob
+# This creates a CronJob that runs on a schedule
+
+# Required fields
+cronjob_name: backup-job
+schedule: "0 2 * * *"
+image: alpine:latest
+namespace: default
+
+# Job command and args (YAML blocks)
+command: '["/bin/sh", "-c"]'
+args: |
+  - |
+    echo "Starting backup at $(date)"
+    # Your backup commands here
+    tar -czf /backup/data-$(date +%Y%m%d).tar.gz /data
+    echo "Backup completed"
+
+# Optional fields
+container_name: backup
+restart_policy: OnFailure
+success_history: 3
+failed_history: 1
+concurrency_policy: Forbid
+
+# Optional: Service account
+# service_account: backup-sa
+
+# Optional: Environment variables (YAML block)
+# env_vars: |
+#   - name: BACKUP_RETENTION_DAYS
+#     value: "7"
+
+# Optional: Volume mounts (YAML block)
+# volume_mounts: |
+#   - name: backup
+#     mountPath: /backup
+#   - name: data
+#     mountPath: /data
+
+# Optional: Volumes (YAML block)
+# volumes: |
+#   - name: backup
+#     persistentVolumeClaim:
+#       claimName: backup-pvc
+#   - name: data
+#     persistentVolumeClaim:
+#       claimName: data-pvc
+
+# Optional: Resources (YAML block)
+# resources: |
+#   requests:
+#     cpu: 100m
+#     memory: 256Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi

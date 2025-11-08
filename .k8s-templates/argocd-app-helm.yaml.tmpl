@@ -1,0 +1,41 @@
+---
+# ArgoCD Application Template - Helm Chart Source
+# This template creates an ArgoCD Application that deploys a Helm chart
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{APP_NAME}}
+  namespace: argocd
+  {{#SYNC_WAVE}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{SYNC_WAVE}}"
+  {{/SYNC_WAVE}}
+spec:
+  project: {{PROJECT|default:default}}
+  source:
+    chart: {{CHART_NAME}}
+    repoURL: {{CHART_REPO_URL}}
+    targetRevision: {{CHART_VERSION}}
+    {{#HELM_VALUES}}
+    helm:
+      {{#RELEASE_NAME}}
+      releaseName: {{RELEASE_NAME}}
+      {{/RELEASE_NAME}}
+      values: |
+{{HELM_VALUES}}
+    {{/HELM_VALUES}}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{NAMESPACE}}
+  syncPolicy:
+    automated:
+      prune: {{AUTO_PRUNE|default:true}}
+      selfHeal: {{AUTO_SELF_HEAL|default:true}}
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: {{RETRY_LIMIT|default:5}}
+      backoff:
+        duration: {{RETRY_DURATION|default:5s}}
+        factor: {{RETRY_FACTOR|default:2}}
+        maxDuration: {{RETRY_MAX_DURATION|default:5m}}

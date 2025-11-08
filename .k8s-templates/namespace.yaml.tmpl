@@ -1,0 +1,14 @@
+---
+# Namespace Template
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{NAMESPACE_NAME}}
+  {{#LABELS}}
+  labels:
+{{LABELS}}
+  {{/LABELS}}
+  {{#ANNOTATIONS}}
+  annotations:
+{{ANNOTATIONS}}
+  {{/ANNOTATIONS}}

@@ -1,0 +1,60 @@
+---
+# ArgoCD Application Template - Directory Source
+# This template creates an ArgoCD Application that deploys resources from a Git directory
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{APP_NAME}}
+  namespace: argocd
+  {{#SYNC_WAVE}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "{{SYNC_WAVE}}"
+  {{/SYNC_WAVE}}
+  {{#FINALIZERS}}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  {{/FINALIZERS}}
+spec:
+  project: {{PROJECT|default:applications}}
+  source:
+    repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+    targetRevision: {{TARGET_REVISION|default:HEAD}}
+    path: {{SOURCE_PATH}}
+    {{#RECURSIVE}}
+    directory:
+      recurse: true
+    {{/RECURSIVE}}
+    {{#EXCLUDE_FILES}}
+    directory:
+      exclude: '{{EXCLUDE_FILES}}'
+    {{/EXCLUDE_FILES}}
+  destination:
+    server: https://kubernetes.default.svc
+{{#NAMESPACE}}
+    namespace: {{NAMESPACE}}
+{{/NAMESPACE}}
+  {{#IGNORE_DIFFERENCES}}
+  ignoreDifferences:
+  {{IGNORE_DIFFERENCES}}
+  {{/IGNORE_DIFFERENCES}}
+  syncPolicy:
+    automated:
+      prune: {{AUTO_PRUNE|default:true}}
+      selfHeal: {{AUTO_SELF_HEAL|default:true}}
+      {{#ALLOW_EMPTY}}
+      allowEmpty: {{ALLOW_EMPTY}}
+      {{/ALLOW_EMPTY}}
+    syncOptions:
+    - CreateNamespace=true
+    {{#RESPECT_IGNORE_DIFF}}
+    - RespectIgnoreDifferences=true
+    {{/RESPECT_IGNORE_DIFF}}
+    {{#PRUNE_PROPAGATION}}
+    - PrunePropagationPolicy={{PRUNE_PROPAGATION}}
+    {{/PRUNE_PROPAGATION}}
+    retry:
+      limit: {{RETRY_LIMIT|default:5}}
+      backoff:
+        duration: {{RETRY_DURATION|default:5s}}
+        factor: {{RETRY_FACTOR|default:2}}
+        maxDuration: {{RETRY_MAX_DURATION|default:3m}}

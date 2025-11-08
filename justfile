@@ -152,3 +152,34 @@ ntopng-alerts score="50" limit="20":
   echo "Total alerts in database: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts;')"
   echo "High-score (>={{score}}) count: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts WHERE score >= {{score}};')"
 
+# Kubernetes Resource Template System
+# List available K8s resource templates
+k8s-templates:
+  @./scripts/k8s-resource-generator.sh -l
+
+# Interactive K8s resource generator wizard
+k8s-new:
+  @./scripts/k8s-resource-wizard.sh
+
+# Generate K8s resource from config file (usage: just k8s-gen <template-type> <config-file>)
+k8s-gen template config:
+  @./scripts/k8s-resource-generator.sh -v "{{template}}" "{{config}}"
+
+# Preview K8s resource generation (dry-run)
+k8s-preview template config:
+  @./scripts/k8s-resource-generator.sh -d "{{template}}" "{{config}}"
+
+# Quick ArgoCD app generator (usage: just k8s-argocd-app <app-name> <source-path>)
+k8s-argocd-app name path namespace="default":
+  #!/usr/bin/env bash
+  CONFIG=$(mktemp /tmp/argocd-config.XXXXXX.yaml)
+  cat > "$CONFIG" <<EOF
+  app_name: {{name}}
+  source_path: {{path}}
+  namespace: {{namespace}}
+  project: applications
+  EOF
+  ./scripts/k8s-resource-generator.sh -v argocd-app-directory "$CONFIG"
+  rm -f "$CONFIG"
+  echo "ArgoCD Application created: gitops/clusters/homelab/{{name}}.yaml"
+

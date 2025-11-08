@@ -1,0 +1,33 @@
+---
+# Ingress Template
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{INGRESS_NAME}}
+  namespace: {{NAMESPACE|default:default}}
+  {{#ANNOTATIONS}}
+  annotations:
+{{ANNOTATIONS}}
+  {{/ANNOTATIONS}}
+spec:
+  {{#INGRESS_CLASS}}
+  ingressClassName: {{INGRESS_CLASS}}
+  {{/INGRESS_CLASS}}
+  {{^INGRESS_CLASS}}
+  ingressClassName: nginx
+  {{/INGRESS_CLASS}}
+  {{#TLS}}
+  tls:
+{{TLS}}
+  {{/TLS}}
+  rules:
+  - host: {{HOST}}
+    http:
+      paths:
+      - path: {{PATH|default:/}}
+        pathType: {{PATH_TYPE|default:Prefix}}
+        backend:
+          service:
+            name: {{SERVICE_NAME}}
+            port:
+              number: {{SERVICE_PORT|default:80}}

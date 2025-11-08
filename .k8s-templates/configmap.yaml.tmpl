@@ -1,0 +1,19 @@
+---
+# ConfigMap Template
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{CONFIGMAP_NAME}}
+  namespace: {{NAMESPACE|default:default}}
+  {{#LABELS}}
+  labels:
+{{LABELS}}
+  {{/LABELS}}
+{{#DATA}}
+data:
+{{DATA}}
+{{/DATA}}
+{{#BINARY_DATA}}
+binaryData:
+{{BINARY_DATA}}
+{{/BINARY_DATA}}

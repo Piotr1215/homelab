@@ -1,0 +1,26 @@
+---
+# PersistentVolumeClaim Template
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{PVC_NAME}}
+  namespace: {{NAMESPACE|default:default}}
+  {{#LABELS}}
+  labels:
+{{LABELS}}
+  {{/LABELS}}
+spec:
+  accessModes:
+    - {{ACCESS_MODE|default:ReadWriteOnce}}
+  {{#STORAGE_CLASS}}
+  storageClassName: {{STORAGE_CLASS}}
+  {{/STORAGE_CLASS}}
+  {{^STORAGE_CLASS}}
+  storageClassName: local-path
+  {{/STORAGE_CLASS}}
+  resources:
+    requests:
+      storage: {{STORAGE_SIZE|default:1Gi}}
+  {{#VOLUME_NAME}}
+  volumeName: {{VOLUME_NAME}}
+  {{/VOLUME_NAME}}

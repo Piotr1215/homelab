@@ -1,0 +1,30 @@
+# Example configuration for ConfigMap
+# This creates a ConfigMap with application configuration
+
+# Required fields
+configmap_name: my-app-config
+namespace: default
+
+# ConfigMap data (YAML block)
+data: |
+  app.conf: |
+    server {
+      listen 80;
+      server_name localhost;
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+    }
+  config.json: |
+    {
+      "apiUrl": "https://api.example.com",
+      "timeout": 30,
+      "retries": 3
+    }
+
+# Optional: Labels (YAML block)
+# labels: |
+#   app: my-app
+#   environment: production

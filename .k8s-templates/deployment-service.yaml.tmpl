@@ -1,0 +1,103 @@
+---
+# Kubernetes Deployment Template
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{NAMESPACE|default:default}}
+  labels:
+    app: {{APP_NAME}}
+    {{#LABELS}}
+    {{LABELS}}
+    {{/LABELS}}
+spec:
+  replicas: {{REPLICAS|default:1}}
+  selector:
+    matchLabels:
+      app: {{APP_NAME}}
+  template:
+    metadata:
+      labels:
+        app: {{APP_NAME}}
+        {{#POD_LABELS}}
+        {{POD_LABELS}}
+        {{/POD_LABELS}}
+    spec:
+      {{#SERVICE_ACCOUNT}}
+      serviceAccountName: {{SERVICE_ACCOUNT}}
+      {{/SERVICE_ACCOUNT}}
+      containers:
+      - name: {{CONTAINER_NAME|default:{{APP_NAME}}}}
+        image: {{IMAGE}}
+        {{#IMAGE_PULL_POLICY}}
+        imagePullPolicy: {{IMAGE_PULL_POLICY}}
+        {{/IMAGE_PULL_POLICY}}
+        {{#CONTAINER_PORT}}
+        ports:
+        - containerPort: {{CONTAINER_PORT}}
+          {{#PORT_NAME}}
+          name: {{PORT_NAME}}
+          {{/PORT_NAME}}
+          {{#PORT_PROTOCOL}}
+          protocol: {{PORT_PROTOCOL}}
+          {{/PORT_PROTOCOL}}
+        {{/CONTAINER_PORT}}
+        {{#ENV_VARS}}
+        env:
+{{ENV_VARS}}
+        {{/ENV_VARS}}
+        {{#VOLUME_MOUNTS}}
+        volumeMounts:
+{{VOLUME_MOUNTS}}
+        {{/VOLUME_MOUNTS}}
+        {{#RESOURCES}}
+        resources:
+{{RESOURCES}}
+        {{/RESOURCES}}
+        {{^RESOURCES}}
+        resources:
+          requests:
+            cpu: {{CPU_REQUEST|default:100m}}
+            memory: {{MEMORY_REQUEST|default:128Mi}}
+          {{#CPU_LIMIT}}
+          limits:
+            cpu: {{CPU_LIMIT}}
+            memory: {{MEMORY_LIMIT|default:256Mi}}
+          {{/CPU_LIMIT}}
+        {{/RESOURCES}}
+      {{#VOLUMES}}
+      volumes:
+{{VOLUMES}}
+      {{/VOLUMES}}
+---
+# Kubernetes Service Template
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{SERVICE_NAME|default:{{APP_NAME}}}}
+  namespace: {{NAMESPACE|default:default}}
+  {{#SERVICE_LABELS}}
+  labels:
+    {{SERVICE_LABELS}}
+  {{/SERVICE_LABELS}}
+spec:
+  selector:
+    app: {{APP_NAME}}
+  {{#SERVICE_TYPE}}
+  type: {{SERVICE_TYPE}}
+  {{/SERVICE_TYPE}}
+  {{^SERVICE_TYPE}}
+  type: ClusterIP
+  {{/SERVICE_TYPE}}
+  {{#LOAD_BALANCER_IP}}
+  loadBalancerIP: {{LOAD_BALANCER_IP}}
+  {{/LOAD_BALANCER_IP}}
+  ports:
+  - port: {{SERVICE_PORT|default:80}}
+    targetPort: {{TARGET_PORT|default:{{CONTAINER_PORT}}}}
+    {{#SERVICE_PORT_NAME}}
+    name: {{SERVICE_PORT_NAME}}
+    {{/SERVICE_PORT_NAME}}
+    {{#SERVICE_PROTOCOL}}
+    protocol: {{SERVICE_PROTOCOL}}
+    {{/SERVICE_PROTOCOL}}

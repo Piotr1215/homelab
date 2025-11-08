@@ -1,0 +1,45 @@
+# Example configuration for ArgoCD Application (Directory Source)
+# This creates an ArgoCD Application that deploys resources from a Git directory
+
+# Required fields
+app_name: my-new-app
+source_path: gitops/apps/my-new-app
+namespace: my-namespace
+
+# Optional fields
+project: applications
+repo_url: https://github.com/Piotr1215/homelab.git
+target_revision: HEAD
+auto_prune: true
+auto_self_heal: true
+retry_limit: 5
+retry_duration: 5s
+retry_factor: 2
+retry_max_duration: 3m
+
+# Optional: Add finalizers
+# finalizers: true
+
+# Optional: Set sync wave for ordering
+# sync_wave: "1"
+
+# Optional: Enable recursive directory scanning
+# recursive: true
+
+# Optional: Exclude files from directory
+# exclude_files: 'values.yaml'
+
+# Optional: Allow empty applications
+# allow_empty: false
+
+# Optional: Respect ignore differences
+# respect_ignore_diff: true
+
+# Optional: Prune propagation policy
+# prune_propagation: foreground
+
+# Optional: Custom ignore differences (YAML block)
+# ignore_differences: |
+#   - group: velero.io
+#     kind: Backup
+#     name: "*"

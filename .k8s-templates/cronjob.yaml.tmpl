@@ -1,0 +1,48 @@
+---
+# CronJob Template
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{CRONJOB_NAME}}
+  namespace: {{NAMESPACE|default:default}}
+spec:
+  schedule: "{{SCHEDULE}}"
+  {{#CONCURRENCY_POLICY}}
+  concurrencyPolicy: {{CONCURRENCY_POLICY}}
+  {{/CONCURRENCY_POLICY}}
+  successfulJobsHistoryLimit: {{SUCCESS_HISTORY|default:1}}
+  failedJobsHistoryLimit: {{FAILED_HISTORY|default:1}}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{#SERVICE_ACCOUNT}}
+          serviceAccountName: {{SERVICE_ACCOUNT}}
+          {{/SERVICE_ACCOUNT}}
+          restartPolicy: {{RESTART_POLICY|default:OnFailure}}
+          containers:
+            - name: {{CONTAINER_NAME|default:{{CRONJOB_NAME}}}}
+              image: {{IMAGE}}
+              {{#COMMAND}}
+              command: {{COMMAND}}
+              {{/COMMAND}}
+              {{#ARGS}}
+              args:
+{{ARGS}}
+              {{/ARGS}}
+              {{#ENV_VARS}}
+              env:
+{{ENV_VARS}}
+              {{/ENV_VARS}}
+              {{#VOLUME_MOUNTS}}
+              volumeMounts:
+{{VOLUME_MOUNTS}}
+              {{/VOLUME_MOUNTS}}
+              {{#RESOURCES}}
+              resources:
+{{RESOURCES}}
+              {{/RESOURCES}}
+          {{#VOLUMES}}
+          volumes:
+{{VOLUMES}}
+          {{/VOLUMES}}

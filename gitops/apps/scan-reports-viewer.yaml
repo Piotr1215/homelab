@@ -4,6 +4,8 @@ kind: Service
 metadata:
   name: scan-reports
   namespace: cluster-scanning
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 192.168.178.108  # Pin to .108 (avoid .107=worker3)
 spec:
   type: LoadBalancer
   ports:

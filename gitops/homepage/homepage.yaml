@@ -109,13 +109,6 @@ data:
           showStats: true
           namespace: falco
           podSelector: app.kubernetes.io/name=falcosidekick-ui
-      - Scan Reports:
-          description: Cluster Security Scanning
-          href: http://192.168.178.100
-          icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/trivy/icon/color/trivy-icon-color.svg
-          showStats: true
-          namespace: cluster-scanning
-          podSelector: app=scan-reports-viewer
       - MCP Framework:
           description: Agentic MCP Framework
           href: http://192.168.178.95:3113

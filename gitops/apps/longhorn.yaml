@@ -21,21 +21,20 @@ spec:
           autoDeletePodWhenVolumeDetachedUnexpectedly: "true"
           createDefaultDiskLabeledNodes: "true"
           autoSalvage: "true"
-          guaranteedEngineManagerCPU: "12"
-          guaranteedReplicaManagerCPU: "12"
+          guaranteedInstanceManagerCPU: "12"
         persistence:
           defaultClass: true
-          defaultClassReplicaCount: "2"
+          defaultClassReplicaCount: 2
         service:
           ui:
             type: LoadBalancer
             annotations:
               metallb.universe.tf/loadBalancerIPs: "192.168.178.105"
         csi:
-          attacherReplicaCount: "2"
-          provisionerReplicaCount: "2"
-          resizerReplicaCount: "2"
-          snapshotterReplicaCount: "2"
+          attacherReplicaCount: 2
+          provisionerReplicaCount: 2
+          resizerReplicaCount: 2
+          snapshotterReplicaCount: 2
         longhornManager:
           priorityClass: system-cluster-critical
         longhornDriver:

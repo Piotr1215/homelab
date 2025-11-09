@@ -104,7 +104,7 @@ data:
           podSelector: app=ntopng
       - Falco Security:
           description: Runtime Security Events
-          href: http://192.168.178.106:2802
+          href: http://192.168.178.108:2802
           icon: si-falco
           showStats: true
           namespace: falco

@@ -14,6 +14,7 @@ spec:
   - https://metallb.github.io/metallb
   - https://kubernetes-sigs.github.io/metrics-server/
   - https://falcosecurity.github.io/charts
+  - https://helm.cilium.io
   destinations:
   - namespace: '*'
     server: https://kubernetes.default.svc

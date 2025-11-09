@@ -21,8 +21,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - 192.168.178.106-192.168.178.106  # 1 IP
-  - 192.168.178.108-192.168.178.110  # 3 IPs (skip .107 = worker3, .111 = worker4)
+  - 192.168.178.108-192.168.178.110  # 3 IPs (skip .106 = too close to .107 worker3, skip .111 = worker4)
   - 192.168.178.112-192.168.178.119  # 8 IPs (expansion for future services)
   autoAssign: true  # Automatic allocation
   avoidBuggyIPs: true

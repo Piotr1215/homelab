@@ -29,7 +29,7 @@ spec:
       initContainers:
         # Install containerd-shim-spin
         - name: install-shim
-          image: alpine:3.19
+          image: alpine:3.22
           command:
             - /bin/sh
             - -c
@@ -73,7 +73,7 @@ spec:
       containers:
         # Keep the pod running to maintain the installation
         - name: keepalive
-          image: alpine:3.19
+          image: alpine:3.22
           command:
             - /bin/sh
             - -c

@@ -20,9 +20,6 @@ spec:
   # Executor type - use containerd-shim-spin
   executor: containerd-shim-spin
 
-  # RuntimeClass that specifies the Spin runtime
-  runtimeClassName: wasmtime-spin-v2
-
   # Environment variables
   variables:
     - name: GREETING
@@ -60,25 +57,24 @@ spec:
       protocol: TCP
       name: http
 ---
-# Optional: Expose via LoadBalancer (using MetalLB)
-# Uncomment if you want external access
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: hello-spin-lb
-#   namespace: default
-#   labels:
-#     app: hello-spin
-# spec:
-#   type: LoadBalancer
-#   loadBalancerIP: 192.168.178.115  # Choose an available IP from dynamic-pool
-#   selector:
-#     app: hello-spin
-#   ports:
-#     - port: 80
-#       targetPort: 80
-#       protocol: TCP
-#       name: http
+# Expose via LoadBalancer (using MetalLB)
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-spin-lb
+  namespace: default
+  labels:
+    app: hello-spin
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 192.168.178.115
+  selector:
+    core.spinkube.dev/app-name: hello-spin
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
 ---
 # Example: More complex Spin app with key-value store
 # Uncomment this section to deploy a Spin app with state

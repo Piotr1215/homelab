@@ -49,57 +49,7 @@ launch_homepage:
 argo-password:
   @kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
-# Check scanning jobs status
-scan_status:
-  @kubectl get cronjobs,jobs -n cluster-scanning
-
-# Clean up completed scan jobs
-scan_cleanup:
-  @echo "Cleaning up completed scan jobs..."
-  @kubectl delete jobs --field-selector status.successful=1 -n cluster-scanning 2>/dev/null || echo "No successful jobs to delete"
-  @kubectl delete jobs --field-selector status.successful=1 -n cluster-scanning 2>/dev/null || echo "No failed jobs to delete"
-  @kubectl delete jobs --field-selector status.successful=1 -n metallb-system 2>/dev/null || echo "No failed jobs to delete"
-  @echo "Cleanup complete"
-
-
-# Manual Velero backup with optional description
-backup-velero description="manual-backup":
-  @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"
-  @NAME=$(echo "{{description}}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')-$(date +%Y%m%d-%H%M%S); \
-  velero backup create "$NAME" \
-    --exclude-namespaces kube-system,kube-public,kube-node-lease \
-    --wait
-  @echo "Backup complete. Listing recent backups:"
-  velero backup get | head -10
-
-
-# Interactive Kubernetes upgrade - shows versions and lets you choose
-k8s-upgrade:
-  #!/usr/bin/env bash
-  CURRENT=$(kubectl get nodes -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}')
-  echo "Current version: $CURRENT"
-  echo
-  CURRENT_MINOR=$(echo "$CURRENT" | cut -d. -f2)
-  NEXT_MINOR=$((CURRENT_MINOR + 1))
-  echo "Available upgrades:"
-  VERSIONS=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases | \
-    jq -r '.[] | .tag_name' | grep -E "^v1\.${NEXT_MINOR}\.[0-9]+$" | sort -V | head -5)
-  if [ -z "$VERSIONS" ]; then
-    echo "Already at latest supported version"
-    exit 0
-  fi
-  echo "$VERSIONS" | nl -w2 -s'. '
-  echo
-  read -p "Enter version number or 'q' to quit: " CHOICE
-  [[ "$CHOICE" == "q" ]] && exit 0
-  TARGET=$(echo "$VERSIONS" | sed -n "${CHOICE}p")
-  echo "Upgrading to $TARGET"
-  read -p "Continue? (y/n) " -n1 -r
-  echo
-  [[ $REPLY =~ ^[Yy]$ ]] && ./scripts/k8s-upgrade.sh "$TARGET"
-
-
-# Configure Bitwarden secrets after ArgoCD sync
+# Configure Bitwarden secrets after ArgoCD sync (bootstrap External Secrets Operator)
 patch-bitwarden:
   #!/usr/bin/env bash
   kubectl create secret generic bitwarden-access-token \
@@ -110,47 +60,15 @@ patch-bitwarden:
   kubectl patch clustersecretstore bitwarden-secretsmanager --type=json \
     -p '[{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/organizationID","value":"'$BITWARDEN_ORG_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/projectID","value":"'$BITWARDEN_PROJECT_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/caBundle","value":"'$CA_BUNDLE'"}]'
 
-# Restart vCluster YAML MCP Server deployment
-restart-vcluster-yaml:
-  @echo "Restarting vcluster-yaml-mcp deployment..."
-  kubectl rollout restart deployment/vcluster-yaml-mcp -n default
-  @echo "Waiting for rollout to complete..."
-  kubectl rollout status deployment/vcluster-yaml-mcp -n default --timeout=2m
-  @echo "Deployment restarted successfully"
-
-# Query ntopng high-score flows (default: score >= 50)
-ntopng-alerts score="50" limit="20":
-  #!/usr/bin/env bash
-  set -euo pipefail
-  echo "Fetching ntopng alerts database..."
-  POD=$(kubectl get pod -n ntopng -l app=ntopng -o jsonpath='{.items[0].metadata.name}')
-  kubectl cp ntopng/$POD:/var/lib/ntopng/0/alerts/alert_store_v11.db /tmp/ntopng_alerts.db -c ntopng 2>/dev/null
-  echo "Querying flows with score >= {{score}} (limit {{limit}})..."
-  echo
-  sqlite3 -header -column /tmp/ntopng_alerts.db "
-    SELECT
-      datetime(tstamp, 'unixepoch', 'localtime') as time,
-      printf('%3d', score) as score,
-      printf('%-15s', cli_ip) as source_ip,
-      printf('%-15s', srv_ip) as dest_ip,
-      printf('%5d', srv_port) as port,
-      CASE
-        WHEN alert_id = 42 THEN 'HTTP Suspicious UA'
-        WHEN alert_id = 101 THEN 'TCP Probe'
-        WHEN alert_id = 69 THEN 'Known Proto Wrong Port'
-        WHEN alert_id = 30 THEN 'Known Proto Non-Std Port'
-        WHEN alert_id = 53 THEN 'DNS Issue'
-        ELSE 'Alert-' || alert_id
-      END as alert_type,
-      substr(info, 1, 30) as info
-    FROM flow_alerts
-    WHERE score >= {{score}}
-    ORDER BY tstamp DESC
-    LIMIT {{limit}};
-  "
-  echo
-  echo "Total alerts in database: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts;')"
-  echo "High-score (>={{score}}) count: $(sqlite3 /tmp/ntopng_alerts.db 'SELECT COUNT(*) FROM flow_alerts WHERE score >= {{score}};')"
+# Manual Velero backup with optional description
+backup-velero description="manual-backup":
+  @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"
+  @NAME=$(echo "{{description}}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')-$(date +%Y%m%d-%H%M%S); \
+  velero backup create "$NAME" \
+    --exclude-namespaces kube-system,kube-public,kube-node-lease \
+    --wait
+  @echo "Backup complete. Listing recent backups:"
+  velero backup get | head -10
 
 # Kubernetes Resource Template System
 # List available K8s resource templates
@@ -182,4 +100,88 @@ k8s-argocd-app name path namespace="default":
   ./scripts/k8s-resource-generator.sh -v argocd-app-directory "$CONFIG"
   rm -f "$CONFIG"
   echo "ArgoCD Application created: gitops/clusters/homelab/{{name}}.yaml"
+
+# Kubespray Ansible Playbooks
+# Edit Kubespray inventory file
+ansible-edit-inventory:
+  ${EDITOR:-vim} kubespray/inventory/homelab/inventory.ini
+
+# Add new worker node to cluster (Kubespray auto-detects new nodes from inventory)
+ansible-scale-worker:
+  #!/usr/bin/env bash
+  cd kubespray
+  ansible-playbook -i inventory/homelab/inventory.ini scale.yml -b
+
+# Deploy/update cluster (also used for adding control planes)
+ansible-cluster:
+  #!/usr/bin/env bash
+  cd kubespray
+  ansible-playbook -i inventory/homelab/inventory.ini cluster.yml -b
+
+# Remove node from cluster
+ansible-remove-node node:
+  #!/usr/bin/env bash
+  cd kubespray
+  ansible-playbook -i inventory/homelab/inventory.ini remove-node.yml -b -e node={{node}}
+
+# Upgrade Kubernetes cluster
+ansible-upgrade-cluster:
+  #!/usr/bin/env bash
+  cd kubespray
+  ansible-playbook -i inventory/homelab/inventory.ini upgrade-cluster.yml -b
+
+# Reset cluster (WARNING: destructive)
+ansible-reset-cluster:
+  #!/usr/bin/env bash
+  read -p "This will DESTROY the cluster. Type 'yes' to continue: " confirm
+  [[ "$confirm" == "yes" ]] && cd kubespray && ansible-playbook -i inventory/homelab/inventory.ini reset.yml -b || echo "Aborted"
+
+# VM Provisioning
+# Create new worker VM with cloud-init (default: 4 CPU, 8GB RAM, 100GB disk)
+create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="100":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd k8s-node-automation
+  source lib/common.sh
+  source lib/proxmox.sh
+
+  # Resolve PVE host IP
+  case "{{pve_host}}" in
+    pve|pve1) PVE_IP="${PROXMOX_HOST}" ;;
+    pve2) PVE_IP="${PROXMOX2_HOST}" ;;
+    *) PVE_IP="{{pve_host}}" ;;
+  esac
+
+  # Auto-generate name if not provided
+  if [ "{{name}}" = "auto" ]; then
+    NEXT_NUM=$(kubectl get nodes 2>/dev/null | grep -oP 'kube-worker\K[0-9]+' | sort -n | tail -1)
+    NEXT_NUM=$((NEXT_NUM + 1))
+    VM_NAME="kube-worker${NEXT_NUM}"
+  else
+    VM_NAME="{{name}}"
+  fi
+
+  # Auto-generate VMID if not provided
+  if [ "{{vmid}}" = "auto" ]; then
+    EXISTING=$(ssh -o StrictHostKeyChecking=no root@${PVE_IP} "qm list" | awk '{print $1}' | grep -E '^[0-9]+$' | sort -n | tail -1)
+    VM_ID=$((EXISTING + 1))
+  else
+    VM_ID="{{vmid}}"
+  fi
+
+  echo "Creating VM ${VM_ID} (${VM_NAME}) on $(hostname_from_ip ${PVE_IP})..."
+  echo "  CPU: {{cores}} cores"
+  echo "  RAM: {{memory}}MB"
+  echo "  Disk: {{disk}}GB"
+
+  create_vm "${PVE_IP}" "${VM_ID}" "${VM_NAME}" "{{cores}}" "{{memory}}" "{{disk}}"
+  start_vm "${PVE_IP}" "${VM_ID}"
+
+  echo ""
+  echo "VM created successfully!"
+  echo "Next steps:"
+  echo "  1. Wait 2-3 minutes for cloud-init to complete"
+  echo "  2. Find VM IP: ssh root@${PVE_IP} 'qm guest cmd ${VM_ID} network-get-interfaces' | grep -oP '192\.168\.178\.\d+' | head -1"
+  echo "  3. Add to inventory: just ansible-edit-inventory"
+  echo "  4. Join cluster: just ansible-scale-worker"
 

@@ -12,6 +12,84 @@ source "${SCRIPT_DIR}/common.sh"
 PVE1_HOST="${PROXMOX_HOST:-192.168.178.75}"
 PVE2_HOST="${PROXMOX2_HOST:-192.168.178.113}"
 
+# Ubuntu cloud image URL
+UBUNTU_CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+
+# Create VM from Ubuntu cloud-init image
+# Usage: create_vm <pve_host> <vmid> <name> <cores> <memory_mb> <disk_gb> [storage]
+create_vm() {
+    local pve_host=$1
+    local vmid=$2
+    local vm_name=$3
+    local cores=$4
+    local memory_mb=$5
+    local disk_gb=$6
+    local storage=${7:-local-lvm}
+
+    log "Creating VM ${vmid} (${vm_name}) on $(hostname_from_ip "$pve_host")..."
+
+    # Download cloud image if not exists
+    local image_file="/tmp/noble-server-cloudimg-amd64-${vmid}.img"
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "[ -f ${image_file} ] || wget -q ${UBUNTU_CLOUD_IMAGE_URL} -O ${image_file}"
+
+    # Resize image
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qemu-img resize ${image_file} ${disk_gb}G"
+
+    # Create VM
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qm create ${vmid} --name ${vm_name} --ostype l26 \
+        --memory ${memory_mb} \
+        --agent 1 \
+        --bios ovmf --machine q35 --efidisk0 ${storage}:0,pre-enrolled-keys=0 \
+        --cpu host --sockets 1 --cores ${cores} \
+        --vga serial0 --serial0 socket \
+        --net0 virtio,bridge=vmbr0" >/dev/null
+
+    # Import disk
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qm importdisk ${vmid} ${image_file} ${storage}" >/dev/null
+
+    # Configure disk and boot
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qm set ${vmid} --scsihw virtio-scsi-pci --virtio0 ${storage}:vm-${vmid}-disk-1,discard=on && \
+        qm set ${vmid} --boot order=virtio0 && \
+        qm set ${vmid} --scsi1 ${storage}:cloudinit" >/dev/null
+
+    # Create cloud-init vendor config for Kubespray prerequisites
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "mkdir -p /var/lib/vz/snippets && cat > /var/lib/vz/snippets/kubespray-prep-${vmid}.yaml << 'CLOUDEOF'
+#cloud-config
+users:
+  - name: decoder
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - $(cat ~/.ssh/id_rsa.pub)
+package_update: true
+packages:
+  - python3
+  - python3-pip
+  - qemu-guest-agent
+runcmd:
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+CLOUDEOF
+"
+
+    # Configure cloud-init
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qm set ${vmid} --cicustom 'user=local:snippets/kubespray-prep-${vmid}.yaml' && \
+        qm set ${vmid} --ipconfig0 ip=dhcp" >/dev/null 2>&1 || true
+
+    # Cleanup temp image
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" "rm -f ${image_file}"
+
+    log_success "VM ${vmid} (${vm_name}) created successfully"
+}
+
 # Get free resources on Proxmox host
 # Returns: free_memory_gb free_storage_gb
 # Usage: get_pve_free_resources <pve_host>

@@ -1,0 +1,47 @@
+# Kubernetes sensitive files
+*.kubeconfig
+**/admin.conf
+**/.kube/
+**/kubeconfig
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*~
+
+# Join commands (contain tokens)
+*join-command*
+kubeadm-join*
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+*.pub
+
+# Secrets and credentials
+*secret*
+*password*
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Terraform (if added later)
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Ansible (if added later)
+*.retry
+.ansible/

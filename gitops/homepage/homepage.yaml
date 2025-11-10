@@ -198,61 +198,6 @@ data:
             version: 4
             metric: fs:/
             refreshInterval: 30000
-    - Virtual Machines:
-      - Kube Main:
-          description: Control Plane VM 101
-          icon: kubernetes.svg
-          showStats: true
-          widget:
-            type: customapi
-            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/101/status/current
-            headers:
-              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
-            mappings:
-              - field: data.cpu
-                label: CPU
-                format: float
-                scale: 100
-                suffix: "%"
-              - field: data.mem
-                label: Memory
-                format: bytes
-      - Kube Worker1:
-          description: Worker Node VM 102
-          icon: kubernetes.svg
-          showStats: true
-          widget:
-            type: customapi
-            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/102/status/current
-            headers:
-              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
-            mappings:
-              - field: data.cpu
-                label: CPU
-                format: float
-                scale: 100
-                suffix: "%"
-              - field: data.mem
-                label: Memory
-                format: bytes
-      - Kube Worker2:
-          description: Worker Node VM 103
-          icon: kubernetes.svg
-          showStats: true
-          widget:
-            type: customapi
-            url: https://192.168.178.75:8006/api2/json/nodes/pve/qemu/103/status/current
-            headers:
-              Authorization: "PVEAPIToken=homepage@pve!default={{HOMEPAGE_VAR_PROXMOX_PASSWORD}}"
-            mappings:
-              - field: data.cpu
-                label: CPU
-                format: float
-                scale: 100
-                suffix: "%"
-              - field: data.mem
-                label: Memory
-                format: bytes
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed
@@ -269,9 +214,6 @@ data:
       Infrastructure:
         style: row
         columns: 2
-      Virtual Machines:
-        style: row
-        columns: 3
       Proxmox Monitoring:
         style: row
         columns: 4

@@ -80,11 +80,6 @@ spec:
             enabled: true
             storageClass: local-path
             size: 10Gi
-          securityContext:
-            fsGroup: 10001
-            runAsGroup: 10001
-            runAsNonRoot: true
-            runAsUser: 10001
           resources:
             requests:
               cpu: 100m
@@ -139,10 +134,8 @@ spec:
   ignoreDifferences:
   - group: apps
     kind: StatefulSet
-    name: loki
-    namespace: loki
     jsonPointers:
-    - /spec/template/spec/securityContext
+    - /spec/volumeClaimTemplates
 
   syncPolicy:
     automated:

@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: backup-all-repos-pv
+  name: forgejo-data-pv
 spec:
   capacity:
     storage: 10Gi
@@ -14,7 +14,7 @@ spec:
   csi:
     driver: driver.longhorn.io
     fsType: ext4
-    volumeHandle: backup-all-repos
+    volumeHandle: forgejo-data
     volumeAttributes:
       numberOfReplicas: "2"
       staleReplicaTimeout: "30"
@@ -33,4 +33,4 @@ spec:
     requests:
       storage: 10Gi
   storageClassName: longhorn
-  volumeName: backup-all-repos-pv
+  volumeName: forgejo-data-pv

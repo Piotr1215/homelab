@@ -137,8 +137,45 @@ ansible-reset-cluster:
   [[ "$confirm" == "yes" ]] && cd kubespray && ansible-playbook -i inventory/homelab/inventory.ini reset.yml -b || echo "Aborted"
 
 # VM Provisioning
-# Create new worker VM with cloud-init (default: 4 CPU, 8GB RAM, 100GB disk)
-create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="100":
+# Create new worker VM with cloud-init
+# Usage: just create-worker-vm-static pve2 kube-worker3 104 192.168.178.107
+create-worker-vm-static pve_host name vmid ip:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd k8s-node-automation
+  source lib/common.sh
+  source lib/proxmox.sh
+
+  # Resolve PVE host IP
+  case "{{pve_host}}" in
+    pve|pve1) PVE_IP="${PROXMOX_HOST}" ;;
+    pve2) PVE_IP="${PROXMOX2_HOST}" ;;
+    *) PVE_IP="{{pve_host}}" ;;
+  esac
+
+  echo "Creating VM {{vmid}} ({{name}}) on $(hostname_from_ip ${PVE_IP})..."
+  echo "  CPU: 4 cores (standard)"
+  echo "  RAM: 8192MB (standard)"
+  echo "  Disk: 100GB (standard)"
+  echo "  IP: {{ip}}/24"
+
+  create_vm "${PVE_IP}" "{{vmid}}" "{{name}}" "4" "8192" "100"
+
+  # Set static IP before starting
+  ssh -o StrictHostKeyChecking=no root@${PVE_IP} \
+    "qm set {{vmid}} --ipconfig0 ip={{ip}}/24,gw=192.168.178.1"
+
+  start_vm "${PVE_IP}" "{{vmid}}"
+
+  echo ""
+  echo "VM created successfully with static IP {{ip}}"
+  echo "Next steps:"
+  echo "  1. Wait 2-3 minutes for cloud-init to complete"
+  echo "  2. Verify: ping {{ip}}"
+  echo "  3. Join cluster: just ansible-scale-worker"
+
+# Create new worker VM with DHCP (default: 4 CPU, 8GB RAM, 100GB disk)
+create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="100" ip="dhcp":
   #!/usr/bin/env bash
   set -euo pipefail
   cd k8s-node-automation
@@ -173,15 +210,35 @@ create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="
   echo "  CPU: {{cores}} cores"
   echo "  RAM: {{memory}}MB"
   echo "  Disk: {{disk}}GB"
+  echo "  IP: {{ip}}"
 
   create_vm "${PVE_IP}" "${VM_ID}" "${VM_NAME}" "{{cores}}" "{{memory}}" "{{disk}}"
+
+  # Set static IP if provided
+  if [ "{{ip}}" != "dhcp" ]; then
+    ssh -o StrictHostKeyChecking=no root@${PVE_IP} \
+      "qm set ${VM_ID} --ipconfig0 ip={{ip}}/24,gw=192.168.178.1"
+  fi
+
   start_vm "${PVE_IP}" "${VM_ID}"
 
   echo ""
   echo "VM created successfully!"
-  echo "Next steps:"
-  echo "  1. Wait 2-3 minutes for cloud-init to complete"
-  echo "  2. Find VM IP: ssh root@${PVE_IP} 'qm guest cmd ${VM_ID} network-get-interfaces' | grep -oP '192\.168\.178\.\d+' | head -1"
-  echo "  3. Add to inventory: just ansible-edit-inventory"
-  echo "  4. Join cluster: just ansible-scale-worker"
+  if [ "{{ip}}" = "dhcp" ]; then
+    echo "Next steps:"
+    echo "  1. Wait 2-3 minutes for cloud-init to complete"
+    echo "  2. Find VM IP: ssh root@${PVE_IP} 'qm guest cmd ${VM_ID} network-get-interfaces' | grep -oP '192\.168\.178\.\d+' | head -1"
+    echo "  3. Add to inventory: just ansible-edit-inventory"
+    echo "  4. Join cluster: just ansible-scale-worker"
+  else
+    echo "Static IP configured: {{ip}}"
+    echo "Next steps:"
+    echo "  1. Wait 2-3 minutes for cloud-init to complete"
+    echo "  2. Add to inventory: just ansible-edit-inventory"
+    echo "  3. Join cluster: just ansible-scale-worker"
+  fi
+
+# Disaster Recovery - Restore full cluster from etcd backup
+cluster-restore:
+  ./scripts/restore-cluster.sh
 

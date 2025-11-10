@@ -28,14 +28,19 @@ create_vm() {
 
     log "Creating VM ${vmid} (${vm_name}) on $(hostname_from_ip "$pve_host")..."
 
-    # Download cloud image if not exists
-    local image_file="/tmp/noble-server-cloudimg-amd64-${vmid}.img"
-    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
-        "[ -f ${image_file} ] || wget -q ${UBUNTU_CLOUD_IMAGE_URL} -O ${image_file}"
+    # Use cached cloud image or download once
+    local cached_image="/var/lib/vz/template/iso/noble-server-cloudimg-amd64.img"
+    local work_image="/tmp/noble-server-cloudimg-amd64-${vmid}.img"
 
-    # Resize image
     ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
-        "qemu-img resize ${image_file} ${disk_gb}G"
+        "if [ ! -f ${cached_image} ]; then \
+            wget -q ${UBUNTU_CLOUD_IMAGE_URL} -O ${cached_image}; \
+        fi && \
+        cp ${cached_image} ${work_image}"
+
+    # Resize working copy
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
+        "qemu-img resize ${work_image} ${disk_gb}G"
 
     # Create VM
     ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
@@ -49,7 +54,7 @@ create_vm() {
 
     # Import disk
     ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
-        "qm importdisk ${vmid} ${image_file} ${storage}" >/dev/null
+        "qm importdisk ${vmid} ${work_image} ${storage}" >/dev/null
 
     # Configure disk and boot
     ssh -o StrictHostKeyChecking=no root@"${pve_host}" \
@@ -84,8 +89,8 @@ CLOUDEOF
         "qm set ${vmid} --cicustom 'user=local:snippets/kubespray-prep-${vmid}.yaml' && \
         qm set ${vmid} --ipconfig0 ip=dhcp" >/dev/null 2>&1 || true
 
-    # Cleanup temp image
-    ssh -o StrictHostKeyChecking=no root@"${pve_host}" "rm -f ${image_file}"
+    # Cleanup working copy (keep cached image)
+    ssh -o StrictHostKeyChecking=no root@"${pve_host}" "rm -f ${work_image}"
 
     log_success "VM ${vmid} (${vm_name}) created successfully"
 }

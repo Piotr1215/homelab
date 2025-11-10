@@ -17,7 +17,7 @@ Then: just ansible-cluster (to provision cluster via Kubespray)
   sudo systemctl stop etcd
   LATEST=$(ls -t /var/backups/etcd/etcd-snapshot-*.db | head -1)
   sudo etcdutl snapshot restore "$LATEST" --data-dir /var/lib/etcd
-  sudo chown -R root:root /var/lib/etcd
+  sudo chown -R etcd:etcd /var/lib/etcd
   sudo systemctl start etcd
 EOF
 read -p "Press ENTER when done..."

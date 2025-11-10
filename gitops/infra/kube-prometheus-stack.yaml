@@ -48,6 +48,11 @@ spec:
         - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
           value: "true"
       values: |
+        grafana:
+          securityContext:
+            fsGroup: 472
+            runAsUser: 472
+            runAsNonRoot: true
         alertmanager:
           alertmanagerSpec:
             secrets:

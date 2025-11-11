@@ -17,7 +17,7 @@ spec:
         defaultSettings:
           defaultReplicaCount: "2"  # 2 replicas for 2 healthy nodes
           replicaSoftAntiAffinity: "true"
-          backupTarget: "nfs://192.168.178.60:/volume1/Kubernetes/longhorn-backups"
+          backupTarget: "nfs://192.168.178.138:/volume1/Kubernetes/longhorn-backups"
           autoDeletePodWhenVolumeDetachedUnexpectedly: "true"
           createDefaultDiskLabeledNodes: "true"
           autoSalvage: "true"

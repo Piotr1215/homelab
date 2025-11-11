@@ -130,12 +130,12 @@ data:
             node: pve
       - Synology NAS:
           description: Network Attached Storage
-          href: http://192.168.178.60:5000
+          href: http://192.168.178.138:5000
           icon: synology.svg
           showStats: true
           widget:
             type: diskstation
-            url: http://192.168.178.60:5000
+            url: http://192.168.178.138:5000
             username: homepage_stats
             password: {{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}
             volume: volume_1

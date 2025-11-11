@@ -9,8 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
 # Proxmox hosts from environment
-PVE1_HOST="${PROXMOX_HOST:-192.168.178.75}"
-PVE2_HOST="${PROXMOX2_HOST:-192.168.178.113}"
+PVE1_HOST="${PROXMOX_HOST}"
+PVE2_HOST="${PROXMOX2_HOST}"
+PVE3_HOST="${PROXMOX3_HOST}"
 
 # Ubuntu cloud image URL
 UBUNTU_CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
@@ -297,6 +298,7 @@ hostname_from_ip() {
     case "$1" in
         "$PVE1_HOST") echo "pve" ;;
         "$PVE2_HOST") echo "pve2" ;;
+        "$PVE3_HOST") echo "pve3" ;;
         *) echo "unknown" ;;
     esac
 }

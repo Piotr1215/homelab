@@ -1,5 +1,10 @@
 set export
 
+# Proxmox hosts (read from environment with fallbacks)
+PROXMOX_HOST := env_var_or_default('PROXMOX_HOST', '192.168.178.75')
+PROXMOX2_HOST := env_var_or_default('PROXMOX2_HOST', '192.168.178.113')
+PROXMOX3_HOST := env_var_or_default('PROXMOX3_HOST', '192.168.178.140')
+
 copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
 browse := if os() == "linux" { "xdg-open" } else { "open" }
 
@@ -142,6 +147,9 @@ ansible-reset-cluster:
 create-worker-vm-static pve_host name vmid ip:
   #!/usr/bin/env bash
   set -euo pipefail
+  export PROXMOX_HOST={{PROXMOX_HOST}}
+  export PROXMOX2_HOST={{PROXMOX2_HOST}}
+  export PROXMOX3_HOST={{PROXMOX3_HOST}}
   cd k8s-node-automation
   source lib/common.sh
   source lib/proxmox.sh
@@ -150,6 +158,7 @@ create-worker-vm-static pve_host name vmid ip:
   case "{{pve_host}}" in
     pve|pve1) PVE_IP="${PROXMOX_HOST}" ;;
     pve2) PVE_IP="${PROXMOX2_HOST}" ;;
+    pve3) PVE_IP="${PROXMOX3_HOST}" ;;
     *) PVE_IP="{{pve_host}}" ;;
   esac
 
@@ -178,6 +187,9 @@ create-worker-vm-static pve_host name vmid ip:
 create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="100" ip="dhcp":
   #!/usr/bin/env bash
   set -euo pipefail
+  export PROXMOX_HOST={{PROXMOX_HOST}}
+  export PROXMOX2_HOST={{PROXMOX2_HOST}}
+  export PROXMOX3_HOST={{PROXMOX3_HOST}}
   cd k8s-node-automation
   source lib/common.sh
   source lib/proxmox.sh
@@ -186,6 +198,7 @@ create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="
   case "{{pve_host}}" in
     pve|pve1) PVE_IP="${PROXMOX_HOST}" ;;
     pve2) PVE_IP="${PROXMOX2_HOST}" ;;
+    pve3) PVE_IP="${PROXMOX3_HOST}" ;;
     *) PVE_IP="{{pve_host}}" ;;
   esac
 
@@ -201,7 +214,7 @@ create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="
   # Auto-generate VMID if not provided
   if [ "{{vmid}}" = "auto" ]; then
     EXISTING=$(ssh -o StrictHostKeyChecking=no root@${PVE_IP} "qm list" | awk '{print $1}' | grep -E '^[0-9]+$' | sort -n | tail -1)
-    VM_ID=$((EXISTING + 1))
+    VM_ID=$(( ${EXISTING:-100} + 1 ))
   else
     VM_ID="{{vmid}}"
   fi

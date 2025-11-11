@@ -89,6 +89,8 @@ spec:
           webui:
             enabled: true
             replicaCount: 1
+            # TTL for Redis keys - keep events for 30 days
+            ttl: "30d"
             service:
               type: LoadBalancer
               port: 2802

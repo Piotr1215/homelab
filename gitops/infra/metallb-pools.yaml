@@ -39,7 +39,7 @@ spec:
   - static-pool
   - dynamic-pool
   interfaces:
-  - ens18  # Network interface on nodes
+  - eth0  # Network interface on worker nodes
   nodeSelectors:
   - matchLabels:
       kubernetes.io/hostname: kube-worker2  # Pin to single node for stability

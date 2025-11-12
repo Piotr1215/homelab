@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: homepage
+spec:
+  parentRefs:
+  - name: homelab-gateway
+  hostnames:
+  - "homepage.homelab.local"
+  rules:
+  - backendRefs:
+    - name: homepage
+      namespace: homepage
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: homepage-backend
+  namespace: homepage
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: envoy-gateway-system
+  to:
+  - group: ""
+    kind: Service
+    name: homepage

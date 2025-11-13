@@ -1,0 +1,41 @@
+# Kubernetes Dashboard Helm Values
+# Chart: kubernetes-dashboard/kubernetes-dashboard
+# Version: 7.14.0
+
+# Kong gateway configuration (default proxy)
+kong:
+  enabled: true
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.universe.tf/address-pool: default
+
+# Dashboard API
+app:
+  ingress:
+    enabled: false  # Using LoadBalancer instead
+
+# Security
+metricsScraper:
+  enabled: true
+
+# Resource limits
+api:
+  containers:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+web:
+  containers:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi

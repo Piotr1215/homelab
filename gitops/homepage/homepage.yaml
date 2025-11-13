@@ -51,6 +51,13 @@ data:
             type: argocd
             url: https://argocd-server.argocd.svc.cluster.local
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
+      - Kubernetes Dashboard:
+          description: K8s Web UI & Job Viewer
+          href: https://192.168.178.106
+          icon: kubernetes.svg
+          showStats: true
+          namespace: kubernetes-dashboard
+          podSelector: app.kubernetes.io/name=kong
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring

@@ -437,51 +437,51 @@
         }
       }
     },
-    "velero@1.17.0": {
-      "last_modified": "2025-10-07T08:41:47Z",
-      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#velero",
+    "velero@1.17.1": {
+      "last_modified": "2025-11-08T12:28:21Z",
+      "resolved": "github:NixOS/nixpkgs/f6b44b2401525650256b977063dbcf830f762369#velero",
       "source": "devbox-search",
-      "version": "1.17.0",
+      "version": "1.17.1",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/nj6b300invbpa8vspv00ncmvcy65sci3-velero-1.17.0",
+              "path": "/nix/store/c40zykhaacvj17askql4kbd5ll72zpyv-velero-1.17.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/nj6b300invbpa8vspv00ncmvcy65sci3-velero-1.17.0"
+          "store_path": "/nix/store/c40zykhaacvj17askql4kbd5ll72zpyv-velero-1.17.1"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/n3xm23r8acdcvmh9xn51i25cmxbshzza-velero-1.17.0",
+              "path": "/nix/store/y5wjfma6jbi5kwkq15bxpbhvb8qgvb2x-velero-1.17.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/n3xm23r8acdcvmh9xn51i25cmxbshzza-velero-1.17.0"
+          "store_path": "/nix/store/y5wjfma6jbi5kwkq15bxpbhvb8qgvb2x-velero-1.17.1"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/dzpfk6l9z38p70xqin9q88x505jq4qra-velero-1.17.0",
+              "path": "/nix/store/17485n00k2mzdwafay471dqlfkz175i5-velero-1.17.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/dzpfk6l9z38p70xqin9q88x505jq4qra-velero-1.17.0"
+          "store_path": "/nix/store/17485n00k2mzdwafay471dqlfkz175i5-velero-1.17.1"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/lnjvzlarraqzv31y6r51cydhxgicvkr7-velero-1.17.0",
+              "path": "/nix/store/wv7vgc8nyfj34lbw7gh5sy7pbn8a448l-velero-1.17.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/lnjvzlarraqzv31y6r51cydhxgicvkr7-velero-1.17.0"
+          "store_path": "/nix/store/wv7vgc8nyfj34lbw7gh5sy7pbn8a448l-velero-1.17.1"
         }
       }
     }

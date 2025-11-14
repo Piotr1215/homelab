@@ -251,6 +251,50 @@ create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="
     echo "  3. Join cluster: just ansible-scale-worker"
   fi
 
+# Create Pi-hole VM (DNS ad-blocking)
+# Usage: just create-pihole-vm pve3
+create-pihole-vm pve_host="pve3" vmid="200" ip="192.168.178.100":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  export PROXMOX_HOST={{PROXMOX_HOST}}
+  export PROXMOX2_HOST={{PROXMOX2_HOST}}
+  export PROXMOX3_HOST={{PROXMOX3_HOST}}
+  cd k8s-node-automation
+  source lib/common.sh
+  source lib/proxmox.sh
+
+  # Resolve PVE host IP
+  case "{{pve_host}}" in
+    pve|pve1) PVE_IP="${PROXMOX_HOST}" ;;
+    pve2) PVE_IP="${PROXMOX2_HOST}" ;;
+    pve3) PVE_IP="${PROXMOX3_HOST}" ;;
+    *) PVE_IP="{{pve_host}}" ;;
+  esac
+
+  echo "Creating Pi-hole VM {{vmid}} on $(hostname_from_ip ${PVE_IP})..."
+  echo "  CPU: 2 cores"
+  echo "  RAM: 2048MB"
+  echo "  Disk: 20GB"
+  echo "  IP: {{ip}}/24"
+
+  # Create VM with Pi-hole appropriate specs
+  create_vm "${PVE_IP}" "{{vmid}}" "pihole" "2" "2048" "20"
+
+  # Set static IP before starting
+  ssh -o StrictHostKeyChecking=no root@${PVE_IP} \
+    "qm set {{vmid}} --ipconfig0 ip={{ip}}/24,gw=192.168.178.1"
+
+  start_vm "${PVE_IP}" "{{vmid}}"
+
+  echo ""
+  echo "Pi-hole VM created successfully with static IP {{ip}}"
+  echo "Next steps:"
+  echo "  1. Wait 2-3 minutes for cloud-init to complete"
+  echo "  2. Verify: ping {{ip}}"
+  echo "  3. SSH: ssh decoder@{{ip}}"
+  echo "  4. Install Pi-hole: curl -sSL https://install.pi-hole.net | bash"
+  echo "  5. Access web interface: http://{{ip}}/admin"
+
 # Disaster Recovery - Restore full cluster from etcd backup
 cluster-restore:
   ./scripts/restore-cluster.sh

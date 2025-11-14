@@ -1,0 +1,73 @@
+---
+# External Service for Pi-hole VM
+# Allows Kubernetes services to reference Pi-hole DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole
+  namespace: prometheus
+  labels:
+    app: pihole
+    component: dns
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+  - name: dns-udp
+    port: 53
+    protocol: UDP
+  - name: http
+    port: 80
+    protocol: TCP
+  - name: metrics
+    port: 9617
+    protocol: TCP
+---
+# Endpoints pointing to Pi-hole VM
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: pihole
+  namespace: prometheus
+  labels:
+    app: pihole
+    component: dns
+subsets:
+- addresses:
+  - ip: 192.168.178.100
+    nodeName: pihole-vm
+  ports:
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
+  - name: dns-udp
+    port: 53
+    protocol: UDP
+  - name: http
+    port: 80
+    protocol: TCP
+  - name: metrics
+    port: 9617
+    protocol: TCP
+---
+# ServiceMonitor for Prometheus scraping
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pihole
+  namespace: prometheus
+  labels:
+    release: kube-prometheus-stack  # Required: Prometheus selector
+    app: pihole
+spec:
+  selector:
+    matchLabels:
+      app: pihole
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scheme: http

@@ -74,6 +74,15 @@ data:
           namespace: prometheus
           podSelector: app.kubernetes.io/name=grafana
     - Services:
+      - Pi-hole:
+          description: Network-wide Ad Blocking
+          href: http://192.168.178.100/admin
+          icon: pi-hole.svg
+          showStats: true
+          widget:
+            type: pihole
+            url: http://192.168.178.100
+            key: {{HOMEPAGE_VAR_PIHOLE_API_KEY}}
       - Forgejo:
           description: Self-hosted Git Server
           href: http://192.168.178.99:3000
@@ -357,6 +366,11 @@ spec:
                 secretKeyRef:
                   name: synology-secrets
                   key: password
+            - name: HOMEPAGE_VAR_PIHOLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-secrets
+                  key: pihole-api-key
           ports:
             - name: http
               containerPort: 3000

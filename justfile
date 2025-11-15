@@ -251,6 +251,37 @@ create-worker-vm pve_host name="auto" vmid="auto" cores="4" memory="8192" disk="
     echo "  3. Join cluster: just ansible-scale-worker"
   fi
 
+# Proxmox Maintenance
+# Fix Proxmox enterprise repo errors and clear task logs
+proxmox-fix-repos:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  for HOST in ${PROXMOX_HOST} ${PROXMOX2_HOST} ${PROXMOX3_HOST}; do
+    echo "Fixing $HOST..."
+    ssh root@$HOST "
+      # Backup and disable enterprise repos
+      if [ -f /etc/apt/sources.list.d/pve-enterprise.list ]; then
+        cp /etc/apt/sources.list.d/pve-enterprise.list /etc/apt/sources.list.d/pve-enterprise.list.backup
+        echo -e \"#\$(cat /etc/apt/sources.list.d/pve-enterprise.list)\" > /etc/apt/sources.list.d/pve-enterprise.list
+      fi
+      if [ -f /etc/apt/sources.list.d/pve-enterprise.sources ]; then
+        cp /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/pve-enterprise.sources.backup
+        echo '# Disabled - no subscription' > /etc/apt/sources.list.d/pve-enterprise.sources
+      fi
+      if [ -f /etc/apt/sources.list.d/ceph.sources ]; then
+        cp /etc/apt/sources.list.d/ceph.sources /etc/apt/sources.list.d/ceph.sources.backup
+        echo '# Disabled - no subscription' > /etc/apt/sources.list.d/ceph.sources
+      fi
+      # Clear task logs
+      systemctl stop pveproxy pvedaemon
+      rm -rf /var/log/pve/tasks/*
+      systemctl start pveproxy pvedaemon
+      # Test update
+      apt-get update
+    "
+    echo "$HOST fixed ✓"
+  done
+
 # Disaster Recovery - Restore full cluster from etcd backup
 cluster-restore:
   ./scripts/restore-cluster.sh

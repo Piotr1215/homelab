@@ -111,24 +111,44 @@ spec:
             - name: 'null'
             - name: 'default'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-default?template=alertmanager'
+              - url: 'http://ntfy-alertmanager.ntfy-alertmanager.svc.cluster.local:8080'
                 send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: alertmanager
+                    password: changeme
             - name: 'ntfy-critical'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-critical?template=alertmanager&priority=urgent&tags=rotating_light,warning'
+              - url: 'http://ntfy-alertmanager.ntfy-alertmanager.svc.cluster.local:8080'
                 send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: alertmanager
+                    password: changeme
             - name: 'ntfy-warning'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-warning?template=alertmanager&priority=high&tags=warning'
+              - url: 'http://ntfy-alertmanager.ntfy-alertmanager.svc.cluster.local:8080'
                 send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: alertmanager
+                    password: changeme
             - name: 'ntfy-storage'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-storage?template=alertmanager&priority=high&tags=floppy_disk'
+              - url: 'http://ntfy-alertmanager.ntfy-alertmanager.svc.cluster.local:8080'
                 send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: alertmanager
+                    password: changeme
             - name: 'ntfy-backup'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-backup?template=alertmanager&priority=high&tags=package'
+              - url: 'http://ntfy-alertmanager.ntfy-alertmanager.svc.cluster.local:8080'
                 send_resolved: true
+                http_config:
+                  basic_auth:
+                    username: alertmanager
+                    password: changeme
             - name: 'ntfy-vcluster-mcp'
               webhook_configs:
               - url_file: /etc/alertmanager/secrets/ntfy-webhook-url/url

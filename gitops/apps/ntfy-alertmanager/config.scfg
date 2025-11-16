@@ -1,0 +1,42 @@
+# ntfy-alertmanager configuration
+http-address :8080
+log-level info
+alert-mode single
+
+# Basic auth for Alertmanager webhook
+user alertmanager
+password changeme
+
+labels {
+    order "severity"
+
+    severity "critical" {
+        priority 5
+        tags "rotating_light,warning"
+    }
+
+    severity "warning" {
+        priority 4
+        tags "warning"
+    }
+
+    severity "info" {
+        priority 3
+    }
+}
+
+resolved {
+    tags "resolved,white_check_mark"
+    priority 1
+}
+
+ntfy {
+    server https://ntfy.sh
+    topic homelab-piotr1215-alerts
+}
+
+cache {
+    type memory
+    duration 24h
+    cleanup-interval 1h
+}

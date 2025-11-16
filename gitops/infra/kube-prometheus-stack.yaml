@@ -111,23 +111,23 @@ spec:
             - name: 'null'
             - name: 'default'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-default'
+              - url: 'https://ntfy.sh/homelab-piotr1215-default?template=alertmanager'
                 send_resolved: true
             - name: 'ntfy-critical'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-critical?priority=urgent&tags=rotating_light,warning'
+              - url: 'https://ntfy.sh/homelab-piotr1215-critical?template=alertmanager&priority=urgent&tags=rotating_light,warning'
                 send_resolved: true
             - name: 'ntfy-warning'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-warning?priority=high&tags=warning'
+              - url: 'https://ntfy.sh/homelab-piotr1215-warning?template=alertmanager&priority=high&tags=warning'
                 send_resolved: true
             - name: 'ntfy-storage'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-storage?priority=high&tags=floppy_disk'
+              - url: 'https://ntfy.sh/homelab-piotr1215-storage?template=alertmanager&priority=high&tags=floppy_disk'
                 send_resolved: true
             - name: 'ntfy-backup'
               webhook_configs:
-              - url: 'https://ntfy.sh/homelab-piotr1215-backup?priority=high&tags=package'
+              - url: 'https://ntfy.sh/homelab-piotr1215-backup?template=alertmanager&priority=high&tags=package'
                 send_resolved: true
             - name: 'ntfy-vcluster-mcp'
               webhook_configs:

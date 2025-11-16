@@ -150,3 +150,14 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+
+  ignoreDifferences:
+    - group: ""
+      kind: PersistentVolumeClaim
+      jsonPointers:
+        - /metadata/creationTimestamp
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates/0/metadata/creationTimestamp
+        - /spec/volumeClaimTemplates/1/metadata/creationTimestamp

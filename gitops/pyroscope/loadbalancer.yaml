@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pyroscope-lb
+  namespace: pyroscope
+  labels:
+    app: pyroscope
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.107"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: pyroscope
+    app.kubernetes.io/instance: pyroscope
+  ports:
+  - name: http
+    port: 4040
+    targetPort: 4040
+    protocol: TCP

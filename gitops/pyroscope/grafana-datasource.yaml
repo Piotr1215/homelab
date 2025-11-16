@@ -17,5 +17,4 @@ data:
         editable: true
         isDefault: false
         jsonData:
-          keepCookies: []
-          httpMethod: GET
+          minStep: '15s'

@@ -39,13 +39,29 @@ spec:
               services:
                 # Auto-discover all services in cluster
                 - k8s_namespace: ".*"
-              # Exclude Beyla itself and monitoring tools
+              # Exclude infrastructure and monitoring namespaces
               exclude_services:
                 - k8s_pod_name: "beyla-.*"
-                - k8s_pod_name: "prometheus-.*"
-                - k8s_pod_name: "tempo-.*"
                 - k8s_namespace: "kube-system"
+                - k8s_namespace: "kube-public"
+                - k8s_namespace: "kube-node-lease"
                 - k8s_namespace: "argocd"
+                - k8s_namespace: "prometheus"
+                - k8s_namespace: "tempo"
+                - k8s_namespace: "loki"
+                - k8s_namespace: "pyroscope"
+                - k8s_namespace: "longhorn-system"
+                - k8s_namespace: "harbor"
+                - k8s_namespace: "metallb-system"
+                - k8s_namespace: "cert-manager"
+                - k8s_namespace: "external-secrets-operator"
+                - k8s_namespace: "k8sgpt-operator-system"
+                - k8s_namespace: "falco"
+                - k8s_namespace: "local-path-provisioner"
+                - k8s_namespace: "local-path-storage"
+                - k8s_namespace: "retina"
+                - k8s_namespace: "envoy-gateway-system"
+                - k8s_namespace: "cluster-scanning"
 
             # eBPF settings
             ebpf:
@@ -93,11 +109,11 @@ spec:
         # Resource limits (per pod/node)
         resources:
           requests:
-            cpu: 50m
-            memory: 128Mi
-          limits:
-            cpu: 500m
+            cpu: 100m
             memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
 
         # Security context for eBPF operations
         securityContext:

@@ -75,7 +75,7 @@ data:
           podSelector: app.kubernetes.io/name=grafana
       - Pyroscope:
           description: Continuous Profiling (eBPF)
-          href: http://192.168.178.110:4040
+          href: http://192.168.178.112:4040
           icon: si-grafana
           showStats: true
           namespace: pyroscope
@@ -125,7 +125,7 @@ data:
           podSelector: app=ntopng
       - Falco Security:
           description: Runtime Security Events
-          href: http://192.168.178.106:2802
+          href: http://192.168.178.109:2802
           icon: si-falco
           showStats: true
           namespace: falco
@@ -146,7 +146,7 @@ data:
           podSelector: app=open-webui
       - K8sGPT:
           description: AI-Powered K8s Troubleshooting (Grafana Dashboard)
-          href: http://192.168.178.96/d/k8sgpt/k8sgpt-overview
+          href: http://192.168.178.96/d/U82QyO8Vz/k8sgpt-overview
           icon: mdi-kubernetes
           widget:
             type: prometheusmetric

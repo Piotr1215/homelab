@@ -59,6 +59,24 @@ spec:
             fsGroup: 472
             runAsUser: 472
             runAsNonRoot: true
+          env:
+            GF_INSTALL_PLUGINS: grafana-pyroscope-datasource
+          additionalDataSources:
+          - name: Pyroscope
+            type: grafana-pyroscope-datasource
+            access: proxy
+            url: http://pyroscope.pyroscope.svc.cluster.local:4040
+            editable: true
+            isDefault: false
+            jsonData:
+              minStep: '15s'
+          sidecar:
+            datasources:
+              enabled: true
+              adminUser: admin
+              adminPassword:
+                existingSecret: grafana-admin-token
+                key: token
         alertmanager:
           alertmanagerSpec:
             secrets:

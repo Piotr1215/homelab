@@ -17,11 +17,13 @@ spec:
       maxRetries: 5
   noCache: false
   repository: ghcr.io/k8sgpt-ai/k8sgpt
-  version: v0.3.48
-  # filters:
-  #   - Pod
-  #   - Service
-  #   - Deployment
-  #   - ReplicaSet
-  #   - PersistentVolumeClaim
-  #   - Ingress
+  version: v0.4.26
+  filters:
+    - Pod
+    - Deployment
+    - ReplicaSet
+    - PersistentVolumeClaim
+    - Ingress
+    - StatefulSet
+    - CronJob
+    - Node

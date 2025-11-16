@@ -7,7 +7,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://git.dcotta.eu/piotr1215/homelab.git
+    repoURL: https://github.com/Piotr1215/homelab.git
     targetRevision: main
     path: gitops/apps/k8sgpt
   destination:

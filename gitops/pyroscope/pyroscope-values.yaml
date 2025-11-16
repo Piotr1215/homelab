@@ -1,16 +1,133 @@
 # Pyroscope Continuous Profiling - Minimal Homelab Configuration
 
-# eBPF Agent - DaemonSet for auto-discovery
+# Disable legacy scraping agent
 agent:
+  enabled: false
+
+# Enable Alloy for pprof scraping
+alloy:
   enabled: true
-  mode: daemonset
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
+  controller:
+    type: "daemonset"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  alloy:
+    configMap:
+      create: true
+      content: |
+        // Discover all pods on this node
+        discovery.kubernetes "local_pods" {
+          selectors {
+            field = "spec.nodeName=" + env("HOSTNAME")
+            role = "pod"
+          }
+          role = "pod"
+        }
+
+        // Scrape pprof endpoints from pods with profiling annotations
+        discovery.relabel "pprof_pods" {
+          targets = discovery.kubernetes.local_pods.targets
+
+          // Keep only pods with cpu scrape annotation enabled
+          rule {
+            source_labels = ["__meta_kubernetes_pod_annotation_profiles_grafana_com_cpu_scrape"]
+            action = "keep"
+            regex = "true"
+          }
+
+          // Keep only the http2 or http-metrics port (not memberlist)
+          rule {
+            source_labels = ["__meta_kubernetes_pod_container_port_name"]
+            action = "keep"
+            regex = "http2|http-metrics"
+          }
+
+          // Set address from pod IP and container port
+          rule {
+            source_labels = ["__meta_kubernetes_pod_ip", "__meta_kubernetes_pod_container_port_number"]
+            action = "replace"
+            separator = ":"
+            target_label = "__address__"
+          }
+
+          // Add service name from pod label or annotation
+          rule {
+            source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+            target_label = "service_name"
+          }
+
+          rule {
+            source_labels = ["__meta_kubernetes_pod_label_app"]
+            action = "replace"
+            target_label = "service_name"
+            regex = "(.+)"
+          }
+
+          // Add namespace
+          rule {
+            source_labels = ["__meta_kubernetes_namespace"]
+            target_label = "namespace"
+          }
+
+          // Add pod name
+          rule {
+            source_labels = ["__meta_kubernetes_pod_name"]
+            target_label = "pod"
+          }
+        }
+
+        pyroscope.scrape "pprof" {
+          targets = discovery.relabel.pprof_pods.output
+          forward_to = [pyroscope.write.endpoint.receiver]
+
+          profiling_config {
+            profile.process_cpu {
+              enabled = true
+              path = "/debug/pprof/profile"
+              delta = true
+            }
+
+            profile.godeltaprof_memory {
+              enabled = true
+              path = "/debug/pprof/delta_heap"
+            }
+
+            profile.memory {
+              enabled = true
+              path = "/debug/pprof/heap"
+              delta = false
+            }
+
+            profile.goroutine {
+              enabled = true
+              path = "/debug/pprof/goroutine"
+              delta = false
+            }
+
+            profile.block {
+              enabled = true
+              path = "/debug/pprof/block"
+              delta = true
+            }
+
+            profile.mutex {
+              enabled = true
+              path = "/debug/pprof/mutex"
+              delta = true
+            }
+          }
+        }
+
+        pyroscope.write "endpoint" {
+          endpoint {
+            url = "http://pyroscope.pyroscope.svc.cluster.local:4040"
+          }
+        }
 
 # Minimal resource configuration for homelab
 querier:

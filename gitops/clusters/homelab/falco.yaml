@@ -94,6 +94,8 @@ spec:
             service:
               type: LoadBalancer
               port: 2802
+              annotations:
+                metallb.universe.tf/loadBalancerIPs: "192.168.178.109"
             resources:
               requests:
                 cpu: 50m

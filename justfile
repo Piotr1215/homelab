@@ -286,3 +286,6 @@ proxmox-fix-repos:
 cluster-restore:
   ./scripts/restore-cluster.sh
 
+# K8sGPT - Show cluster issues found by AI
+k8sgpt:
+  kubectl get results -n k8sgpt-operator-system 2>/dev/null || echo "K8sGPT not running"

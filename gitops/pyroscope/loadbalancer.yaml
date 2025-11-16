@@ -6,8 +6,7 @@ metadata:
   namespace: pyroscope
   labels:
     app: pyroscope
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.107"
+  # IP auto-assigned by MetalLB: 192.168.178.110
 spec:
   type: LoadBalancer
   selector:

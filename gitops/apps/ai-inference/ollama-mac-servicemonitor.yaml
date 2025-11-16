@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ollama-mac
+  namespace: ai-tools
+  labels:
+    app: ollama-mac
+spec:
+  selector:
+    matchLabels:
+      app: ollama-mac
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s

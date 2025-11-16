@@ -130,6 +130,13 @@ data:
           showStats: true
           namespace: default
           podSelector: app.kubernetes.io/name=mcp-agentic-framework
+      - Open WebUI:
+          description: Self-Hosted AI Chat Interface (Mac Ollama)
+          href: http://192.168.178.108:8080
+          icon: mdi-chat-processing
+          showStats: true
+          namespace: ai-tools
+          podSelector: app=open-webui
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management

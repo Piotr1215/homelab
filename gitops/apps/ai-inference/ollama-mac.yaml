@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-mac
+  namespace: ai-tools
+  labels:
+    app: ollama-mac
+    component: inference
+  annotations:
+    availability: "ephemeral"
+    description: "Mac laptop - expect downtime during sleep/shutdown"
+    sla: "best-effort"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 11434
+    targetPort: 11434
+    protocol: TCP
+    name: http
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ollama-mac
+  namespace: ai-tools
+subsets:
+- addresses:
+  - ip: 192.168.178.141
+  ports:
+  - port: 11434
+    name: http

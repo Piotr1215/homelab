@@ -88,6 +88,13 @@ data:
           showStats: true
           namespace: minio
           podSelector: app=minio
+      - Harbor:
+          description: Container Registry with Vulnerability Scanning
+          href: http://192.168.178.100
+          icon: harbor.svg
+          showStats: true
+          namespace: harbor
+          podSelector: app=harbor,component=core
       - Longhorn:
           description: Distributed Block Storage
           href: http://192.168.178.105

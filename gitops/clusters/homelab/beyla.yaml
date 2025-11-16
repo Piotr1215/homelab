@@ -78,10 +78,9 @@ spec:
             network:
               enable: true
 
-            # Disable Prometheus export to avoid port conflicts
-            # Beyla metrics aren't critical - we only need traces
-            prometheus_export:
-              port: 0  # Disables the endpoint
+        # Disable service - we only export via OTLP, no Prometheus metrics
+        service:
+          enabled: false
 
         # Resource limits (per pod/node)
         resources:

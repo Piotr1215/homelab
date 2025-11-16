@@ -46,14 +46,17 @@
 
 | Service | IP | Pool |
 |---------|-----|------|
-| ArgoCD Server | 192.168.178.98 | core-services |
-| Homepage | 192.168.178.93 | app-services |
 | Prometheus | 192.168.178.90 | core-services |
-| Grafana | 192.168.178.96 | app-services |
+| AlertManager | 192.168.178.91 | core-services |
 | Vault UI | 192.168.178.92 | core-services |
-| MinIO | 192.168.178.97 | app-services |
+| Homepage | 192.168.178.93 | app-services |
 | Hubble UI | 192.168.178.94 | app-services |
+| Grafana | 192.168.178.96 | app-services |
+| MinIO | 192.168.178.97 | app-services |
+| ArgoCD Server | 192.168.178.98 | core-services |
 | Ingress | 192.168.178.99 | app-services |
+| Harbor | 192.168.178.100 | core-services |
+| ntopng | 192.168.178.104 | app-services |
 
 ## Recommended Next Steps
 

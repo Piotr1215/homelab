@@ -1,0 +1,268 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: homelab-alerts
+  namespace: prometheus
+  labels:
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    # Pod and Container Alerts
+    - name: pod.rules
+      interval: 30s
+      rules:
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has restarted {{ $value }} times in the last 15 minutes."
+
+        - alert: PodNotReady
+          expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in {{ $labels.phase }} state for more than 10 minutes."
+
+        - alert: ContainerMemoryUsageHigh
+          expr: (container_memory_working_set_bytes / container_spec_memory_limit_bytes) > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} memory usage high"
+            description: "Container is using {{ $value | humanizePercentage }} of memory limit."
+
+    # Node Alerts
+    - name: node.rules
+      interval: 30s
+      rules:
+        - alert: NodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} is not ready"
+            description: "Node {{ $labels.node }} has been unready for more than 5 minutes."
+
+        - alert: NodeMemoryPressure
+          expr: kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} has memory pressure"
+            description: "Node {{ $labels.node }} is experiencing memory pressure."
+
+        - alert: NodeDiskPressure
+          expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} has disk pressure"
+            description: "Node {{ $labels.node }} is experiencing disk pressure."
+
+        - alert: NodeDiskSpaceLow
+          expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} disk space low"
+            description: "Node {{ $labels.instance }} has less than 10% disk space available on {{ $labels.mountpoint }}."
+
+        - alert: NodeDiskSpaceCritical
+          expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.instance }} disk space critical"
+            description: "Node {{ $labels.instance }} has less than 5% disk space available on {{ $labels.mountpoint }}."
+
+    # Storage Alerts
+    - name: storage.rules
+      interval: 30s
+      rules:
+        - alert: PersistentVolumeSpaceLow
+          expr: (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) < 0.2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PV {{ $labels.persistentvolumeclaim }} space low"
+            description: "Persistent volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has less than 20% space available."
+
+        - alert: PersistentVolumeSpaceCritical
+          expr: (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) < 0.1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PV {{ $labels.persistentvolumeclaim }} space critical"
+            description: "Persistent volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has less than 10% space available."
+
+    # Certificate Alerts
+    - name: certificate.rules
+      interval: 1h
+      rules:
+        - alert: CertificateExpiringSoon
+          expr: certmanager_certificate_expiration_timestamp_seconds - time() < 7 * 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} expiring soon"
+            description: "Certificate {{ $labels.namespace }}/{{ $labels.name }} will expire in {{ $value | humanizeDuration }}."
+
+        - alert: CertificateExpiryCritical
+          expr: certmanager_certificate_expiration_timestamp_seconds - time() < 24 * 3600
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} expiring within 24h"
+            description: "Certificate {{ $labels.namespace }}/{{ $labels.name }} will expire in {{ $value | humanizeDuration }}."
+
+        - alert: CertificateNotReady
+          expr: certmanager_certificate_ready_status{condition="False"} == 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} not ready"
+            description: "Certificate {{ $labels.namespace }}/{{ $labels.name }} is not ready."
+
+    # Backup Alerts
+    - name: backup.rules
+      interval: 1h
+      rules:
+        - alert: VeleroBackupFailed
+          expr: increase(velero_backup_failure_total[24h]) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: "Velero backup failed"
+            description: "Velero backup has failed {{ $value }} times in the last 24 hours."
+
+        - alert: VeleroBackupPartialFailure
+          expr: increase(velero_backup_partial_failure_total[24h]) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup partially failed"
+            description: "Velero backup has partially failed {{ $value }} times in the last 24 hours."
+
+        - alert: NoBackupInLast24Hours
+          expr: time() - velero_backup_last_successful_timestamp{schedule!=""} > 24 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "No successful backup for schedule {{ $labels.schedule }}"
+            description: "No successful Velero backup has been created for schedule {{ $labels.schedule }} in the last 24 hours."
+
+    # ArgoCD Alerts
+    - name: argocd.rules
+      interval: 30s
+      rules:
+        - alert: ArgoApplicationOutOfSync
+          expr: argocd_app_info{sync_status="OutOfSync"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ArgoCD application {{ $labels.name }} out of sync"
+            description: "ArgoCD application {{ $labels.namespace }}/{{ $labels.name }} has been out of sync for more than 15 minutes."
+
+        - alert: ArgoApplicationHealthDegraded
+          expr: argocd_app_info{health_status=~"Degraded|Suspended"} == 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ArgoCD application {{ $labels.name }} health degraded"
+            description: "ArgoCD application {{ $labels.namespace }}/{{ $labels.name }} health is {{ $labels.health_status }}."
+
+        - alert: ArgoApplicationSyncFailed
+          expr: argocd_app_info{sync_status="Unknown"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ArgoCD application {{ $labels.name }} sync failed"
+            description: "ArgoCD application {{ $labels.namespace }}/{{ $labels.name }} sync status is Unknown."
+
+    # Vault Alerts
+    - name: vault.rules
+      interval: 30s
+      rules:
+        - alert: VaultSealed
+          expr: vault_core_unsealed == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault is sealed"
+            description: "Vault instance is sealed and requires manual intervention."
+
+        - alert: VaultHighMemoryUsage
+          expr: (container_memory_working_set_bytes{namespace="vault",container="vault"} / container_spec_memory_limit_bytes{namespace="vault",container="vault"}) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Vault memory usage high"
+            description: "Vault is using {{ $value | humanizePercentage }} of its memory limit."
+
+    # General Service Availability
+    - name: service.rules
+      interval: 30s
+      rules:
+        - alert: ServiceDown
+          expr: up{job=~".*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Service {{ $labels.job }} is down"
+            description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 5 minutes."
+
+        - alert: HighErrorRate
+          expr: rate(prometheus_http_requests_total{code=~"5.."}[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High error rate on {{ $labels.job }}"
+            description: "{{ $labels.job }} is experiencing high error rate: {{ $value }} errors/sec."
+
+    # Cluster Resource Alerts
+    - name: cluster.rules
+      interval: 30s
+      rules:
+        - alert: TooManyPods
+          expr: sum(kubelet_running_pods) > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Too many pods running"
+            description: "Cluster has {{ $value }} pods running, which may indicate resource issues."
+
+        - alert: KubernetesJobFailed
+          expr: kube_job_status_failed > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kubernetes job {{ $labels.namespace }}/{{ $labels.job_name }} failed"
+            description: "Kubernetes job {{ $labels.namespace }}/{{ $labels.job_name }} has failed."

@@ -45,6 +45,12 @@ spec:
           value: local-path
         - name: alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage
           value: 1Gi
+        - name: alertmanager.service.type
+          value: LoadBalancer
+        - name: alertmanager.service.annotations.metallb\.universe\.tf/loadBalancerIPs
+          value: "192.168.178.91"
+        - name: alertmanager.enabled
+          value: "true"
         - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
           value: "true"
       values: |
@@ -61,35 +67,78 @@ spec:
             global:
               resolve_timeout: 5m
             route:
-              group_by: ['namespace']
+              group_by: ['alertname', 'cluster', 'service']
               group_wait: 10s
               group_interval: 5m
               repeat_interval: 12h
-              receiver: 'null'
+              receiver: 'default'
               routes:
+              # Critical alerts - send immediately
+              - matchers:
+                - severity = critical
+                receiver: ntfy-critical
+                group_wait: 0s
+                repeat_interval: 4h
+                continue: true
+              # Warning alerts
+              - matchers:
+                - severity = warning
+                receiver: ntfy-warning
+                group_wait: 30s
+                repeat_interval: 12h
+              # Storage alerts
+              - matchers:
+                - alertname =~ "PersistentVolume.*|.*DiskPressure"
+                receiver: ntfy-storage
+                repeat_interval: 12h
+              # Backup alerts
+              - matchers:
+                - alertname =~ "VeleroBackup.*|VaultSnapshot.*"
+                receiver: ntfy-backup
+                repeat_interval: 12h
+              # VCluster MCP alerts
               - matchers:
                 - alertname = VClusterMCPServerUsed
                 receiver: ntfy-vcluster-mcp
                 group_by: ['pod']
                 group_wait: 5s
                 repeat_interval: 5m
+              # Watchdog (health check - silence)
               - matchers:
                 - alertname = "Watchdog"
                 receiver: "null"
             receivers:
             - name: 'null'
+            - name: 'default'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-piotr1215-default'
+                send_resolved: true
+            - name: 'ntfy-critical'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-piotr1215-critical?priority=urgent&tags=rotating_light,warning'
+                send_resolved: true
+            - name: 'ntfy-warning'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-piotr1215-warning?priority=high&tags=warning'
+                send_resolved: true
+            - name: 'ntfy-storage'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-piotr1215-storage?priority=high&tags=floppy_disk'
+                send_resolved: true
+            - name: 'ntfy-backup'
+              webhook_configs:
+              - url: 'https://ntfy.sh/homelab-piotr1215-backup?priority=high&tags=package'
+                send_resolved: true
             - name: 'ntfy-vcluster-mcp'
               webhook_configs:
               - url_file: /etc/alertmanager/secrets/ntfy-webhook-url/url
                 send_resolved: true
             inhibit_rules:
-            - equal:
-              - namespace
-              - alertname
-              source_matchers:
+            - source_matchers:
               - severity = critical
               target_matchers:
-              - severity =~ warning|info
+              - severity = warning
+              equal: ['alertname', 'namespace', 'pod']
             templates:
             - /etc/alertmanager/config/*.tmpl
   destination:

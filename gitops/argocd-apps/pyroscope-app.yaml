@@ -11,7 +11,7 @@ spec:
   sources:
   - repoURL: https://grafana.github.io/helm-charts
     chart: pyroscope
-    targetRevision: "1.15.1"
+    targetRevision: "1.16.0"
     helm:
       valueFiles:
       - $values/gitops/pyroscope/pyroscope-values.yaml

@@ -27,3 +27,7 @@ spec:
     - StatefulSet
     - CronJob
     - Node
+    - Service
+    - HorizontalPodAutoscaler
+    - PodDisruptionBudget
+    - NetworkPolicy

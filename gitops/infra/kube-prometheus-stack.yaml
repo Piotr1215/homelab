@@ -60,7 +60,7 @@ spec:
             runAsUser: 472
             runAsNonRoot: true
           env:
-            GF_INSTALL_PLUGINS: grafana-pyroscope-datasource
+            GF_INSTALL_PLUGINS: grafana-pyroscope-datasource,grafana-llm-app
           additionalDataSources:
           - name: Pyroscope
             type: grafana-pyroscope-datasource

@@ -73,6 +73,13 @@ data:
           showStats: true
           namespace: prometheus
           podSelector: app.kubernetes.io/name=grafana
+      - Pyroscope:
+          description: Continuous Profiling (eBPF)
+          href: http://192.168.178.107:4040
+          icon: si-grafana
+          showStats: true
+          namespace: pyroscope
+          podSelector: app.kubernetes.io/name=pyroscope
     - Services:
       - Forgejo:
           description: Self-hosted Git Server

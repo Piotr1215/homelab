@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-pyroscope-datasource
+  namespace: prometheus
+  labels:
+    grafana_datasource: "1"
+data:
+  pyroscope-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Pyroscope
+        type: grafana-pyroscope-datasource
+        access: proxy
+        url: http://pyroscope-query-frontend.pyroscope.svc.cluster.local:4040
+        editable: true
+        isDefault: false
+        jsonData:
+          keepCookies: []
+          httpMethod: GET

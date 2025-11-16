@@ -1,0 +1,96 @@
+# Pyroscope Continuous Profiling - Minimal Homelab Configuration
+
+# eBPF Agent - DaemonSet for auto-discovery
+agent:
+  enabled: true
+  mode: daemonset
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Minimal resource configuration for homelab
+querier:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+queryFrontend:
+  replicas: 1
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: "192.168.178.107"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+distributor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+ingester:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 10Gi
+
+compactor:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 10Gi
+
+storeGateway:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 10Gi
+
+# Monitoring
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack

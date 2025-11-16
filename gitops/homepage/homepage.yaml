@@ -144,6 +144,23 @@ data:
           showStats: true
           namespace: ai-tools
           podSelector: app=open-webui
+      - K8sGPT:
+          description: AI-Powered K8s Troubleshooting (Grafana Dashboard)
+          href: http://192.168.178.96/d/k8sgpt/k8sgpt-overview
+          icon: mdi-kubernetes
+          widget:
+            type: prometheusmetric
+            url: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090
+            refreshInterval: 30000
+            metrics:
+              - label: Issues Found
+                query: sum(k8sgpt_number_of_results)
+                format:
+                  type: number
+              - label: AI Backend Failures
+                query: sum(k8sgpt_number_of_failed_backend_ai_calls)
+                format:
+                  type: number
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management

@@ -13,7 +13,7 @@ data:
       - name: Pyroscope
         type: grafana-pyroscope-datasource
         access: proxy
-        url: http://pyroscope-query-frontend.pyroscope.svc.cluster.local:4040
+        url: http://pyroscope.pyroscope.svc.cluster.local:4040
         editable: true
         isDefault: false
         jsonData:

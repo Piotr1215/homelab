@@ -66,6 +66,14 @@ spec:
               protocol: http/protobuf
               interval: 60s
 
+            # Continuous Profiling - send to Pyroscope
+            profiles:
+              enabled: true
+
+            # Export profiles in Pyroscope format
+            pyroscope_export:
+              endpoint: http://pyroscope.pyroscope.svc.cluster.local:4040
+
             # Kubernetes metadata
             attributes:
               kubernetes:

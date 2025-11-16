@@ -156,8 +156,10 @@ spec:
       kind: PersistentVolumeClaim
       jsonPointers:
         - /metadata/creationTimestamp
+        - /metadata/managedFields
     - group: apps
       kind: StatefulSet
       jsonPointers:
-        - /spec/volumeClaimTemplates/0/metadata/creationTimestamp
-        - /spec/volumeClaimTemplates/1/metadata/creationTimestamp
+        - /spec/volumeClaimTemplates
+      managedFieldsManagers:
+        - kube-controller-manager

@@ -1,0 +1,139 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: beyla
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after OTel Collector
+spec:
+  project: default
+  source:
+    chart: beyla
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 1.9.9
+    helm:
+      values: |
+        # Beyla eBPF auto-instrumentation configuration
+
+        # Image configuration
+        image:
+          repository: grafana/beyla
+          tag: "2.7.5"
+
+        # Deployment mode - application (DaemonSet is the default)
+        preset: application
+
+        # Enable privileged mode for eBPF
+        privileged: true
+
+        # Enable context propagation
+        contextPropagation:
+          enabled: true
+
+        # Beyla configuration
+        config:
+          create: true
+          data:
+            # Service discovery - what to instrument
+            discovery:
+              services:
+                # Auto-discover all services in cluster
+                - k8s_namespace: ".*"
+              # Exclude Beyla itself and monitoring tools
+              exclude_services:
+                - k8s_pod_name: "beyla-.*"
+                - k8s_pod_name: "prometheus-.*"
+                - k8s_pod_name: "tempo-.*"
+                - k8s_namespace: "kube-system"
+                - k8s_namespace: "argocd"
+
+            # eBPF settings
+            ebpf:
+              # Trace context propagation
+              trace_map_size: 4096
+              # Performance tuning
+              wakeup_len: 100
+
+            # OTEL traces export to OpenTelemetry Collector
+            otel_traces_export:
+              # Send to OTel Collector via HTTP
+              endpoint: http://opentelemetry-collector.tempo.svc.cluster.local:4318
+              protocol: http/protobuf
+
+            # Optional: Export Beyla's own metrics
+            otel_metrics_export:
+              endpoint: http://opentelemetry-collector.tempo.svc.cluster.local:4318
+              protocol: http/protobuf
+              interval: 60s
+
+            # Kubernetes metadata
+            attributes:
+              kubernetes:
+                enable: true
+
+            # Logging
+            log_level: info
+
+            # Network configuration
+            network:
+              enable: true
+
+            # Disable Prometheus export to avoid port conflicts
+            # Beyla metrics aren't critical - we only need traces
+            prometheus_export:
+              port: 0  # Disables the endpoint
+
+        # Resource limits (per pod/node)
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        # Security context for eBPF operations
+        securityContext:
+          privileged: true  # Required for eBPF
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - SYS_PTRACE
+              - NET_ADMIN
+
+        # Node selector - only Linux nodes, exclude control plane
+        nodeSelector:
+          kubernetes.io/os: linux
+
+        # Node affinity - avoid control plane (kube-main) to prevent port 9090 conflict
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
+
+        # Tolerations for all nodes
+        tolerations:
+          - effect: NoSchedule
+            operator: Exists
+
+        # Environment variables
+        env:
+          BEYLA_KUBE_METADATA_ENABLE: "autodetect"
+          BEYLA_OPEN_PORT: "80,443,8080,9090,3000,4317,4318"
+          BEYLA_SERVICE_NAMESPACE: "k8s"
+          OTEL_EBPF_KUBE_CLUSTER_NAME: "homelab"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tempo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

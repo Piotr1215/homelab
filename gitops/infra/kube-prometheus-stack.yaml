@@ -54,6 +54,8 @@ spec:
         - name: prometheus.prometheusSpec.enableRemoteWriteReceiver
           value: "true"
       values: |
+        kubeEtcd:
+          enabled: false
         grafana:
           securityContext:
             fsGroup: 472

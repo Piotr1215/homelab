@@ -89,8 +89,8 @@ spec:
           webui:
             enabled: true
             replicaCount: 1
-            # TTL for Redis keys - keep events for 30 days
-            ttl: "30d"
+            # TTL for Redis keys - keep events for 7 days (reduced from 30d)
+            ttl: "7d"
             service:
               type: LoadBalancer
               port: 2802
@@ -103,6 +103,14 @@ spec:
               limits:
                 cpu: 200m
                 memory: 128Mi
+            redis:
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 256Mi
+                limits:
+                  cpu: 200m
+                  memory: 512Mi
 
         # Enable ServiceMonitor for Prometheus scraping
         serviceMonitor:

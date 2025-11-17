@@ -7,6 +7,20 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: ntopng-whitelist
+  namespace: ntopng
+data:
+  legitimate-hosts.conf: |
+    # Cloudflare Tunnel - vCluster remote access
+    # IP ranges used by Cloudflare
+    198.41.192.0/22
+    198.41.200.0/22
+    # Specific host seen
+    quic.cftunnel.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: fritzdump-script
   namespace: ntopng
 data:
@@ -57,6 +71,8 @@ data:
     # --packet-filter: Sample 1 in 10 packets (reduces CPU by ~70%)
     # --disable-alerts: Disable real-time alerting (reduces CPU)
     # --dump-flows: Disable flow dump (reduces disk I/O)
+    # NOTE: Cloudflare Tunnel (vCluster) whitelisted - see ntopng-whitelist ConfigMap
+    # To enable alerts: remove --disable-alerts, add --whitelist-file /etc/ntopng/legitimate-hosts.conf
     exec wget --no-check-certificate -qO- \
       "$FRITZIP/cgi-bin/capture_notimeout?ifaceorminor=$IFACE&snaplen=&capture=Start&sid=$SID" | \
       ntopng -i - \

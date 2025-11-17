@@ -138,23 +138,29 @@ choose_optimal_pve_host() {
 
     log "Checking resources on Proxmox hosts..."
 
-    # Get resources from both hosts
+    # Get resources from all hosts
     local pve1_resources
     local pve2_resources
+    local pve3_resources
     pve1_resources=$(get_pve_free_resources "$PVE1_HOST" 2>/dev/null || echo "0 0")
     pve2_resources=$(get_pve_free_resources "$PVE2_HOST" 2>/dev/null || echo "0 0")
+    pve3_resources=$(get_pve_free_resources "$PVE3_HOST" 2>/dev/null || echo "0 0")
 
     local pve1_mem=$(echo "$pve1_resources" | awk '{print $1}')
     local pve1_disk=$(echo "$pve1_resources" | awk '{print $2}')
     local pve2_mem=$(echo "$pve2_resources" | awk '{print $1}')
     local pve2_disk=$(echo "$pve2_resources" | awk '{print $2}')
+    local pve3_mem=$(echo "$pve3_resources" | awk '{print $1}')
+    local pve3_disk=$(echo "$pve3_resources" | awk '{print $2}')
 
     print_info "PVE1 Free" "${pve1_mem}GB RAM, ${pve1_disk}GB disk"
     print_info "PVE2 Free" "${pve2_mem}GB RAM, ${pve2_disk}GB disk"
+    print_info "PVE3 Free" "${pve3_mem}GB RAM, ${pve3_disk}GB disk"
 
     # Check if requirements can be met
     local pve1_ok=0
     local pve2_ok=0
+    local pve3_ok=0
 
     if [ "$pve1_mem" -ge "$required_mem" ] && [ "$pve1_disk" -ge "$required_disk" ]; then
         pve1_ok=1
@@ -164,22 +170,35 @@ choose_optimal_pve_host() {
         pve2_ok=1
     fi
 
-    # Choose host with most free resources (prefer memory)
-    if [ $pve1_ok -eq 0 ] && [ $pve2_ok -eq 0 ]; then
-        log_error "Neither PVE host has sufficient resources (need ${required_mem}GB RAM, ${required_disk}GB disk)"
-        return 1
-    elif [ $pve1_ok -eq 1 ] && [ $pve2_ok -eq 0 ]; then
-        echo "$PVE1_HOST"
-    elif [ $pve1_ok -eq 0 ] && [ $pve2_ok -eq 1 ]; then
-        echo "$PVE2_HOST"
-    else
-        # Both OK, choose one with more free memory
-        if [ "$pve1_mem" -ge "$pve2_mem" ]; then
-            echo "$PVE1_HOST"
-        else
-            echo "$PVE2_HOST"
-        fi
+    if [ "$pve3_mem" -ge "$required_mem" ] && [ "$pve3_disk" -ge "$required_disk" ]; then
+        pve3_ok=1
     fi
+
+    # Choose host with most free memory
+    if [ $pve1_ok -eq 0 ] && [ $pve2_ok -eq 0 ] && [ $pve3_ok -eq 0 ]; then
+        log_error "No PVE host has sufficient resources (need ${required_mem}GB RAM, ${required_disk}GB disk)"
+        return 1
+    fi
+
+    # Find host with most free memory among those that meet requirements
+    local best_host="$PVE1_HOST"
+    local best_mem=$pve1_mem
+
+    if [ $pve1_ok -eq 0 ]; then
+        best_mem=0
+    fi
+
+    if [ $pve2_ok -eq 1 ] && [ "$pve2_mem" -gt "$best_mem" ]; then
+        best_host="$PVE2_HOST"
+        best_mem=$pve2_mem
+    fi
+
+    if [ $pve3_ok -eq 1 ] && [ "$pve3_mem" -gt "$best_mem" ]; then
+        best_host="$PVE3_HOST"
+        best_mem=$pve3_mem
+    fi
+
+    echo "$best_host"
 }
 
 # Clone VM from source

@@ -26,7 +26,7 @@ metadata:
   namespace: ai-tools
 subsets:
 - addresses:
-  - ip: 192.168.178.141
+  - ip: 192.168.178.147
   ports:
   - port: 11434
     name: http

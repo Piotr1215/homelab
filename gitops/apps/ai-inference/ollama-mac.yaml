@@ -12,21 +12,9 @@ metadata:
     description: "Mac laptop - expect downtime during sleep/shutdown"
     sla: "best-effort"
 spec:
-  type: ClusterIP
+  type: ExternalName
+  externalName: mac-os.fritz.box
   ports:
   - port: 11434
-    targetPort: 11434
     protocol: TCP
-    name: http
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: ollama-mac
-  namespace: ai-tools
-subsets:
-- addresses:
-  - ip: 192.168.178.147
-  ports:
-  - port: 11434
     name: http

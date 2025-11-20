@@ -6,11 +6,11 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  project: platform
+  project: default
   source:
     chart: k8s-gateway
     repoURL: https://ori-edge.github.io/k8s_gateway
-    targetRevision: 2.4.0
+    targetRevision: 2.3.3
     helm:
       values: |
         # Domain for all Kubernetes resources
@@ -20,28 +20,12 @@ spec:
         service:
           type: LoadBalancer
           loadBalancerIP: 192.168.178.103
-          annotations:
-            metallb.universe.tf/allow-shared-ip: "k8s-gateway"
+          port: 53
+          protocol: UDP
 
-        # Watch for Services and Ingresses
+        # Watch for LoadBalancer Services only
         watchedResources:
           - Service
-          - Ingress
-
-        # Only watch LoadBalancer services
-        serviceType: LoadBalancer
-
-        # Enable fallthrough to upstream DNS for non-cluster domains
-        fallthrough:
-          enabled: true
-          zones:
-            - .
-
-        # Forward non-cluster queries to upstream DNS
-        forward:
-          enabled: true
-          primary: 8.8.8.8
-          secondary: 8.8.4.4
 
         # Resources
         resources:

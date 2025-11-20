@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k8s-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: platform
+  source:
+    chart: k8s-gateway
+    repoURL: https://ori-edge.github.io/k8s_gateway
+    targetRevision: 2.4.0
+    helm:
+      values: |
+        # Domain for all Kubernetes resources
+        domain: home.arpa
+
+        # DNS server configuration
+        service:
+          type: LoadBalancer
+          loadBalancerIP: 192.168.178.103
+          annotations:
+            metallb.universe.tf/allow-shared-ip: "k8s-gateway"
+
+        # Watch for Services and Ingresses
+        watchedResources:
+          - Service
+          - Ingress
+
+        # Only watch LoadBalancer services
+        serviceType: LoadBalancer
+
+        # Enable fallthrough to upstream DNS for non-cluster domains
+        fallthrough:
+          enabled: true
+          zones:
+            - .
+
+        # Forward non-cluster queries to upstream DNS
+        forward:
+          enabled: true
+          primary: 8.8.8.8
+          secondary: 8.8.4.4
+
+        # Resources
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

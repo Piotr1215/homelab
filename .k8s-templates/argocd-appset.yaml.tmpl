@@ -1,0 +1,45 @@
+---
+# ArgoCD ApplicationSet Template - Single App
+# Creates an ApplicationSet for a single application (list generator)
+# For multi-app patterns, use git generator variant
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{APP_NAME}}
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: {{APP_NAME}}
+            namespace: {{NAMESPACE|default:APP_NAME}}
+  template:
+    metadata:
+      name: "{{`{{ .app }}`}}"
+      {{#FINALIZERS}}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      {{/FINALIZERS}}
+    spec:
+      project: {{PROJECT|default:applications}}
+      source:
+        repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+        targetRevision: {{TARGET_REVISION|default:HEAD}}
+        path: "gitops/apps/{{`{{ .app }}`}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{`{{ .namespace }}`}}"
+      syncPolicy:
+        automated:
+          prune: {{AUTO_PRUNE|default:true}}
+          selfHeal: {{AUTO_SELF_HEAL|default:true}}
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: {{RETRY_LIMIT|default:5}}
+          backoff:
+            duration: {{RETRY_DURATION|default:5s}}
+            factor: {{RETRY_FACTOR|default:2}}
+            maxDuration: {{RETRY_MAX_DURATION|default:3m}}

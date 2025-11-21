@@ -1,0 +1,30 @@
+config:
+  # Register the repositories to check for images
+  registries:
+    - name: Docker Hub
+      api_url: https://registry-1.docker.io
+      ping: yes
+      default: yes
+
+# Git commit configuration
+git:
+  user: argocd-image-updater
+  email: noreply@argoproj.io
+
+# Resource limits
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Log level
+logLevel: info
+
+# Metrics
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false

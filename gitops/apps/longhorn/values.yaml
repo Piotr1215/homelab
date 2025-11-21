@@ -1,0 +1,29 @@
+# Disable pre-upgrade checker for ArgoCD compatibility
+preUpgradeChecker:
+  jobEnabled: false
+defaultSettings:
+  defaultReplicaCount: "2"
+  replicaSoftAntiAffinity: "true"
+  backupTarget: "nfs://192.168.178.138:/volume1/Kubernetes/longhorn-backups"
+  autoDeletePodWhenVolumeDetachedUnexpectedly: "true"
+  createDefaultDiskLabeledNodes: "true"
+  autoSalvage: "true"
+  guaranteedInstanceManagerCPU: "12"
+persistence:
+  defaultClass: true
+  defaultClassReplicaCount: 2
+service:
+  ui:
+    type: LoadBalancer
+    loadBalancerIP: ""
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: "192.168.178.105"
+csi:
+  attacherReplicaCount: 2
+  provisionerReplicaCount: 2
+  resizerReplicaCount: 2
+  snapshotterReplicaCount: 2
+longhornManager:
+  priorityClass: system-cluster-critical
+longhornDriver:
+  priorityClass: system-cluster-critical

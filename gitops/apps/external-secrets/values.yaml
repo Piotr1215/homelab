@@ -1,0 +1,46 @@
+installCRDs: true
+
+replicaCount: 1
+
+# Enable Bitwarden SDK Server for Bitwarden Secrets Manager support
+bitwarden-sdk-server:
+  enabled: true
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 9998
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+webhook:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+certController:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

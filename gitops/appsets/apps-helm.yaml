@@ -1,0 +1,175 @@
+---
+# Helm chart apps with external sources
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-helm
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: kubernetes-dashboard
+            namespace: kubernetes-dashboard
+            chartRepo: https://kubernetes.github.io/dashboard/
+            chartName: kubernetes-dashboard
+            chartVersion: "7.14.0"
+            createNamespace: "false"
+          - app: forgejo
+            namespace: git-mirror
+            chartRepo: oci://code.forgejo.org/forgejo-helm/forgejo
+            chartName: forgejo
+            chartVersion: "8.0.0"
+            createNamespace: "false"
+          - app: pyroscope
+            namespace: pyroscope
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: pyroscope
+            chartVersion: "1.16.0"
+            createNamespace: "true"
+          - app: longhorn
+            namespace: longhorn-system
+            chartRepo: https://charts.longhorn.io
+            chartName: longhorn
+            chartVersion: "1.10.1"
+            createNamespace: "true"
+          - app: cert-manager
+            namespace: cert-manager
+            chartRepo: https://charts.jetstack.io
+            chartName: cert-manager
+            chartVersion: "v1.19.1"
+            createNamespace: "true"
+          - app: external-secrets
+            namespace: external-secrets
+            chartRepo: https://charts.external-secrets.io
+            chartName: external-secrets
+            chartVersion: "0.20.4"
+            createNamespace: "true"
+          - app: kube-prometheus-stack
+            namespace: prometheus
+            chartRepo: https://prometheus-community.github.io/helm-charts
+            chartName: kube-prometheus-stack
+            chartVersion: "79.6.1"
+            createNamespace: "true"
+          - app: loki
+            namespace: loki
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: loki
+            chartVersion: "6.46.0"
+            createNamespace: "true"
+          - app: tempo
+            namespace: tempo
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: tempo
+            chartVersion: "1.24.0"
+            createNamespace: "true"
+          - app: promtail
+            namespace: loki
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: promtail
+            chartVersion: "6.17.1"
+            createNamespace: "false"
+          - app: envoy-gateway
+            namespace: envoy-gateway-system
+            chartRepo: oci://docker.io/envoyproxy/gateway-helm
+            chartName: gateway-helm
+            chartVersion: "v1.4.0"
+            createNamespace: "true"
+          - app: argocd-image-updater
+            namespace: argocd
+            chartRepo: https://argoproj.github.io/argo-helm
+            chartName: argocd-image-updater
+            chartVersion: "0.14.0"
+            createNamespace: "false"
+          - app: beyla
+            namespace: tempo
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: beyla
+            chartVersion: "1.9.9"
+            createNamespace: "false"
+          - app: falco
+            namespace: falco
+            chartRepo: https://falcosecurity.github.io/charts
+            chartName: falco
+            chartVersion: "4.15.1"
+            createNamespace: "true"
+          - app: k8sgpt-operator
+            namespace: k8sgpt-operator-system
+            chartRepo: https://charts.k8sgpt.ai/
+            chartName: k8sgpt-operator
+            chartVersion: "0.2.24"
+            createNamespace: "true"
+          - app: metrics-server
+            namespace: kube-system
+            chartRepo: https://kubernetes-sigs.github.io/metrics-server/
+            chartName: metrics-server
+            chartVersion: "3.13.0"
+            createNamespace: "false"
+          - app: opentelemetry-collector
+            namespace: tempo
+            chartRepo: https://open-telemetry.github.io/opentelemetry-helm-charts
+            chartName: opentelemetry-collector
+            chartVersion: "0.140.0"
+            createNamespace: "false"
+          - app: github-exporter
+            namespace: prometheus
+            chartRepo: https://promhippie.github.io/charts
+            chartName: github-exporter
+            chartVersion: "7.0.13"
+            createNamespace: "false"
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - longhorn
+  template:
+    metadata:
+      name: "{{ .app }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: applications
+      sources:
+        # Helm chart
+        - repoURL: "{{ .chartRepo }}"
+          chart: "{{ .chartName }}"
+          targetRevision: "{{ .chartVersion }}"
+          helm:
+            releaseName: "{{ .app }}"
+            valueFiles:
+              - $values/gitops/apps/{{ .app }}/values.yaml
+        # Values reference
+        - repoURL: https://github.com/Piotr1215/homelab.git
+          targetRevision: HEAD
+          ref: values
+        # Extra K8s resources
+        - repoURL: https://github.com/Piotr1215/homelab.git
+          targetRevision: HEAD
+          path: gitops/apps/{{ .app }}
+          directory:
+            exclude: "values.yaml"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace={{ .createNamespace | default "false" }}
+          - SkipDryRunOnMissingResource=true
+          - ServerSideApply=true
+          - RespectIgnoreDifferences=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

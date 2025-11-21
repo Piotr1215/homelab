@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-agentic-framework
+  labels:
+    app.kubernetes.io/name: mcp-agentic-framework
+    app.kubernetes.io/instance: mcp-agentic-framework
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mcp-agentic-framework
+      app.kubernetes.io/instance: mcp-agentic-framework
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mcp-agentic-framework
+        app.kubernetes.io/instance: mcp-agentic-framework
+    spec:
+      containers:
+        - name: mcp-server
+          image: piotrzan/mcp-agentic-framework:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3113
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3113
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3113
+            initialDelaySeconds: 5
+            periodSeconds: 10

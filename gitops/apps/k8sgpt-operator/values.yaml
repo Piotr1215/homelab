@@ -1,0 +1,12 @@
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
+grafanaDashboard:
+  enabled: true
+  folder:
+    annotation: grafana_folder
+    name: ai
+  label:
+    key: grafana_dashboard
+    value: "1"

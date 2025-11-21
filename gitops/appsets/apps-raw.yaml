@@ -1,0 +1,100 @@
+---
+# Raw K8s manifest apps - explicit list (not git generator)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-raw
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: vcluster-yaml-mcp-server
+            namespace: default
+            project: apps
+          - app: homepage
+            namespace: homepage
+          - app: ai-inference
+            namespace: ai-tools
+          - app: cloudflare-tunnel
+            namespace: cloudflare-tunnel
+          - app: cilium
+            namespace: kube-system
+            project: networking
+          - app: argocd
+            namespace: argocd
+            project: cluster-management
+          - app: cluster-config
+            namespace: default
+            project: cluster-management
+          - app: envoy-gateway-resources
+            namespace: envoy-gateway-system
+            project: networking
+          - app: grafana-datasources
+            namespace: prometheus
+            project: observability
+          - app: k8sgpt
+            namespace: k8sgpt-operator-system
+          - app: kube-cleanup-operator
+            namespace: kube-cleanup-operator
+            project: cluster-management
+          - app: local-path-provisioner
+            namespace: local-path-storage
+            project: storage
+          - app: metallb
+            namespace: metallb-system
+            project: networking
+          - app: minio
+            namespace: minio
+            project: storage
+          - app: ntfy-alertmanager
+            namespace: ntfy-alertmanager
+            project: observability
+          - app: ntopng
+            namespace: ntopng
+            project: networking
+          - app: retina
+            namespace: kube-system
+            project: networking
+          - app: mcp-agentic-framework
+            namespace: default
+            project: apps
+  template:
+    metadata:
+      name: "{{ .app }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{ dig "project" "apps" . }}'
+      source:
+        repoURL: https://github.com/Piotr1215/homelab.git
+        targetRevision: HEAD
+        path: "gitops/apps/{{ .app }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      ignoreDifferences:
+        - group: argoproj.io
+          kind: Application
+          jsonPointers:
+            - /status
+            - /operation
+        - group: ""
+          kind: Service
+          jsonPointers:
+            - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

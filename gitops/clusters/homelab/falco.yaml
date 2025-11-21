@@ -10,7 +10,7 @@ spec:
   source:
     chart: falco
     repoURL: https://falcosecurity.github.io/charts
-    targetRevision: 4.15.1
+    targetRevision: 4.22.0
     helm:
       values: |
         # Driver configuration - using modern eBPF probe (default)

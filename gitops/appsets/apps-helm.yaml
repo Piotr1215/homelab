@@ -51,6 +51,7 @@ spec:
             chartName: external-secrets
             chartVersion: "0.20.4"
             createNamespace: "true"
+            serverSideApply: "true"
             project: security
           - app: kube-prometheus-stack
             namespace: prometheus

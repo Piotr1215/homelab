@@ -8,6 +8,17 @@
 
 GitOps Kubernetes cluster with ArgoCD and External Secrets Operator (ESO) using Bitwarden Secrets Manager. Bootstrap installs core services, ArgoCD handles everything else.
 
+## Repository Pattern
+
+This repo follows a 2-layer ApplicationSet pattern. K8s manifests and Helm values live in `gitops/apps/`. ApplicationSets in `gitops/appsets/` generate ArgoCD Applications from those manifests. A single `appsets-loader` bootstraps everything. No Helm values are inlined in ArgoCD resources - all config stays in Git.
+
+```
+gitops/
+  apps/        <- K8s manifests + values.yaml per app
+  appsets/     <- ApplicationSets (apps-helm, apps-raw)
+  clusters/    <- appsets-loader bootstrap
+```
+
 ## Setup
 
 Clone the repository and ensure you have access to your Kubernetes cluster.

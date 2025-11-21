@@ -1,29 +1,29 @@
 ---
+# Single bootstrap Application that loads all ApplicationSets
+# This is NOT app-of-apps - it just watches the appsets folder
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: homepage
+  name: appsets-loader
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: applications
+  project: default
   source:
     repoURL: https://github.com/Piotr1215/homelab.git
     targetRevision: HEAD
-    path: gitops/homepage
+    path: gitops/appsets
   destination:
     server: https://kubernetes.default.svc
-    namespace: homepage
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=false
     retry:
-      limit: 5
+      limit: 3
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 1m

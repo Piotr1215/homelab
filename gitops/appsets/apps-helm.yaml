@@ -1,0 +1,127 @@
+---
+# Helm chart apps with external sources
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-helm
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: kubernetes-dashboard
+            namespace: kubernetes-dashboard
+            chartRepo: https://kubernetes.github.io/dashboard/
+            chartName: kubernetes-dashboard
+            chartVersion: "7.14.0"
+            createNamespace: "false"
+          - app: forgejo
+            namespace: git-mirror
+            chartRepo: oci://code.forgejo.org/forgejo-helm/forgejo
+            chartName: forgejo
+            chartVersion: "8.0.0"
+            createNamespace: "false"
+          - app: pyroscope
+            namespace: pyroscope
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: pyroscope
+            chartVersion: "1.16.0"
+            createNamespace: "true"
+          - app: longhorn
+            namespace: longhorn-system
+            chartRepo: https://charts.longhorn.io
+            chartName: longhorn
+            chartVersion: "1.10.1"
+            createNamespace: "true"
+          - app: cert-manager
+            namespace: cert-manager
+            chartRepo: https://charts.jetstack.io
+            chartName: cert-manager
+            chartVersion: "v1.19.1"
+            createNamespace: "true"
+          - app: external-secrets
+            namespace: external-secrets
+            chartRepo: https://charts.external-secrets.io
+            chartName: external-secrets
+            chartVersion: "0.20.4"
+            createNamespace: "true"
+          - app: kube-prometheus-stack
+            namespace: prometheus
+            chartRepo: https://prometheus-community.github.io/helm-charts
+            chartName: kube-prometheus-stack
+            chartVersion: "79.6.1"
+            createNamespace: "true"
+          - app: loki
+            namespace: loki
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: loki
+            chartVersion: "6.46.0"
+            createNamespace: "true"
+          - app: tempo
+            namespace: tempo
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: tempo
+            chartVersion: "1.24.0"
+            createNamespace: "true"
+          - app: promtail
+            namespace: loki
+            chartRepo: https://grafana.github.io/helm-charts
+            chartName: promtail
+            chartVersion: "6.17.1"
+            createNamespace: "false"
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+        - matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - longhorn
+  template:
+    metadata:
+      name: "{{ .app }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: applications
+      sources:
+        # Helm chart
+        - repoURL: "{{ .chartRepo }}"
+          chart: "{{ .chartName }}"
+          targetRevision: "{{ .chartVersion }}"
+          helm:
+            releaseName: "{{ .app }}"
+            valueFiles:
+              - $values/gitops/apps/{{ .app }}/values.yaml
+        # Values reference
+        - repoURL: https://github.com/Piotr1215/homelab.git
+          targetRevision: HEAD
+          ref: values
+        # Extra K8s resources
+        - repoURL: https://github.com/Piotr1215/homelab.git
+          targetRevision: HEAD
+          path: gitops/apps/{{ .app }}
+          directory:
+            exclude: "values.yaml"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace={{ .createNamespace | default "false" }}
+          - SkipDryRunOnMissingResource=true
+          - ServerSideApply=true
+          - RespectIgnoreDifferences=true
+          - ApplyOutOfSyncOnly=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

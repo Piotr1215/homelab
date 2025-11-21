@@ -1,0 +1,58 @@
+---
+# ArgoCD ApplicationSet Template - Helm Chart with Values from Git
+# For external Helm charts with values stored in gitops/apps/<app>/values.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{APP_NAME}}
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: {{APP_NAME}}
+            namespace: {{NAMESPACE|default:APP_NAME}}
+            chartVersion: "{{CHART_VERSION}}"
+  template:
+    metadata:
+      name: "{{`{{ .app }}`}}"
+      {{#FINALIZERS}}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      {{/FINALIZERS}}
+    spec:
+      project: {{PROJECT|default:applications}}
+      sources:
+        - repoURL: {{CHART_REPO_URL}}
+          chart: {{CHART_NAME}}
+          targetRevision: "{{`{{ .chartVersion }}`}}"
+          helm:
+            releaseName: {{RELEASE_NAME|default:APP_NAME}}
+            valueFiles:
+              - $values/gitops/apps/{{`{{ .app }}`}}/values.yaml
+        - repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+          targetRevision: {{TARGET_REVISION|default:HEAD}}
+          ref: values
+        # Extra K8s resources (everything except values.yaml)
+        - repoURL: {{REPO_URL|default:https://github.com/Piotr1215/homelab.git}}
+          targetRevision: {{TARGET_REVISION|default:HEAD}}
+          path: gitops/apps/{{`{{ .app }}`}}
+          directory:
+            exclude: "values.yaml"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{`{{ .namespace }}`}}"
+      syncPolicy:
+        automated:
+          prune: {{AUTO_PRUNE|default:true}}
+          selfHeal: {{AUTO_SELF_HEAL|default:true}}
+        syncOptions:
+          - CreateNamespace={{CREATE_NAMESPACE|default:false}}
+        retry:
+          limit: {{RETRY_LIMIT|default:5}}
+          backoff:
+            duration: {{RETRY_DURATION|default:5s}}
+            factor: {{RETRY_FACTOR|default:2}}
+            maxDuration: {{RETRY_MAX_DURATION|default:3m}}

@@ -1,0 +1,51 @@
+---
+# Raw K8s manifest apps - auto-discovered via git generator
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-raw
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/Piotr1215/homelab.git
+        revision: HEAD
+        directories:
+          - path: gitops/apps/*
+          # Exclude Helm-based apps (they have values.yaml)
+          - path: gitops/apps/kubernetes-dashboard
+            exclude: true
+          - path: gitops/apps/forgejo
+            exclude: true
+          - path: gitops/apps/pyroscope
+            exclude: true
+          - path: gitops/apps/longhorn
+            exclude: true
+  template:
+    metadata:
+      name: "{{ .path.basename }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: applications
+      source:
+        repoURL: https://github.com/Piotr1215/homelab.git
+        targetRevision: HEAD
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .path.basename }}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

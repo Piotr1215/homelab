@@ -1,0 +1,33 @@
+# Configure Promtail to send logs to Loki
+config:
+  clients:
+    - url: http://loki:3100/loki/api/v1/push
+
+# DaemonSet configuration
+daemonset:
+  enabled: true
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  name: promtail
+
+# RBAC
+rbac:
+  create: true
+  pspEnabled: false
+
+# Resource limits
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack

@@ -10,7 +10,7 @@ spec:
   source:
     chart: harbor
     repoURL: https://helm.goharbor.io
-    targetRevision: 1.18.0
+    targetRevision: 1.17.0
     helm:
       valuesObject:
         expose:
@@ -25,6 +25,10 @@ spec:
               httpsPort: 443
 
         externalURL: http://192.168.178.100
+
+        # Use Recreate strategy for RWO volumes (prevents Multi-Attach errors)
+        updateStrategy:
+          type: Recreate
 
         # Persistence - using Longhorn for HA and replication
         persistence:
@@ -158,16 +162,18 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      allowEmpty: false
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
+      - PruneLast=true
+      - SkipDryRunOnMissingResource=true
 
   ignoreDifferences:
     - group: ""
       kind: PersistentVolumeClaim
-      jsonPointers:
-        - /metadata/creationTimestamp
-        - /metadata/managedFields
+      jqPathExpressions:
+        - .spec
+        - .metadata.managedFields
     - group: apps
       kind: StatefulSet
       jsonPointers:

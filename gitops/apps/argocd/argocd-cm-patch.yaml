@@ -15,8 +15,8 @@ data:
   # Application instance label
   application.instanceLabelKey: argocd.argoproj.io/instance
 
-  # ArgoCD URL
-  url: http://192.168.178.98
+  # ArgoCD URL - HTTPS!
+  url: https://192.168.178.98
 
   # Dex configuration for Authentik OIDC
   dex.config: |
@@ -26,6 +26,7 @@ data:
         clientID: cC5rwGcBk5ooxqE0cNyVhoznI4qXshZaVaOhajSA
         clientSecret: $dex.authentik.clientSecret
         insecureEnableGroups: true
+        insecureSkipVerify: true
         scopes:
           - openid
           - profile

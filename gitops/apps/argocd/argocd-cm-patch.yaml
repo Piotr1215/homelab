@@ -1,5 +1,5 @@
 ---
-# ArgoCD ConfigMap - Minimal safe configuration
+# ArgoCD ConfigMap - With Authentik SSO via Dex
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,3 +14,22 @@ data:
   accounts.homepage.enabled: "true"
   # Application instance label
   application.instanceLabelKey: argocd.argoproj.io/instance
+
+  # ArgoCD URL
+  url: http://192.168.178.98
+
+  # Dex configuration for Authentik OIDC
+  dex.config: |
+    connectors:
+    - config:
+        issuer: http://192.168.178.99/application/o/argo-cd/
+        clientID: cC5rwGcBk5ooxqE0cNyVhoznI4qXshZaVaOhajSA
+        clientSecret: $dex.authentik.clientSecret
+        insecureEnableGroups: true
+        scopes:
+          - openid
+          - profile
+          - email
+      name: authentik
+      type: oidc
+      id: authentik

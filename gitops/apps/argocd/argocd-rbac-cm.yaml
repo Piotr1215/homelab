@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Default policy - deny all unless explicitly allowed
+  policy.default: role:readonly
+
+  # Group-based RBAC - maps Authentik groups to ArgoCD roles
+  policy.csv: |
+    g, ArgoCD Admins, role:admin
+    g, ArgoCD Viewers, role:readonly

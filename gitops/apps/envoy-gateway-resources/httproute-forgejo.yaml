@@ -5,6 +5,8 @@ metadata:
 spec:
   parentRefs:
   - name: homelab-gateway
+    namespace: envoy-gateway-system
+    sectionName: https
   hostnames:
   - "forgejo.homelab.local"
   rules:

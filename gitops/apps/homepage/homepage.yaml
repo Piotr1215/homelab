@@ -61,14 +61,14 @@ data:
     - Observability:
       - Prometheus:
           description: Metrics & Monitoring
-          href: http://192.168.178.90:9090
+          href: https://prometheus.homelab.local
           icon: prometheus.svg
           showStats: true
           namespace: prometheus
           podSelector: app.kubernetes.io/name=prometheus
       - Grafana:
           description: Visualization & Dashboards
-          href: http://192.168.178.96
+          href: https://grafana.homelab.local
           icon: grafana.svg
           showStats: true
           namespace: prometheus
@@ -83,7 +83,7 @@ data:
     - Services:
       - Forgejo:
           description: Self-hosted Git Server
-          href: http://192.168.178.108:3000
+          href: https://forgejo.homelab.local
           icon: gitea.svg
           showStats: true
           namespace: git-mirror
@@ -104,14 +104,14 @@ data:
           podSelector: app=harbor,component=core
       - Longhorn:
           description: Distributed Block Storage
-          href: http://192.168.178.105
+          href: https://longhorn.homelab.local
           icon: si-rancher
           showStats: true
           namespace: longhorn-system
           podSelector: app=longhorn-ui
       - Hubble UI:
           description: Network Flow Visualization
-          href: http://192.168.178.94
+          href: https://hubble.homelab.local
           icon: cilium.svg
           showStats: true
           namespace: kube-system
@@ -125,7 +125,7 @@ data:
           podSelector: app=ntopng
       - Falco Security:
           description: Runtime Security Events
-          href: http://192.168.178.110:2802
+          href: https://falco.homelab.local
           icon: si-falco
           showStats: true
           namespace: falco
@@ -153,7 +153,7 @@ data:
           podSelector: app=open-webui
       - K8sGPT:
           description: AI-Powered K8s Troubleshooting (Grafana Dashboard)
-          href: http://192.168.178.96/d/U82QyO8Vz/k8sgpt-overview
+          href: https://grafana.homelab.local/d/U82QyO8Vz/k8sgpt-overview
           icon: mdi-kubernetes
           widget:
             type: prometheusmetric

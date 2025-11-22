@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-tls
+  namespace: prometheus
+spec:
+  secretName: prometheus-tls
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: -prometheus.homelab.local
+  dnsNames:
+    - -prometheus.homelab.local
+  duration: 2160h  # 90 days
+  renewBefore: 720h  # 30 days

@@ -26,3 +26,27 @@ spec:
         - kind: Secret
           name: argocd-tls
           namespace: argocd
+        - kind: Secret
+          name: grafana-tls
+          namespace: prometheus
+        - kind: Secret
+          name: prometheus-tls
+          namespace: prometheus
+        - kind: Secret
+          name: longhorn-tls
+          namespace: longhorn-system
+        - kind: Secret
+          name: homepage-tls
+          namespace: homepage
+        - kind: Secret
+          name: hubble-tls
+          namespace: kube-system
+        - kind: Secret
+          name: falco-tls
+          namespace: falco
+        - kind: Secret
+          name: forgejo-tls
+          namespace: git-mirror
+        - kind: Secret
+          name: vcluster-tls
+          namespace: default

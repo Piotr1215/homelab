@@ -186,6 +186,9 @@ spec:
           kind: Service
           jqPathExpressions:
             - .metadata.annotations["metallb.universe.tf/ip-allocated-from-pool"]
+            - .metadata.annotations["metallb.universe.tf/loadBalancerIPs"]
+            - .status
+            - .spec.ports[].nodePort
         - group: external-secrets.io
           kind: ExternalSecret
           jqPathExpressions:

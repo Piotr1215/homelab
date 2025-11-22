@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: falco-tls
+  namespace: falco
+spec:
+  secretName: falco-tls
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: -falco.homelab.local
+  dnsNames:
+    - -falco.homelab.local
+  duration: 2160h  # 90 days
+  renewBefore: 720h  # 30 days

@@ -152,15 +152,6 @@ spec:
             chartVersion: "1.17.0"
             createNamespace: "true"
             project: storage
-  strategy:
-    type: RollingSync
-    rollingSync:
-      steps:
-        - matchExpressions:
-            - key: app
-              operator: In
-              values:
-                - longhorn
   template:
     metadata:
       name: "{{ .app }}"

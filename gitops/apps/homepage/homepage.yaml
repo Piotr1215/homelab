@@ -44,7 +44,7 @@ data:
     - GitOps:
       - ArgoCD:
           description: GitOps Continuous Delivery
-          href: http://192.168.178.98
+          href: https://192.168.178.98
           icon: git.svg
           showStats: true
           widget:
@@ -130,6 +130,13 @@ data:
           showStats: true
           namespace: falco
           podSelector: app.kubernetes.io/name=falcosidekick-ui
+      - Authentik:
+          description: Identity Provider & SSO
+          href: http://192.168.178.99
+          icon: authentik.svg
+          showStats: true
+          namespace: authentik
+          podSelector: app.kubernetes.io/name=authentik,app.kubernetes.io/component=server
       - MCP Framework:
           description: Agentic MCP Framework
           href: http://192.168.178.95:3113

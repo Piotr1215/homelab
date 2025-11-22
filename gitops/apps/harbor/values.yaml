@@ -137,3 +137,8 @@ jobservice:
     limits:
       memory: 512Mi
       cpu: 500m
+  # Increase delays to avoid startup race with core
+  readinessProbe:
+    initialDelaySeconds: 60  # Increased from default 20s
+  livenessProbe:
+    initialDelaySeconds: 300  # Keep at 300s

@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-tls
+  namespace: argocd
+spec:
+  secretName: argocd-tls
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  commonName: 192.168.178.98
+  ipAddresses:
+    - 192.168.178.98
+  duration: 2160h  # 90 days
+  renewBefore: 720h  # 30 days

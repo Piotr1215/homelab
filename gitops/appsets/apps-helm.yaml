@@ -186,6 +186,16 @@ spec:
           kind: Service
           jqPathExpressions:
             - .metadata.annotations["metallb.universe.tf/ip-allocated-from-pool"]
+        - group: external-secrets.io
+          kind: ExternalSecret
+          jqPathExpressions:
+            - .status
+            - .metadata.resourceVersion
+            - .metadata.generation
+            - .metadata.finalizers
+            - .spec.data[].remoteRef.conversionStrategy
+            - .spec.data[].remoteRef.decodingStrategy
+            - .spec.data[].remoteRef.metadataPolicy
       syncPolicy:
         automated:
           prune: true

@@ -8,6 +8,7 @@ PROXMOX3_HOST := env_var_or_default('PROXMOX3_HOST', '192.168.178.140')
 copy := if os() == "linux" { "xsel --clipboard" } else { "pbcopy" }
 browse := if os() == "linux" { "xdg-open" } else { "open" }
 
+# Show available recipes
 default:
   just --list
 
@@ -15,23 +16,29 @@ default:
 ubuntu:
   ssh coder@${UBUNTU_HOST}
 
+# SSH to control plane
 kube-main:
   ssh decoder@${KUBE_MAIN}
 
-kube-worker1:
-  ssh decoder@${KUBE_WORKER1}
+# SSH to worker node (usage: just kube-worker 1)
+kube-worker x:
+  #!/usr/bin/env bash
+  IP=$(kubectl get node kube-worker{{x}} -o jsonpath='{.status.addresses[0].address}' 2>/dev/null)
+  if [ -z "$IP" ]; then
+    echo "Error: kube-worker{{x}} not found"
+    exit 1
+  fi
+  ssh decoder@$IP
 
-kube-worker2:
-  ssh decoder@${KUBE_WORKER2}
-
+# SSH to Proxmox host
 proxmox:
   ssh root@${PROXMOX_HOST}
 
-# key based ssh
+# SSH to NAS (key based)
 nas:
   ssh nas
 
-# Utilities
+# Download kubeconfig from control plane
 get-kubeconfig:
   #!/usr/bin/env bash
   ssh -o StrictHostKeyChecking=no decoder@${KUBE_MAIN} "sudo cat /etc/kubernetes/admin.conf" > ./kubeconfig

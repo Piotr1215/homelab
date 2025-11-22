@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/name: argocd-cm
     app.kubernetes.io/part-of: argocd
 data:
-  # Minimal placeholder to prevent deletion
-  # Add custom settings here as needed
+  # Homepage account configuration
+  accounts.homepage: apiKey,login
+  accounts.homepage.enabled: "true"
+  # Application instance label
   application.instanceLabelKey: argocd.argoproj.io/instance

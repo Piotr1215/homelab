@@ -1,7 +1,8 @@
 expose:
   type: loadBalancer
   tls:
-    enabled: false
+    enabled: true
+    certSource: auto  # Auto-generate self-signed cert
   loadBalancer:
     name: harbor
     IP: 192.168.178.100
@@ -9,7 +10,7 @@ expose:
       httpPort: 80
       httpsPort: 443
 
-externalURL: http://192.168.178.100
+externalURL: https://192.168.178.100
 
 # Use Recreate strategy for RWO volumes (prevents Multi-Attach errors)
 updateStrategy:

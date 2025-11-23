@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-argocd-backend-ca-cm
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: argocd-server
+      containers:
+      - name: create-ca-configmap
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          # Extract CA cert from the certificate secret
+          kubectl get secret argocd-server-backend-tls -n argocd -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
+
+          # Create or update ConfigMap
+          kubectl create configmap argocd-backend-ca-cm \
+            --from-file=ca.crt=/tmp/ca.crt \
+            --dry-run=client -o yaml | kubectl apply -f -
+      restartPolicy: OnFailure
+  backoffLimit: 3

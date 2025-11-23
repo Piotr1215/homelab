@@ -9,8 +9,8 @@ spec:
   issuerRef:
     name: homelab-ca-issuer
     kind: ClusterIssuer
-  commonName: 192.168.178.98
-  ipAddresses:
-    - 192.168.178.98
+  commonName: argocd.homelab.local
+  dnsNames:
+    - argocd.homelab.local
   duration: 2160h  # 90 days
   renewBefore: 720h  # 30 days

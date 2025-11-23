@@ -3,6 +3,9 @@ kind: Gateway
 metadata:
   name: homelab-gateway
   namespace: envoy-gateway-system
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca-issuer
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   gatewayClassName: envoy-gateway
   listeners:
@@ -17,6 +20,7 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
+    hostname: "*.homelab.local"
     allowedRoutes:
       namespaces:
         from: All
@@ -24,29 +28,5 @@ spec:
       mode: Terminate
       certificateRefs:
         - kind: Secret
-          name: argocd-tls
-          namespace: argocd
-        - kind: Secret
-          name: grafana-tls
-          namespace: prometheus
-        - kind: Secret
-          name: prometheus-tls
-          namespace: prometheus
-        - kind: Secret
-          name: longhorn-tls
-          namespace: longhorn-system
-        - kind: Secret
-          name: homepage-tls
-          namespace: homepage
-        - kind: Secret
-          name: hubble-tls
-          namespace: kube-system
-        - kind: Secret
-          name: falco-tls
-          namespace: falco
-        - kind: Secret
-          name: forgejo-tls
-          namespace: git-mirror
-        - kind: Secret
-          name: vcluster-tls
-          namespace: default
+          name: homelab-gateway-tls
+          namespace: envoy-gateway-system

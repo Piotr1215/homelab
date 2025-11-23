@@ -16,7 +16,7 @@ data:
   application.instanceLabelKey: argocd.argoproj.io/instance
 
   # ArgoCD URL - HTTPS!
-  url: https://192.168.178.98
+  url: https://argocd.homelab.local
 
   # Dex configuration for Authentik OIDC
   dex.config: |

@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsmasq-config
+  namespace: kube-system
+data:
+  dnsmasq.conf: |
+    # Don't read /etc/resolv.conf or /etc/hosts
+    no-resolv
+    no-hosts
+
+    # Listen on all interfaces (container network)
+    listen-address=0.0.0.0
+    port=53
+
+    # Cache settings
+    cache-size=1000
+
+    # Logging (disable after testing)
+    log-queries
+    log-facility=-  # Log to stderr (captured by kubectl logs)
+
+    # Internal domain: *.homelab.local → Envoy Gateway
+    address=/homelab.local/192.168.178.92
+
+    # Forward all other queries to external DNS
+    server=8.8.8.8
+    server=8.8.4.4
+
+    # Optional: block common ad domains (comment out if not needed)
+    # address=/doubleclick.net/0.0.0.0
+    # address=/googlesyndication.com/0.0.0.0

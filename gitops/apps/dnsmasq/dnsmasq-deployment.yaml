@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dnsmasq
+  namespace: kube-system
+  labels:
+    app: dnsmasq
+spec:
+  replicas: 2  # HA: 2 replicas
+  selector:
+    matchLabels:
+      app: dnsmasq
+  template:
+    metadata:
+      labels:
+        app: dnsmasq
+    spec:
+      dnsPolicy: Default  # Use node's DNS, not cluster DNS
+      containers:
+      - name: dnsmasq
+        image: 4km3/dnsmasq:2.90-r3  # Alpine-based, actively maintained
+        args:
+          - "--log-queries"
+          - "--no-resolv"
+          - "--no-hosts"
+          - "--bind-interfaces"
+          - "--cache-size=1000"
+          - "--address=/homelab.local/192.168.178.92"
+          - "--server=8.8.8.8"
+          - "--server=8.8.4.4"
+          - "--log-facility=-"
+        ports:
+        - name: dns-udp
+          containerPort: 53
+          protocol: UDP
+        - name: dns-tcp
+          containerPort: 53
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dnsmasq.conf
+          subPath: dnsmasq.conf
+          readOnly: true
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          tcpSocket:
+            port: 53
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        readinessProbe:
+          tcpSocket:
+            port: 53
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+      volumes:
+      - name: config
+        configMap:
+          name: dnsmasq-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dnsmasq
+  namespace: kube-system
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.101"  # DNS server IP
+spec:
+  type: LoadBalancer
+  selector:
+    app: dnsmasq
+  ports:
+  - name: dns-udp
+    port: 53
+    targetPort: 53
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    targetPort: 53
+    protocol: TCP

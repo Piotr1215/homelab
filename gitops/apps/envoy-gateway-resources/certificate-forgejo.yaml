@@ -9,8 +9,8 @@ spec:
   issuerRef:
     name: homelab-ca-issuer
     kind: ClusterIssuer
-  commonName: -forgejo.homelab.local
+  commonName: forgejo.homelab.local
   dnsNames:
-    - -forgejo.homelab.local
+    - forgejo.homelab.local
   duration: 2160h  # 90 days
   renewBefore: 720h  # 30 days

@@ -9,8 +9,8 @@ spec:
   issuerRef:
     name: homelab-ca-issuer
     kind: ClusterIssuer
-  commonName: -homepage.homelab.local
+  commonName: homepage.homelab.local
   dnsNames:
-    - -homepage.homelab.local
+    - homepage.homelab.local
   duration: 2160h  # 90 days
   renewBefore: 720h  # 30 days

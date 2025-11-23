@@ -23,6 +23,9 @@ spec:
           - app: cilium
             namespace: kube-system
             project: networking
+          - app: dnsmasq
+            namespace: kube-system
+            project: networking
           - app: argocd
             namespace: argocd
             project: cluster-management

@@ -1,6 +1,6 @@
 ---
 # ArgoCD Server Command Parameters
-# Enable insecure mode since Gateway handles TLS termination
+# HTTPS enabled for internal traffic
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,4 +10,4 @@ metadata:
     app.kubernetes.io/name: argocd-cmd-params-cm
     app.kubernetes.io/part-of: argocd
 data:
-  server.insecure: "true"
+  server.insecure: "false"

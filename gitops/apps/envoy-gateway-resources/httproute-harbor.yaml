@@ -1,25 +1,26 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: argocd
+  name: harbor
+  namespace: envoy-gateway-system
 spec:
   parentRefs:
   - name: homelab-gateway
     namespace: envoy-gateway-system
-    sectionName: https  # Use HTTPS listener
+    sectionName: https
   hostnames:
-  - "argocd.homelab.local"
+  - "harbor.homelab.local"
   rules:
   - backendRefs:
-    - name: argocd-server
-      namespace: argocd
-      port: 443
+    - name: harbor
+      namespace: harbor
+      port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
 metadata:
-  name: argocd-backend
-  namespace: argocd
+  name: harbor-backend
+  namespace: harbor
 spec:
   from:
   - group: gateway.networking.k8s.io
@@ -28,4 +29,4 @@ spec:
   to:
   - group: ""
     kind: Service
-    name: argocd-server
+    name: harbor

@@ -9,7 +9,7 @@ metadata:
 spec:
   template:
     spec:
-      serviceAccountName: argocd-server
+      serviceAccountName: argocd-ca-job
       containers:
       - name: create-ca-configmap
         image: bitnami/kubectl:latest
@@ -18,8 +18,8 @@ spec:
         - -c
         - |
           set -e
-          # Extract CA cert from the certificate secret
-          kubectl get secret argocd-server-backend-tls -n argocd -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
+          # Extract CA cert from running ArgoCD server
+          kubectl exec -n argocd deploy/argocd-server -- sh -c "openssl s_client -connect localhost:8080 -showcerts </dev/null 2>/dev/null | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p'" > /tmp/ca.crt
 
           # Create or update ConfigMap
           kubectl create configmap argocd-backend-ca-cm \

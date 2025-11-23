@@ -1,16 +1,14 @@
 expose:
   type: loadBalancer
   tls:
-    enabled: true
-    certSource: auto  # Auto-generate self-signed cert
+    enabled: false
   loadBalancer:
     name: harbor
-    IP: 192.168.178.100
     ports:
       httpPort: 80
       httpsPort: 443
 
-externalURL: https://192.168.178.100
+externalURL: https://harbor.homelab.local
 
 # Use Recreate strategy for RWO volumes (prevents Multi-Attach errors)
 updateStrategy:

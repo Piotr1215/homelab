@@ -11,8 +11,32 @@ spec:
   hostnames:
   - "harbor.homelab.local"
   rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: harbor-core
+      namespace: harbor
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /c
+    backendRefs:
+    - name: harbor-core
+      namespace: harbor
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /service
+    backendRefs:
+    - name: harbor-core
+      namespace: harbor
+      port: 80
   - backendRefs:
-    - name: harbor
+    - name: harbor-portal
       namespace: harbor
       port: 80
 ---
@@ -29,4 +53,7 @@ spec:
   to:
   - group: ""
     kind: Service
-    name: harbor
+    name: harbor-portal
+  - group: ""
+    kind: Service
+    name: harbor-core

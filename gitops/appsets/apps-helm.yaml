@@ -86,8 +86,9 @@ spec:
             namespace: envoy-gateway-system
             chartRepo: oci://docker.io/envoyproxy/gateway-helm
             chartName: gateway-helm
-            chartVersion: "v1.4.0"
+            chartVersion: "v1.6.0"
             createNamespace: "true"
+            serverSideApply: "true"
             project: networking
           - app: argocd-image-updater
             namespace: argocd

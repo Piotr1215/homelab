@@ -5,10 +5,10 @@
 # Kong gateway configuration (default proxy)
 kong:
   enabled: true
-  service:
+  proxy:
     type: LoadBalancer
     annotations:
-      metallb.universe.tf/address-pool: default
+      metallb.universe.tf/address-pool: dynamic-pool
 
 # Dashboard API
 app:

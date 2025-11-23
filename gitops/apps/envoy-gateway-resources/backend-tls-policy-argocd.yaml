@@ -8,7 +8,3 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: argocd
-  tls:
-    alpnProtocols:
-    - http/1.1
-    - h2

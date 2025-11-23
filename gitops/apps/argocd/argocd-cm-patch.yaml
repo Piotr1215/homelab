@@ -22,7 +22,7 @@ data:
   dex.config: |
     connectors:
     - config:
-        issuer: http://192.168.178.99/application/o/argo-cd/
+        issuer: https://authentik.homelab.local/application/o/argo-cd/
         clientID: cC5rwGcBk5ooxqE0cNyVhoznI4qXshZaVaOhajSA
         clientSecret: $dex.authentik.clientSecret
         insecureEnableGroups: true

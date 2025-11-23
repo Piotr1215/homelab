@@ -23,7 +23,8 @@ spec:
   addresses:
   - 192.168.178.106-192.168.178.106  # 1 IP
   - 192.168.178.108-192.168.178.110  # 3 IPs (skip .107 = ubuntu device collision)
-  - 192.168.178.112-192.168.178.119  # 8 IPs (expansion for future services)
+  - 192.168.178.112-192.168.178.112  # 1 IP
+  - 192.168.178.114-192.168.178.119  # 6 IPs (skip .113 = PVE2)
   autoAssign: true  # Automatic allocation
   avoidBuggyIPs: true
 ---

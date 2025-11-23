@@ -8,8 +8,8 @@ metadata:
     app.kubernetes.io/name: argocd-rbac-cm
     app.kubernetes.io/part-of: argocd
 data:
-  # Default policy - deny all unless explicitly allowed
-  policy.default: role:readonly
+  # Default policy - all authenticated users get admin (homelab)
+  policy.default: role:admin
 
   # Group-based RBAC - maps Authentik groups to ArgoCD roles
   policy.csv: |

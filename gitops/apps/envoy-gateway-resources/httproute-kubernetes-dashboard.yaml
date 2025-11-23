@@ -12,9 +12,9 @@ spec:
   - "dashboard.homelab.local"
   rules:
   - backendRefs:
-    - name: kubernetes-dashboard-kong-proxy
+    - name: kubernetes-dashboard-web
       namespace: kubernetes-dashboard
-      port: 443
+      port: 8000
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant

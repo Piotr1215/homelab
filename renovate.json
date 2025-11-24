@@ -125,18 +125,18 @@
     }
   ],
   "argocd": {
-    "fileMatch": [
-      "gitops/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/gitops/.+\\.ya?ml$/"
     ]
   },
   "kubernetes": {
-    "fileMatch": [
-      "gitops/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/gitops/.+\\.ya?ml$/"
     ]
   },
   "terraform": {
-    "fileMatch": [
-      "(^|/).*\\.tf$"
+    "managerFilePatterns": [
+      "/(^|/).*\\.tf$/"
     ]
   },
   "ignorePaths": [

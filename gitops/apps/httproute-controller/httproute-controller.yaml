@@ -69,6 +69,8 @@ rules:
   verbs:
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - gateway.networking.k8s.io
@@ -207,7 +209,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: piotrzan/httproute-controller:v0.2.0
+        image: piotrzan/httproute-controller:v0.3.0
         livenessProbe:
           httpGet:
             path: /healthz

@@ -11,6 +11,25 @@ spec:
   hostnames:
   - "harbor.homelab.local"
   rules:
+  # Docker registry v2 API base endpoint (exact match)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v2
+    backendRefs:
+    - name: harbor-core
+      namespace: harbor
+      port: 80
+  # Docker registry v2 API operations (with trailing slash)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /v2/
+    backendRefs:
+    - name: harbor-registry
+      namespace: harbor
+      port: 5000
+  # Harbor Core API
   - matches:
     - path:
         type: PathPrefix
@@ -19,6 +38,7 @@ spec:
     - name: harbor-core
       namespace: harbor
       port: 80
+  # Harbor UI controllers
   - matches:
     - path:
         type: PathPrefix
@@ -27,6 +47,7 @@ spec:
     - name: harbor-core
       namespace: harbor
       port: 80
+  # Harbor service endpoints
   - matches:
     - path:
         type: PathPrefix
@@ -35,7 +56,12 @@ spec:
     - name: harbor-core
       namespace: harbor
       port: 80
-  - backendRefs:
+  # Harbor Portal (UI) - catch all
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
     - name: harbor-portal
       namespace: harbor
       port: 80
@@ -57,3 +83,6 @@ spec:
   - group: ""
     kind: Service
     name: harbor-core
+  - group: ""
+    kind: Service
+    name: harbor-registry

@@ -87,6 +87,11 @@ falcosidekick:
         cpu: 200m
         memory: 128Mi
     redis:
+      livenessProbe:
+        initialDelaySeconds: 300
+        periodSeconds: 5
+        timeoutSeconds: 2
+        failureThreshold: 3
       resources:
         requests:
           cpu: 50m

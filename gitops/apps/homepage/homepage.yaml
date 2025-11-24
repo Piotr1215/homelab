@@ -53,7 +53,7 @@ data:
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
       - Kubernetes Dashboard:
           description: K8s Web UI & Job Viewer
-          href: https://192.168.178.114
+          href: https://dashboard.homelab.local
           icon: kubernetes.svg
           showStats: true
           namespace: kubernetes-dashboard

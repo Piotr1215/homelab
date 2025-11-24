@@ -1,0 +1,3 @@
+kustomize:
+  images:
+  - piotrzan/httproute-controller:0.3.2

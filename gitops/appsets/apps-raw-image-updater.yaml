@@ -1,0 +1,69 @@
+---
+# Raw K8s manifest apps with ArgoCD Image Updater enabled
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-raw-image-updater
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - app: vcluster-yaml-mcp-server
+            namespace: default
+            project: apps
+            imageAlias: mcp-server
+            imageName: piotrzan/vcluster-yaml-mcp-server
+            updateStrategy: semver
+          - app: httproute-controller
+            namespace: httproute-controller-system
+            project: networking
+            imageAlias: httproute
+            imageName: piotrzan/httproute-controller
+            updateStrategy: semver
+  template:
+    metadata:
+      name: "{{ .app }}"
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: "{{ .imageAlias }}={{ .imageName }}"
+        argocd-image-updater.argoproj.io/{{ .imageAlias }}.update-strategy: "{{ .updateStrategy }}"
+        argocd-image-updater.argoproj.io/write-back-method: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{ dig "project" "apps" . }}'
+      source:
+        repoURL: https://github.com/Piotr1215/homelab.git
+        targetRevision: HEAD
+        path: "gitops/apps/{{ .app }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      ignoreDifferences:
+        - group: argoproj.io
+          kind: Application
+          jsonPointers:
+            - /status
+            - /operation
+        - group: ""
+          kind: Service
+          jsonPointers:
+            - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - Replace=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 1s
+            factor: 2
+            maxDuration: 30s

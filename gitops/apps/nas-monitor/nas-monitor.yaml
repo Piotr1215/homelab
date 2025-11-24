@@ -7,6 +7,14 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: nas-monitor-state
+  namespace: monitoring
+data:
+  state: "unknown"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: nas-monitor-script
   namespace: monitoring
 data:
@@ -17,7 +25,6 @@ data:
     NAS_IP="192.168.178.138"
     NAS_PORT="5000"
     NTFY_TOPIC="https://ntfy.sh/homelab-piotr1215-backup"
-    STATE_FILE="/tmp/nas-state"
 
     # Function to send ntfy alert
     send_alert() {
@@ -33,37 +40,60 @@ data:
         -d "$message" || true
     }
 
-    # Check ping
-    if ! ping -c 2 -W 3 "$NAS_IP" >/dev/null 2>&1; then
-      if [ ! -f "$STATE_FILE" ] || [ "$(cat $STATE_FILE)" != "down" ]; then
+    # Get current state from ConfigMap
+    CURRENT_STATE=$(kubectl get configmap nas-monitor-state -n monitoring -o jsonpath='{.data.state}' 2>/dev/null || echo "unknown")
+
+    # Check HTTP connectivity (more reliable than ping)
+    if timeout 5 curl -sf http://$NAS_IP:$NAS_PORT >/dev/null 2>&1; then
+      # NAS is UP
+      if [ "$CURRENT_STATE" != "up" ]; then
+        if [ "$CURRENT_STATE" != "unknown" ]; then
+          send_alert "✅ NAS Recovered" \
+            "Synology NAS at $NAS_IP is now reachable." \
+            1 "white_check_mark,nas"
+        fi
+        kubectl patch configmap nas-monitor-state -n monitoring --type merge -p '{"data":{"state":"up"}}'
+      fi
+    else
+      # NAS is DOWN
+      if [ "$CURRENT_STATE" != "down" ]; then
         send_alert "🔴 NAS Unreachable" \
-          "Synology NAS at $NAS_IP is not responding to ping. Check network connectivity and NAS power." \
+          "Synology NAS at $NAS_IP:$NAS_PORT is not responding. Check network and DSM service." \
           5 "rotating_light,warning,nas"
-        echo "down" > "$STATE_FILE"
+        kubectl patch configmap nas-monitor-state -n monitoring --type merge -p '{"data":{"state":"down"}}'
       fi
-      exit 0
     fi
-
-    # Check HTTP port
-    if ! timeout 5 bash -c "cat < /dev/null > /dev/tcp/$NAS_IP/$NAS_PORT" 2>/dev/null; then
-      if [ ! -f "$STATE_FILE" ] || [ "$(cat $STATE_FILE)" != "port-down" ]; then
-        send_alert "⚠️ NAS Port Unreachable" \
-          "Synology NAS at $NAS_IP:$NAS_PORT is not responding. DSM service may be down." \
-          4 "warning,nas"
-        echo "port-down" > "$STATE_FILE"
-      fi
-      exit 0
-    fi
-
-    # NAS is healthy - send recovery alert if it was down
-    if [ -f "$STATE_FILE" ] && [ "$(cat $STATE_FILE)" != "up" ]; then
-      send_alert "✅ NAS Recovered" \
-        "Synology NAS at $NAS_IP is now reachable." \
-        1 "white_check_mark,nas"
-      echo "up" > "$STATE_FILE"
-    elif [ ! -f "$STATE_FILE" ]; then
-      echo "up" > "$STATE_FILE"
-    fi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nas-monitor
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nas-monitor
+  namespace: monitoring
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["nas-monitor-state"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nas-monitor
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nas-monitor
+subjects:
+- kind: ServiceAccount
+  name: nas-monitor
+  namespace: monitoring
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -71,7 +101,7 @@ metadata:
   name: nas-monitor
   namespace: monitoring
 spec:
-  schedule: "*/5 * * * *"  # Every 5 minutes
+  schedule: "*/5 * * * *"
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   concurrencyPolicy: Forbid
@@ -82,16 +112,15 @@ spec:
           labels:
             app: nas-monitor
         spec:
+          serviceAccountName: nas-monitor
           restartPolicy: Never
           containers:
           - name: checker
-            image: nicolaka/netshoot:latest
+            image: bitnami/kubectl:latest
             command: ["/bin/bash", "/scripts/check-nas.sh"]
             volumeMounts:
             - name: script
               mountPath: /scripts
-            - name: state
-              mountPath: /tmp
             resources:
               requests:
                 cpu: 10m
@@ -106,8 +135,6 @@ spec:
               capabilities:
                 drop:
                 - ALL
-                add:
-                - NET_RAW  # Required for ping
               seccompProfile:
                 type: RuntimeDefault
           volumes:
@@ -115,5 +142,3 @@ spec:
             configMap:
               name: nas-monitor-script
               defaultMode: 0755
-          - name: state
-            emptyDir: {}

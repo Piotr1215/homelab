@@ -153,6 +153,13 @@ spec:
             chartVersion: "1.17.0"
             createNamespace: "true"
             project: storage
+          - app: uptime-kuma
+            namespace: uptime-kuma
+            chartRepo: https://charts.pascaliske.dev
+            chartName: uptime-kuma
+            chartVersion: "2.4.0"
+            createNamespace: "false"
+            project: observability
   template:
     metadata:
       name: "{{ .app }}"

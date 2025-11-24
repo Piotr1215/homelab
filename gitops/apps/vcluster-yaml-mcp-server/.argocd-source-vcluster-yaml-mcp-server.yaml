@@ -1,3 +1,0 @@
-kustomize:
-  images:
-  - piotrzan/vcluster-yaml-mcp-server:1.1.1

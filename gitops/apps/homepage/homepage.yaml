@@ -59,6 +59,13 @@ data:
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
     - Observability:
+      - Uptime Kuma:
+          description: Uptime & Status Monitoring
+          href: https://uptime.homelab.local
+          icon: https://uptime.kuma.pet/icon.svg
+          showStats: true
+          namespace: uptime-kuma
+          podSelector: app.kubernetes.io/name=uptime-kuma
       - Prometheus:
           description: Metrics & Monitoring
           href: https://prometheus.homelab.local

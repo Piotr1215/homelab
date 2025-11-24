@@ -16,7 +16,7 @@ data:
 
     NAS_IP="192.168.178.138"
     NAS_PORT="5000"
-    NTFY_TOPIC="https://ntfy.sh/homelab-alerts"
+    NTFY_TOPIC="https://ntfy.sh/homelab-piotr1215-backup"
     STATE_FILE="/tmp/nas-state"
 
     # Function to send ntfy alert

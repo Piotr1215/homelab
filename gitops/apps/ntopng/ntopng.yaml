@@ -32,7 +32,7 @@ data:
     rm -f /var/run/ntopng.pid
 
     # Fritz!Box configuration
-    FRITZIP=http://fritz.box
+    FRITZIP=http://192.168.178.1
     IFACE="2-0"  # WAN interface
     FRITZUSER="$FRITZ_USER"
     FRITZPWD="$FRITZ_PASSWORD"

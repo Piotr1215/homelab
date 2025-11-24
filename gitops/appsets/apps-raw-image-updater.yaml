@@ -29,7 +29,9 @@ spec:
       annotations:
         argocd-image-updater.argoproj.io/image-list: "{{ .imageAlias }}={{ .imageName }}"
         argocd-image-updater.argoproj.io/{{ .imageAlias }}.update-strategy: "{{ .updateStrategy }}"
-        argocd-image-updater.argoproj.io/write-back-method: argocd
+        argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/homelab-git-credentials
+        argocd-image-updater.argoproj.io/write-back-target: kustomization
+        argocd-image-updater.argoproj.io/git-branch: main
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:

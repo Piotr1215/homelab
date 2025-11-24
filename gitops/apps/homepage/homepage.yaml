@@ -300,10 +300,8 @@ metadata:
     app.kubernetes.io/name: homepage
     app.kubernetes.io/version: v1.2.0
     helm.sh/chart: homepage-2.1.0
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.93"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - port: 80
       targetPort: http

@@ -143,9 +143,7 @@ querier:
 queryFrontend:
   replicas: 1
   service:
-    type: LoadBalancer
-    annotations:
-      metallb.universe.tf/loadBalancerIPs: "192.168.178.107"
+    type: ClusterIP
   resources:
     requests:
       cpu: 100m

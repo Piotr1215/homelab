@@ -14,10 +14,7 @@ persistence:
   defaultClassReplicaCount: 2
 service:
   ui:
-    type: LoadBalancer
-    loadBalancerIP: ""
-    annotations:
-      metallb.universe.tf/loadBalancerIPs: "192.168.178.105"
+    type: ClusterIP
 csi:
   attacherReplicaCount: 2
   provisionerReplicaCount: 2

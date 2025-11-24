@@ -77,10 +77,8 @@ falcosidekick:
     # TTL for Redis keys - keep events for 7 days (reduced from 30d)
     ttl: "7d"
     service:
-      type: LoadBalancer
+      type: ClusterIP
       port: 2802
-      annotations:
-        metallb.universe.tf/loadBalancerIPs: "192.168.178.110"
     resources:
       requests:
         cpu: 50m

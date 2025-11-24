@@ -6,10 +6,8 @@ metadata:
   namespace: pyroscope
   labels:
     app: pyroscope
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.112"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: pyroscope
     app.kubernetes.io/instance: pyroscope

@@ -209,7 +209,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: piotrzan/httproute-controller:0.3.3
+        image: piotrzan/httproute-controller:0.3.4
         livenessProbe:
           httpGet:
             path: /healthz

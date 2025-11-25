@@ -1,0 +1,46 @@
+# LitmusChaos ChaosCenter configuration
+# Portal configuration
+portal:
+  frontend:
+    service:
+      type: ClusterIP
+      annotations:
+        gateway.homelab.local/expose: "true"
+        gateway.homelab.local/hostname: "chaos.homelab.local"
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+  server:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  auth:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+# MongoDB persistence - uses Longhorn
+mongodb:
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

@@ -137,6 +137,13 @@ data:
           showStats: true
           namespace: falco
           podSelector: app.kubernetes.io/name=falcosidekick-ui
+      - LitmusChaos:
+          description: Chaos Engineering Platform
+          href: https://chaos.homelab.local
+          icon: mdi-flask-outline
+          showStats: true
+          namespace: litmus
+          podSelector: app.kubernetes.io/component=litmusportal-frontend
       - Authentik:
           description: Identity Provider & SSO
           href: https://authentik.homelab.local

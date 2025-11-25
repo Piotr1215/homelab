@@ -118,13 +118,6 @@ spec:
             chartVersion: "4.15.1"
             createNamespace: "true"
             project: security
-          - app: litmus
-            namespace: litmus
-            chartRepo: https://litmuschaos.github.io/litmus-helm/
-            chartName: litmus
-            chartVersion: "3.22.0"
-            createNamespace: "true"
-            project: security
           - app: k8sgpt-operator
             namespace: k8sgpt-operator-system
             chartRepo: https://charts.k8sgpt.ai/

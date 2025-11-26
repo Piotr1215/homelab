@@ -4,4 +4,4 @@ resources:
   - httproute-controller.yaml
 images:
   - name: piotrzan/httproute-controller
-    newTag: 0.3.7
+    newTag: 0.3.8

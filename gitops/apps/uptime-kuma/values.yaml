@@ -27,8 +27,8 @@ service:
   enabled: true
   type: ClusterIP
   annotations:
-    gateway.homelab.local/expose: "true"
-    gateway.homelab.local/hostname: "uptime.homelab.local"
+    httproute.controller/expose: "true"
+    httproute.controller/hostname: "uptime.homelab.local"
 
 # Port configuration
 ports:

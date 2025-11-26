@@ -65,6 +65,13 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - services
   verbs:
   - get
@@ -207,13 +214,12 @@ spec:
         - --metrics-bind-address=:8443
         - --leader-elect
         - --health-probe-bind-address=:8081
-        - --annotation-prefix=gateway.homelab.local
         - --default-gateway=homelab-gateway
         - --default-gateway-namespace=envoy-gateway-system
         - --default-section-name=https
         command:
         - /manager
-        image: piotrzan/httproute-controller:0.3.4
+        image: piotrzan/httproute-controller:0.3.7
         livenessProbe:
           httpGet:
             path: /healthz

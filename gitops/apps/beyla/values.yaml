@@ -3,7 +3,7 @@
 # Image configuration
 image:
   repository: grafana/beyla
-  tag: "2.7.8"
+  tag: "2.8.0"
 
 # Deployment mode - application (DaemonSet is the default)
 preset: application

@@ -87,6 +87,10 @@ falcosidekick:
         cpu: 200m
         memory: 128Mi
     redis:
+      # Memory policy to evict old keys when limit reached
+      customConfig:
+        - maxmemory 1gb
+        - maxmemory-policy allkeys-lru
       livenessProbe:
         initialDelaySeconds: 300
         periodSeconds: 5
@@ -98,7 +102,7 @@ falcosidekick:
           memory: 512Mi
         limits:
           cpu: 200m
-          memory: 1Gi
+          memory: 1536Mi
 
 # Enable ServiceMonitor for Prometheus scraping
 serviceMonitor:

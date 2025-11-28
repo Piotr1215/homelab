@@ -219,7 +219,7 @@ spec:
         - --default-section-name=https
         command:
         - /manager
-        image: piotrzan/httproute-controller:0.3.7
+        image: piotrzan/httproute-controller:0.3.9
         livenessProbe:
           httpGet:
             path: /healthz

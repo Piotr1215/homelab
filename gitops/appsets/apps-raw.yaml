@@ -64,6 +64,9 @@ spec:
           - app: nas-monitor
             namespace: monitoring
             project: observability
+          - app: shell-operator
+            namespace: metallb-system
+            project: networking
   template:
     metadata:
       name: "{{ .app }}"

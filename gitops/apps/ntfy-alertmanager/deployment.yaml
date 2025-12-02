@@ -43,7 +43,7 @@ data:
 
     ntfy {
         server https://ntfy.sh
-        topic homelab-piotr1215-alerts
+        topic homelab-piotr1215-warning
     }
 
     cache {

@@ -24,10 +24,16 @@ data:
     # Internal domain: *.homelab.local → Envoy Gateway
     address=/homelab.local/192.168.178.92
 
-    # Forward all other queries to external DNS
-    server=8.8.8.8
-    server=8.8.4.4
+    # Forward all other queries to external DNS (Quad9 + Cloudflare)
+    server=9.9.9.9
+    server=149.112.112.112
+    server=1.1.1.1
 
-    # Optional: block common ad domains (comment out if not needed)
-    # address=/doubleclick.net/0.0.0.0
-    # address=/googlesyndication.com/0.0.0.0
+    # DNSSEC validation
+    dnssec
+    trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D
+    dnssec-check-unsigned
+
+    # Additional hardening
+    bogus-priv
+    domain-needed

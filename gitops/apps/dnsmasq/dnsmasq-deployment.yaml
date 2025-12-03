@@ -19,7 +19,7 @@ spec:
       dnsPolicy: Default  # Use node's DNS, not cluster DNS
       containers:
       - name: dnsmasq
-        image: 4km3/dnsmasq:2.90-r3  # Alpine-based, actively maintained
+        image: dockurr/dnsmasq:2.91  # CVE-2023-49441 fixed
         args:
           - "--log-queries"
           - "--no-resolv"
@@ -27,9 +27,12 @@ spec:
           - "--bind-interfaces"
           - "--cache-size=1000"
           - "--address=/homelab.local/192.168.178.92"
-          - "--server=8.8.8.8"
-          - "--server=8.8.4.4"
+          - "--server=9.9.9.9"      # Quad9 primary (privacy + security)
+          - "--server=149.112.112.112"  # Quad9 secondary
+          - "--server=1.1.1.1"      # Cloudflare fallback
           - "--log-facility=-"
+          - "--dnssec"              # Enable DNSSEC validation
+          - "--trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D"
         ports:
         - name: dns-udp
           containerPort: 53

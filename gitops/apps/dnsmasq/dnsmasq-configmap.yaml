@@ -29,11 +29,6 @@ data:
     server=149.112.112.112
     server=1.1.1.1
 
-    # DNSSEC validation
-    dnssec
-    trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D
-    dnssec-check-unsigned
-
     # Additional hardening
     bogus-priv
     domain-needed

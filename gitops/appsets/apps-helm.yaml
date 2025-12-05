@@ -105,7 +105,7 @@ spec:
             chartVersion: "2.40.5"
             createNamespace: "true"
             project: cluster-management
-            serverSideApply: "true"
+            skipCrds: "true"
           - app: authentik
             namespace: authentik
             chartRepo: https://charts.goauthentik.io
@@ -183,6 +183,7 @@ spec:
           targetRevision: "{{ .chartVersion }}"
           helm:
             releaseName: "{{ .app }}"
+            skipCrds: '{{ dig "skipCrds" "false" . }}'
             valueFiles:
               - $values/gitops/apps/{{ .app }}/values.yaml
         # Values reference

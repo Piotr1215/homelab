@@ -98,6 +98,13 @@ spec:
             chartVersion: "0.14.0"
             createNamespace: "false"
             project: cluster-management
+          - app: argo-rollouts
+            namespace: argo-rollouts
+            chartRepo: https://argoproj.github.io/argo-helm
+            chartName: argo-rollouts
+            chartVersion: "2.40.5"
+            createNamespace: "true"
+            project: cluster-management
           - app: authentik
             namespace: authentik
             chartRepo: https://charts.goauthentik.io

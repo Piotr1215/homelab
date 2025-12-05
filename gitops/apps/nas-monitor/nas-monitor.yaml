@@ -13,58 +13,6 @@ data:
   state: "unknown"
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nas-monitor-script
-  namespace: monitoring
-data:
-  check-nas.sh: |
-    #!/bin/bash
-    set -eo pipefail
-
-    NAS_IP="192.168.178.138"
-    NAS_PORT="5000"
-    NTFY_TOPIC="https://ntfy.sh/homelab-piotr1215-backup"
-
-    # Function to send ntfy alert
-    send_alert() {
-      local title="$1"
-      local message="$2"
-      local priority="${3:-4}"
-      local tags="${4:-warning}"
-
-      curl -s -X POST "$NTFY_TOPIC" \
-        -H "Title: $title" \
-        -H "Priority: $priority" \
-        -H "Tags: $tags" \
-        -d "$message" || true
-    }
-
-    # Get current state from ConfigMap
-    CURRENT_STATE=$(kubectl get configmap nas-monitor-state -n monitoring -o jsonpath='{.data.state}' 2>/dev/null || echo "unknown")
-
-    # Check HTTP connectivity (more reliable than ping)
-    if timeout 5 curl -sf http://$NAS_IP:$NAS_PORT >/dev/null 2>&1; then
-      # NAS is UP
-      if [ "$CURRENT_STATE" != "up" ]; then
-        if [ "$CURRENT_STATE" != "unknown" ]; then
-          send_alert "✅ NAS Recovered" \
-            "Synology NAS at $NAS_IP is now reachable." \
-            1 "white_check_mark,nas"
-        fi
-        kubectl patch configmap nas-monitor-state -n monitoring --type merge -p '{"data":{"state":"up"}}'
-      fi
-    else
-      # NAS is DOWN
-      if [ "$CURRENT_STATE" != "down" ]; then
-        send_alert "🔴 NAS Unreachable" \
-          "Synology NAS at $NAS_IP:$NAS_PORT is not responding. Check network and DSM service." \
-          5 "rotating_light,warning,nas"
-        kubectl patch configmap nas-monitor-state -n monitoring --type merge -p '{"data":{"state":"down"}}'
-      fi
-    fi
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: nas-monitor
@@ -95,51 +43,47 @@ subjects:
   name: nas-monitor
   namespace: monitoring
 ---
-apiVersion: batch/v1
-kind: CronJob
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: nas-monitor
   namespace: monitoring
+  labels:
+    app: nas-monitor
 spec:
-  schedule: "*/5 * * * *"
-  successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 1
-  concurrencyPolicy: Forbid
-  jobTemplate:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nas-monitor
+  template:
+    metadata:
+      labels:
+        app: nas-monitor
     spec:
-      template:
-        metadata:
-          labels:
-            app: nas-monitor
-        spec:
-          serviceAccountName: nas-monitor
-          restartPolicy: Never
-          containers:
-          - name: checker
-            image: rancher/kubectl:v1.34.2
-            imagePullPolicy: IfNotPresent
-            command: ["/bin/bash", "/scripts/check-nas.sh"]
-            volumeMounts:
-            - name: script
-              mountPath: /scripts
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                cpu: 100m
-                memory: 64Mi
-            securityContext:
-              allowPrivilegeEscalation: false
-              runAsNonRoot: true
-              runAsUser: 1000
-              capabilities:
-                drop:
-                - ALL
-              seccompProfile:
-                type: RuntimeDefault
-          volumes:
-          - name: script
-            configMap:
-              name: nas-monitor-script
-              defaultMode: 0755
+      serviceAccountName: nas-monitor
+      containers:
+      - name: shell-operator
+        image: piotrzan/shell-operator-nas-monitor:v1
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: run
+          mountPath: /var/run/shell-operator
+      volumes:
+      - name: run
+        emptyDir: {}

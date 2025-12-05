@@ -1,5 +1,6 @@
 # Argo Rollouts - Progressive Delivery Controller
-installCRDs: true
+# CRDs installed separately - skip to avoid ArgoCD sync drift
+installCRDs: false
 
 controller:
   replicas: 1

@@ -1,0 +1,13 @@
+# Argo Rollouts - Progressive Delivery Controller
+installCRDs: true
+
+controller:
+  replicas: 1
+
+dashboard:
+  enabled: true
+  service:
+    type: ClusterIP
+    annotations:
+      gateway.homelab.local/expose: "true"
+      gateway.homelab.local/hostname: "rollouts.homelab.local"

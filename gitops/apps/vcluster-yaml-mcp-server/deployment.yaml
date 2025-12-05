@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: mcp-server
-        image: piotrzan/vcluster-yaml-mcp-server:1.1.1
+        image: piotrzan/vcluster-yaml-mcp-server:v1.1.2
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

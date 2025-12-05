@@ -116,7 +116,8 @@ spec:
           restartPolicy: Never
           containers:
           - name: checker
-            image: bitnami/kubectl:latest
+            image: rancher/kubectl:v1.34.2
+            imagePullPolicy: IfNotPresent
             command: ["/bin/bash", "/scripts/check-nas.sh"]
             volumeMounts:
             - name: script

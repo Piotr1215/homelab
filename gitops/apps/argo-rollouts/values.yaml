@@ -10,5 +10,5 @@ dashboard:
   service:
     type: ClusterIP
     annotations:
-      gateway.homelab.local/expose: "true"
-      gateway.homelab.local/hostname: "rollouts.homelab.local"
+      httproute.controller/expose: "true"
+      httproute.controller/hostname: "rollouts.homelab.local"

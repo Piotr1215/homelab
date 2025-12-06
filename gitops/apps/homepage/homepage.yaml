@@ -51,6 +51,13 @@ data:
             type: argocd
             url: https://argocd-server.argocd.svc.cluster.local
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
+      - Argo Rollouts:
+          description: Progressive Delivery & Canary Releases
+          href: https://rollouts.homelab.local
+          icon: si-argo
+          showStats: true
+          namespace: argo-rollouts
+          podSelector: app.kubernetes.io/component=rollouts-dashboard
       - Kubernetes Dashboard:
           description: K8s Web UI & Job Viewer
           href: https://dashboard.homelab.local

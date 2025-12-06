@@ -65,6 +65,13 @@ data:
           showStats: true
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
+      - Tekton:
+          description: Cloud Native CI/CD Pipelines
+          href: https://tekton.homelab.local
+          icon: si-tekton
+          showStats: true
+          namespace: tekton-pipelines
+          podSelector: app.kubernetes.io/part-of=tekton-dashboard
     - Observability:
       - Uptime Kuma:
           description: Uptime & Status Monitoring

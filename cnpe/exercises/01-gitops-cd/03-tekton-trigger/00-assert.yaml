@@ -1,0 +1,11 @@
+# Phase 1: TriggerTemplate references correct pipeline
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: build-trigger-template
+  namespace: cnpe-tekton-test
+spec:
+  resourcetemplates:
+    - spec:
+        pipelineRef:
+          name: build-app

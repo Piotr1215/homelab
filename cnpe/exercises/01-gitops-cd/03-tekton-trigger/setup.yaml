@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpe-tekton-test
+---
+# The actual pipeline that should be triggered
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: build-app
+  namespace: cnpe-tekton-test
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: echo-task
+      params:
+        - name: message
+          value: "Cloning $(params.repo-url)"
+---
+# Simple task for testing
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: echo-task
+  namespace: cnpe-tekton-test
+spec:
+  params:
+    - name: message
+      type: string
+  steps:
+    - name: echo
+      image: alpine:3.19
+      script: |
+        echo "$(params.message)"
+---
+# BROKEN: References wrong pipeline name
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: build-trigger-template
+  namespace: cnpe-tekton-test
+spec:
+  params:
+    - name: repo-url
+      description: The git repository url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: build-app-run-
+      spec:
+        pipelineRef:
+          name: build-application  # BUG: Wrong name, should be 'build-app'
+        params:
+          - name: repo-url
+            value: $(tt.params.repo-url)
+---
+# BROKEN: Wrong parameter name and path
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: build-trigger-binding
+  namespace: cnpe-tekton-test
+spec:
+  params:
+    - name: git-url  # BUG: Wrong name, should be 'repo-url'
+      value: $(body.repo.url)  # BUG: Wrong path, should be '$(body.repository.clone_url)'
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: build-trigger
+  namespace: cnpe-tekton-test
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - name: build-trigger
+      bindings:
+        - ref: build-trigger-binding
+      template:
+        ref: build-trigger-template
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+  namespace: cnpe-tekton-test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-eventlistener
+  namespace: cnpe-tekton-test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: cnpe-tekton-test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-triggers-cnpe-test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+    namespace: cnpe-tekton-test

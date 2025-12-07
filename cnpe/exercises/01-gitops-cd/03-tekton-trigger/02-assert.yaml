@@ -1,0 +1,9 @@
+# Phase 3: PipelineRun exists (created by trigger)
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  namespace: cnpe-tekton-test
+  # generateName creates random suffix, so we just check namespace
+spec:
+  pipelineRef:
+    name: build-app

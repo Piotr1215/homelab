@@ -1,0 +1,8 @@
+# Phase 1: Deployment must be paused
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+spec:
+  paused: true

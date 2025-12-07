@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpe-broken-app
+  namespace: argocd
+status:
+  sync:
+    status: Synced
+  health:
+    status: Healthy

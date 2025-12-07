@@ -1,0 +1,16 @@
+# Phase 3: Deployment scaled to 0, Rollout healthy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+spec:
+  replicas: 0
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+status:
+  phase: Healthy

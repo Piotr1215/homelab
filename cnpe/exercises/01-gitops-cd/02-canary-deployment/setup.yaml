@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpe-canary-test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+spec:
+  selector:
+    app: web-api
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-api-canary
+  namespace: cnpe-canary-test
+spec:
+  selector:
+    app: web-api
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+# Production Deployment - currently serving traffic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-api
+  template:
+    metadata:
+      labels:
+        app: web-api
+    spec:
+      containers:
+        - name: web-api
+          image: nginx:1.25
+          ports:
+            - containerPort: 8080

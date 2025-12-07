@@ -1,0 +1,9 @@
+# Phase 3: Verify policy works - compliant pod must exist
+# User creates this pod to prove the policy allows valid pods
+apiVersion: v1
+kind: Pod
+metadata:
+  name: compliant-pod
+  namespace: cnpe-security-test
+status:
+  phase: Running

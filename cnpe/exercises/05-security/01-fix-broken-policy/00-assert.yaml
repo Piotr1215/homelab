@@ -1,0 +1,7 @@
+# Phase 1: Policy is in Enforce mode
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-memory-limits
+spec:
+  validationFailureAction: Enforce

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpe-gitops-test
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpe-broken-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: guestbook-broken  # Wrong path - does not exist
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpe-gitops-test
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

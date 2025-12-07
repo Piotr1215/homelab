@@ -1,0 +1,10 @@
+# Phase 2: TriggerBinding extracts repo-url parameter
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: build-trigger-binding
+  namespace: cnpe-tekton-test
+spec:
+  params:
+    - name: repo-url
+      value: $(body.repository.clone_url)

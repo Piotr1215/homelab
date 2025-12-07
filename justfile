@@ -324,3 +324,44 @@ cluster-restore:
 # K8sGPT - Show cluster issues found by AI
 k8sgpt:
   kubectl get results -n k8sgpt-operator-system 2>/dev/null || echo "K8sGPT not running"
+
+# ==================== CNPE Exam Prep ====================
+
+# List all CNPE exercises
+cnpe-list:
+  @echo "CNPE Exercises:"
+  @find cnpe/exercises -mindepth 2 -maxdepth 2 -type d | sort | sed 's|cnpe/exercises/||' | grep -v "^$"
+
+# Helper to run exercise with timer
+[private]
+_cnpe-run domain test:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd "cnpe/exercises/{{domain}}"
+  echo "Starting: {{domain}}/{{test}} (7 min timer)"
+  echo "Fix the issue, then assertions will pass automatically"
+  echo "---"
+  timeout 420 kubectl kuttl test --config kuttl-test.yaml --test "{{test}}" || echo "Time's up or test failed"
+
+# Run all GitOps exercises (25%)
+cnpe-domain-gitops:
+  cd cnpe/exercises/01-gitops-cd && kubectl kuttl test --config kuttl-test.yaml
+
+# Run all Security exercises (15%)
+cnpe-domain-security:
+  cd cnpe/exercises/05-security && kubectl kuttl test --config kuttl-test.yaml
+
+# Fix broken ArgoCD sync
+cnpe-gitops-fix: (_cnpe-run "01-gitops-cd" "01-fix-broken-sync")
+
+# Configure Argo Rollouts canary deployment
+cnpe-gitops-canary: (_cnpe-run "01-gitops-cd" "02-canary-deployment")
+
+# Setup Tekton trigger pipeline
+cnpe-gitops-tekton: (_cnpe-run "01-gitops-cd" "03-tekton-trigger")
+
+# ArgoCD ApplicationSet environment promotion
+cnpe-gitops-promotion: (_cnpe-run "01-gitops-cd" "04-environment-promotion")
+
+# Fix broken Kyverno policy
+cnpe-security-policy: (_cnpe-run "05-security" "01-fix-broken-policy")

@@ -1,0 +1,11 @@
+# Phase 2: Rollout must exist with canary strategy
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: web-api
+  namespace: cnpe-canary-test
+spec:
+  strategy:
+    canary:
+      stableService: web-api
+      canaryService: web-api-canary

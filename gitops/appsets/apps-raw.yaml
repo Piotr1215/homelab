@@ -70,7 +70,6 @@ spec:
           - app: tekton
             namespace: tekton-pipelines
             project: cluster-management
-            serverSideApply: "true"
   template:
     metadata:
       name: "{{ .app }}"

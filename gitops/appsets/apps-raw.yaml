@@ -70,6 +70,7 @@ spec:
           - app: tekton
             namespace: tekton-pipelines
             project: cluster-management
+            serverSideApply: "true"
   template:
     metadata:
       name: "{{ .app }}"
@@ -101,7 +102,7 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - RespectIgnoreDifferences=true
-          - ServerSideApply=true
+          - ServerSideApply={{ dig "serverSideApply" "false" . }}
         retry:
           limit: 5
           backoff:

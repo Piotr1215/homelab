@@ -1,8 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestSuite
-testDirs:
-  - ./
-startKIND: false
-skipDelete: false
-timeout: 60  # 60 sec for simple exercises
-parallel: 1

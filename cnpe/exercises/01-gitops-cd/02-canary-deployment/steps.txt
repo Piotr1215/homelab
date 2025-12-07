@@ -1,3 +1,0 @@
-0:Pause the Deployment to prevent controller conflicts
-1:Create Rollout with canary strategy (stableService + canaryService)
-2:Scale Deployment to 0 replicas, Rollout becomes Healthy

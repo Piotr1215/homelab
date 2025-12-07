@@ -1,8 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestSuite
-testDirs:
-  - ./
-startKIND: false
-skipDelete: false
-timeout: 420  # 7 minutes per test (exam time limit)
-parallel: 1   # Run sequentially like exam

@@ -1,3 +1,0 @@
-0:Fix validationFailureAction to Enforce
-1:Fix namespace selector to cnpe-security-test
-2:Create compliant pod to verify policy allows valid pods

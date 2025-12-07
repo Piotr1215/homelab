@@ -44,9 +44,3 @@ reportsController:
 # CRDs - install via helm
 crds:
   install: true
-
-# Webhooks config
-config:
-  # Don't block on webhook failures in homelab
-  webhooks:
-    - failurePolicy: Ignore

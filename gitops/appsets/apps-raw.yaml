@@ -95,6 +95,12 @@ spec:
           kind: Service
           jsonPointers:
             - /metadata/annotations/metallb.universe.tf~1ip-allocated-from-pool
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          jqPathExpressions:
+            - .metadata
+            - .status
+            - .spec.conversion
       syncPolicy:
         automated:
           prune: true

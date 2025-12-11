@@ -35,6 +35,9 @@ spec:
           - app: grafana-datasources
             namespace: prometheus
             project: observability
+          - app: claude-code-dashboard
+            namespace: prometheus
+            project: observability
           - app: k8sgpt
             namespace: k8sgpt-operator-system
           - app: kube-cleanup-operator
@@ -70,7 +73,7 @@ spec:
           - app: tekton
             namespace: tekton-pipelines
             project: cluster-management
-            # SSA disabled - upstream Tekton YAMLs contain managedFields which SSA rejects
+            serverSideApply: true
   template:
     metadata:
       name: "{{ .app }}"

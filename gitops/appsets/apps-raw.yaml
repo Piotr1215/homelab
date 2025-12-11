@@ -67,10 +67,6 @@ spec:
           - app: shell-operator
             namespace: metallb-system
             project: networking
-          - app: tekton
-            namespace: tekton-pipelines
-            project: cluster-management
-            # SSA disabled - upstream Tekton YAMLs contain managedFields which SSA rejects
   template:
     metadata:
       name: "{{ .app }}"

@@ -2,9 +2,9 @@
 mode: deployment
 replicaCount: 1
 
-# Image configuration - use contrib for prometheusremotewrite exporter
+# Image configuration
 image:
-  repository: otel/opentelemetry-collector-contrib
+  repository: otel/opentelemetry-collector-k8s
 
 # OpenTelemetry Collector configuration
 config:
@@ -52,29 +52,10 @@ config:
           - 'attributes["http.target"] == "/metrics"'
           - 'attributes["http.target"] == "/health"'
 
-    # Resource processor - add Claude Code specific attributes
-    resource:
-      attributes:
-        - key: source
-          value: claude-code
-          action: upsert
-
   exporters:
-    # Export traces to Tempo
+    # Export to Tempo
     otlp:
       endpoint: tempo.tempo.svc.cluster.local:4317
-      tls:
-        insecure: true
-
-    # Export metrics to Prometheus via remote write
-    prometheusremotewrite:
-      endpoint: http://kube-prometheus-stack-prometheus.prometheus.svc.cluster.local:9090/api/v1/write
-      tls:
-        insecure: true
-
-    # Export logs to Loki via OTLP (Loki 3.x supports OTLP natively)
-    otlphttp/loki:
-      endpoint: http://loki.loki.svc.cluster.local:3100/otlp
       tls:
         insecure: true
 
@@ -88,25 +69,11 @@ config:
       traces:
         receivers: [otlp, jaeger, zipkin]
         processors: [memory_limiter, filter, batch]
-        exporters: [otlp]
+        exporters: [otlp, debug]
 
-      # Metrics pipeline - for Claude Code metrics
-      metrics:
-        receivers: [otlp]
-        processors: [memory_limiter, resource, batch]
-        exporters: [prometheusremotewrite, debug]
-
-      # Logs pipeline - for Claude Code events
-      logs:
-        receivers: [otlp]
-        processors: [memory_limiter, resource, batch]
-        exporters: [otlphttp/loki, debug]
-
-# Service configuration - expose externally for Claude Code on local machine
+# Service configuration
 service:
-  type: LoadBalancer
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.110"
+  type: ClusterIP
 
 # Resource limits
 resources:

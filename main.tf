@@ -8,7 +8,7 @@ terraform {
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.35"
+      version = "~> 3.0"
     }
     null = {
       source  = "hashicorp/null"
@@ -32,7 +32,7 @@ variable "github_repo" {
 
 # Providers
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     config_path = pathexpand(var.kubeconfig_path)
   }
 }
@@ -42,7 +42,7 @@ provider "kubernetes" {
 }
 
 # Create argocd namespace
-resource "kubernetes_namespace" "argocd" {
+resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
   }
@@ -53,7 +53,7 @@ resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
   version    = "9.1.7"
 
   values = [

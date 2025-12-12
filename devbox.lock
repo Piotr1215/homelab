@@ -197,51 +197,51 @@
         }
       }
     },
-    "istioctl@1.28.1": {
-      "last_modified": "2025-12-04T22:20:37Z",
-      "resolved": "github:NixOS/nixpkgs/bd88d6c13ab85cc842b93d53f68d6d40412e5a18#istioctl",
+    "istioctl@1.28.0": {
+      "last_modified": "2025-11-23T21:50:36Z",
+      "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#istioctl",
       "source": "devbox-search",
-      "version": "1.28.1",
+      "version": "1.28.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/7qq19j6ysg5139xrvz09j4ci2cm0l5mf-istioctl-1.28.1",
+              "path": "/nix/store/3y2xyrmigg4lvinx6ylw7kkb8fz2hh31-istioctl-1.28.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/7qq19j6ysg5139xrvz09j4ci2cm0l5mf-istioctl-1.28.1"
+          "store_path": "/nix/store/3y2xyrmigg4lvinx6ylw7kkb8fz2hh31-istioctl-1.28.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/ibnnns0n4phvkv4cnz07vd9qdpbglpvm-istioctl-1.28.1",
+              "path": "/nix/store/6a41rfda38si814rnp137yrblxg4kppd-istioctl-1.28.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/ibnnns0n4phvkv4cnz07vd9qdpbglpvm-istioctl-1.28.1"
+          "store_path": "/nix/store/6a41rfda38si814rnp137yrblxg4kppd-istioctl-1.28.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/h7lpsfx8zpg6r7zlps6sk53pqzjm3bqy-istioctl-1.28.1",
+              "path": "/nix/store/fh1fcsyzrhhxsy6qnyhd7mcgl26c65lk-istioctl-1.28.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/h7lpsfx8zpg6r7zlps6sk53pqzjm3bqy-istioctl-1.28.1"
+          "store_path": "/nix/store/fh1fcsyzrhhxsy6qnyhd7mcgl26c65lk-istioctl-1.28.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/9c7liml17znn97n14ylbccxis1jw1595-istioctl-1.28.1",
+              "path": "/nix/store/3pckshyhl8gwdxna1kq967rcc3swgzq4-istioctl-1.28.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/9c7liml17znn97n14ylbccxis1jw1595-istioctl-1.28.1"
+          "store_path": "/nix/store/3pckshyhl8gwdxna1kq967rcc3swgzq4-istioctl-1.28.0"
         }
       }
     },
@@ -293,51 +293,51 @@
         }
       }
     },
-    "ollama@0.12.11": {
-      "last_modified": "2025-11-18T03:14:24Z",
-      "resolved": "github:NixOS/nixpkgs/0ade817efdde79cbc46b624c849027335ebc25c5#ollama",
+    "ollama@0.13.1": {
+      "last_modified": "2025-12-04T22:20:37Z",
+      "resolved": "github:NixOS/nixpkgs/bd88d6c13ab85cc842b93d53f68d6d40412e5a18#ollama",
       "source": "devbox-search",
-      "version": "0.12.11",
+      "version": "0.13.1",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/cs3dxpq3mq22q48lwxccyl8x6mlwzckz-ollama-0.12.11",
+              "path": "/nix/store/mqk8yfp6ha1v2m0wzdn8rdyq8syvnyq4-ollama-0.13.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/cs3dxpq3mq22q48lwxccyl8x6mlwzckz-ollama-0.12.11"
+          "store_path": "/nix/store/mqk8yfp6ha1v2m0wzdn8rdyq8syvnyq4-ollama-0.13.1"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/nxnrg8vgjwyk79cr5gzp1n3yzniwc78x-ollama-0.12.11",
+              "path": "/nix/store/kl4cl5wykfy1dps3mzllrqa6gnpxydvn-ollama-0.13.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/nxnrg8vgjwyk79cr5gzp1n3yzniwc78x-ollama-0.12.11"
+          "store_path": "/nix/store/kl4cl5wykfy1dps3mzllrqa6gnpxydvn-ollama-0.13.1"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/m0jp5krdakrcv9qwgpjnkqbayndgydlm-ollama-0.12.11",
+              "path": "/nix/store/f6y0qsh1ir12nbq6fh7v6i5l75hrwh1g-ollama-0.13.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/m0jp5krdakrcv9qwgpjnkqbayndgydlm-ollama-0.12.11"
+          "store_path": "/nix/store/f6y0qsh1ir12nbq6fh7v6i5l75hrwh1g-ollama-0.13.1"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/3cs20bjvsq39mc0kwsa4fzwvxpzkrv82-ollama-0.12.11",
+              "path": "/nix/store/r358n57gl3r2mjz5cnzv2fkmd180cvzw-ollama-0.13.1",
               "default": true
             }
           ],
-          "store_path": "/nix/store/3cs20bjvsq39mc0kwsa4fzwvxpzkrv82-ollama-0.12.11"
+          "store_path": "/nix/store/r358n57gl3r2mjz5cnzv2fkmd180cvzw-ollama-0.13.1"
         }
       }
     },

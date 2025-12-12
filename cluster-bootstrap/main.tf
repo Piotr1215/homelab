@@ -21,7 +21,7 @@ provider "kubernetes" {
   config_path = "/home/decoder/dev/homelab/kubeconfig"
 }
 
-resource "kubernetes_namespace" "argocd" {
+resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
   }

@@ -34,6 +34,10 @@ prometheus:
 grafana:
   namespaceOverride: prometheus
   defaultDashboardsEnabled: true
+  admin:
+    existingSecret: grafana-admin-token
+    userKey: admin-user
+    passwordKey: admin-password
   initChownData:
     enabled: false
   service:
@@ -62,10 +66,6 @@ grafana:
   sidecar:
     datasources:
       enabled: true
-      adminUser: admin
-      adminPassword:
-        existingSecret: grafana-admin-token
-        key: token
 
 alertmanager:
   enabled: true

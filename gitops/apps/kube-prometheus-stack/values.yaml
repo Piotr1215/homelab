@@ -66,6 +66,10 @@ grafana:
   sidecar:
     datasources:
       enabled: true
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Admin
 
 alertmanager:
   enabled: true

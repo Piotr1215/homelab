@@ -8,11 +8,11 @@
 
 GitOps Kubernetes cluster with ArgoCD and External Secrets Operator (ESO) using Bitwarden Secrets Manager. Bootstrap installs core services, ArgoCD handles everything else.
 
-## Repository Pattern
+## Architecture
 
-This repo follows a 2-layer ApplicationSet pattern. K8s manifests and Helm values live in `gitops/apps/`. ApplicationSets in `gitops/appsets/` generate ArgoCD Applications from those manifests. A single `appsets-loader` bootstraps everything. No Helm values are inlined in ArgoCD resources - all config stays in Git.
+This repo follows a 2-layer `ApplicationSet` pattern. K8s manifests and Helm values live in `gitops/apps/`. `ApplicationSets` in `gitops/appsets/` generate ArgoCD Applications from those manifests. A single `appsets-loader` bootstraps everything. No Helm values are inlined in ArgoCD resources - all config stays in Git.
 
-```
+```text
 gitops/
   apps/        <- K8s manifests + values.yaml per app
   appsets/     <- ApplicationSets (apps-helm, apps-raw)
@@ -31,7 +31,7 @@ export KUBECONFIG=./kubeconfig  # if using local kubeconfig
 
 ## Bootstrap
 
-Deploy the core infrastructure components using Terraform. This sets up ArgoCD and essential operators.
+Deploy the core infrastructure components using Terraform or OpenTofu. This sets up ArgoCD and essential operators.
 
 ### Fresh install
 
@@ -45,14 +45,10 @@ terraform init && terraform apply
 
 ## Access
 
-Service endpoints are available via LoadBalancer IPs. Use these commands to get the URLs:
+HTTPRoutes auto-generate from Service annotations. Access services at `https://<service>.homelab.local`.
 
 ```bash
-# Get ArgoCD URL
-kubectl get svc -n argocd argocd-server -o jsonpath='http://{.status.loadBalancer.ingress[0].ip}'
-
-# Get Homepage URL
-kubectl get svc -n homepage homepage -o jsonpath='http://{.status.loadBalancer.ingress[0].ip}'
+kubectl get httproute -A  # List all routes
 ```
 
 ## Operations
@@ -67,21 +63,12 @@ kubectl get app -n argocd  # Check app status
 
 ## Image Updates
 
-ArgoCD Image Updater automatically tracks and updates container images using semantic versioning.
+[ArgoCD Image Updater](https://argocd-image-updater.readthedocs.io/) automatically tracks and updates container images using semantic versioning.
 
-**Requirements:**
+### Requirements
 - Application must use **Kustomize** or **Helm** source type (not Directory)
 - Current image tag must be semver-compliant (e.g., `1.0.0`, not `latest`)
 - Tags must match the configured regex pattern
-
-**Example annotations:**
-```yaml
-argocd-image-updater.argoproj.io/image-list: myapp=docker.io/user/image
-argocd-image-updater.argoproj.io/myapp.update-strategy: semver
-argocd-image-updater.argoproj.io/myapp.allow-tags: regexp:^[0-9]+\.[0-9]+\.[0-9]+$
-argocd-image-updater.argoproj.io/write-back-method: git
-argocd-image-updater.argoproj.io/git-branch: main
-```
 
 ## Secrets
 

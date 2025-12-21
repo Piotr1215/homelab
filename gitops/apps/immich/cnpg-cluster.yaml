@@ -8,14 +8,14 @@ metadata:
 spec:
   instances: 1
 
-  # VectorChord image for Immich vector search
-  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16-1.0.0
+  # pgvecto.rs image for Immich vector search (deprecated but compatible)
+  imageName: ghcr.io/tensorchord/cloudnative-pgvecto.rs:16-v0.3.0
 
   enableSuperuserAccess: true
 
   postgresql:
     shared_preload_libraries:
-      - "vchord.so"
+      - "vectors.so"
 
   bootstrap:
     initdb:
@@ -24,7 +24,7 @@ spec:
       secret:
         name: immich-postgres-user
       postInitSQL:
-        - CREATE EXTENSION IF NOT EXISTS "vchord" CASCADE;
+        - CREATE EXTENSION IF NOT EXISTS "vectors";
         - CREATE EXTENSION IF NOT EXISTS "cube" CASCADE;
         - CREATE EXTENSION IF NOT EXISTS "earthdistance" CASCADE;
 

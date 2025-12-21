@@ -14,12 +14,12 @@ controllers:
           DB_USERNAME:
             valueFrom:
               secretKeyRef:
-                name: immich-postgres-app
+                name: immich-postgres-user
                 key: username
           DB_PASSWORD:
             valueFrom:
               secretKeyRef:
-                name: immich-postgres-app
+                name: immich-postgres-user
                 key: password
 
 immich:

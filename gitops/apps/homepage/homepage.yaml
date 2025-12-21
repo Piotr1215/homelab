@@ -42,16 +42,17 @@ data:
     mode: cluster
     gateway: true
   services.yaml: |
-    - GitOps:
+    - ArgoCD:
       - ArgoCD:
           description: GitOps Continuous Delivery
           href: https://argocd.homelab.local
-          icon: git.svg
+          icon: argocd.svg
           showStats: true
           widget:
             type: argocd
             url: https://argocd-server.argocd.svc.cluster.local
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
+    - DevOps:
       - Argo Rollouts:
           description: Progressive Delivery & Canary Releases
           href: https://rollouts.homelab.local
@@ -66,13 +67,6 @@ data:
           showStats: true
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
-      - Tekton:
-          description: Cloud Native CI/CD Pipelines
-          href: https://tekton.homelab.local
-          icon: si-tekton
-          showStats: true
-          namespace: tekton-pipelines
-          podSelector: app.kubernetes.io/part-of=tekton-dashboard
     - Observability:
       - Uptime Kuma:
           description: Uptime & Status Monitoring
@@ -102,14 +96,14 @@ data:
           showStats: true
           namespace: pyroscope
           podSelector: app.kubernetes.io/name=pyroscope
-    - Services:
-      - Forgejo:
-          description: Self-hosted Git Server
-          href: https://forgejo.homelab.local
-          icon: gitea.svg
+    - Storage:
+      - Longhorn:
+          description: Distributed Block Storage
+          href: https://longhorn.homelab.local
+          icon: si-rancher
           showStats: true
-          namespace: git-mirror
-          podSelector: app.kubernetes.io/name=forgejo
+          namespace: longhorn-system
+          podSelector: app=longhorn-ui
       - MinIO:
           description: S3-Compatible Object Storage
           href: https://minio.homelab.local
@@ -118,20 +112,35 @@ data:
           namespace: minio
           podSelector: app=minio
       - Harbor:
-          description: Container Registry with Vulnerability Scanning
+          description: Container Registry
           href: https://harbor.homelab.local
           icon: harbor.svg
           showStats: true
           namespace: harbor
           podSelector: app=harbor,component=core
-      - Longhorn:
-          description: Distributed Block Storage
-          href: https://longhorn.homelab.local
-          icon: si-rancher
+      - Forgejo:
+          description: Self-hosted Git Server
+          href: https://forgejo.homelab.local
+          icon: gitea.svg
           showStats: true
-          namespace: longhorn-system
-          podSelector: app=longhorn-ui
-      - Hubble UI:
+          namespace: git-mirror
+          podSelector: app.kubernetes.io/name=forgejo
+    - Security:
+      - Authentik:
+          description: Identity Provider & SSO
+          href: https://authentik.homelab.local
+          icon: authentik.svg
+          showStats: true
+          namespace: authentik
+          podSelector: app.kubernetes.io/name=authentik,app.kubernetes.io/component=server
+      - Falco:
+          description: Runtime Security Events
+          href: https://falco.homelab.local
+          icon: si-falco
+          showStats: true
+          namespace: falco
+          podSelector: app.kubernetes.io/name=falcosidekick-ui
+      - Hubble:
           description: Network Flow Visualization
           href: https://hubble.homelab.local
           icon: cilium.svg
@@ -145,36 +154,16 @@ data:
           showStats: true
           namespace: ntopng
           podSelector: app=ntopng
-      - Falco Security:
-          description: Runtime Security Events
-          href: https://falco.homelab.local
-          icon: si-falco
-          showStats: true
-          namespace: falco
-          podSelector: app.kubernetes.io/name=falcosidekick-ui
-      - Authentik:
-          description: Identity Provider & SSO
-          href: https://authentik.homelab.local
-          icon: authentik.svg
-          showStats: true
-          namespace: authentik
-          podSelector: app.kubernetes.io/name=authentik,app.kubernetes.io/component=server
-      - MCP Framework:
-          description: Agentic MCP Framework
-          href: https://mcp.homelab.local
-          icon: mdi-robot
-          showStats: true
-          namespace: default
-          podSelector: app.kubernetes.io/name=mcp-agentic-framework
+    - AI Tools:
       - Open WebUI:
-          description: Self-Hosted AI Chat Interface (Mac Ollama)
+          description: AI Chat Interface
           href: https://webui.homelab.local
           icon: mdi-chat-processing
           showStats: true
           namespace: ai-tools
           podSelector: app=open-webui
       - K8sGPT:
-          description: AI-Powered K8s Troubleshooting (Grafana Dashboard)
+          description: AI K8s Troubleshooting
           href: https://grafana.homelab.local/d/U82QyO8Vz/k8sgpt-overview
           icon: mdi-kubernetes
           widget:
@@ -190,6 +179,13 @@ data:
                 query: sum(k8sgpt_number_of_failed_backend_ai_calls)
                 format:
                   type: number
+      - MCP Framework:
+          description: Agentic MCP Framework
+          href: https://mcp.homelab.local
+          icon: mdi-robot
+          showStats: true
+          namespace: default
+          podSelector: app.kubernetes.io/name=mcp-agentic-framework
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management
@@ -275,22 +271,34 @@ data:
   settings.yaml: |
     title: Homelab Dashboard
     headerStyle: boxed
+    statusStyle: dot
+    useEqualHeights: true
     layout:
-      GitOps:
+      ArgoCD:
         style: row
         columns: 1
-      Observability:
+      DevOps:
         style: row
         columns: 2
-      Services:
+      Observability:
         style: row
         columns: 4
+      Storage:
+        style: row
+        columns: 4
+      Security:
+        style: row
+        columns: 4
+      AI Tools:
+        style: row
+        columns: 3
       Infrastructure:
         style: row
         columns: 2
       Proxmox Monitoring:
         style: row
         columns: 4
+        initiallyCollapsed: true
     
   widgets.yaml: |
     - kubernetes:

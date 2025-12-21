@@ -158,6 +158,19 @@ data:
           showStats: true
           namespace: ntopng
           podSelector: app=ntopng
+    - Media:
+      - Immich:
+          description: Photo & Video Backup
+          href: https://immich.cloudrumble.net
+          icon: immich.svg
+          showStats: true
+          namespace: immich
+          podSelector: app.kubernetes.io/name=immich-server
+          widget:
+            type: immich
+            url: http://immich-server.immich.svc.cluster.local:2283
+            key: {{HOMEPAGE_VAR_IMMICH_API_KEY}}
+            version: 2
     - AI Tools:
       - Open WebUI:
           description: AI Chat Interface
@@ -190,19 +203,6 @@ data:
           showStats: true
           namespace: default
           podSelector: app.kubernetes.io/name=mcp-agentic-framework
-    - Media:
-      - Immich:
-          description: Photo & Video Backup
-          href: https://immich.cloudrumble.net
-          icon: immich.svg
-          showStats: true
-          namespace: immich
-          podSelector: app.kubernetes.io/name=immich-server
-          widget:
-            type: immich
-            url: http://immich-server.immich.svc.cluster.local:2283
-            key: {{HOMEPAGE_VAR_IMMICH_API_KEY}}
-            version: 2
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management
@@ -306,6 +306,9 @@ data:
       Security:
         style: row
         columns: 4
+      Media:
+        style: row
+        columns: 1
       AI Tools:
         style: row
         columns: 3

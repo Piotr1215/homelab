@@ -78,11 +78,11 @@ data:
       - Glances:
           description: Real-time System Monitoring
           href: https://glances.homelab.local
-          icon: si-glances
+          icon: glances.svg
       - Uptime Kuma:
           description: Uptime & Status Monitoring
           href: https://uptime.homelab.local
-          icon: https://uptime.kuma.pet/icon.svg
+          icon: uptime-kuma.svg
           showStats: true
           namespace: uptime-kuma
           podSelector: app.kubernetes.io/name=uptime-kuma

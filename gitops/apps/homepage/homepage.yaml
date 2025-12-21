@@ -14,7 +14,7 @@ metadata:
     helm.sh/chart: homepage-2.1.0
     app.kubernetes.io/name: homepage
     app.kubernetes.io/instance: homepage
-    app.kubernetes.io/version: "v1.2.0"
+    app.kubernetes.io/version: "v1.8.0"
     app.kubernetes.io/managed-by: Helm
     
 data:
@@ -319,7 +319,7 @@ metadata:
     app.kubernetes.io/instance: homepage
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: homepage
-    app.kubernetes.io/version: v1.2.0
+    app.kubernetes.io/version: v1.8.0
     helm.sh/chart: homepage-2.1.0
 spec:
   type: ClusterIP
@@ -342,7 +342,7 @@ metadata:
     app.kubernetes.io/instance: homepage
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: homepage
-    app.kubernetes.io/version: v1.2.0
+    app.kubernetes.io/version: v1.8.0
     helm.sh/chart: homepage-2.1.0
   annotations:
     values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
@@ -378,7 +378,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: homepage
-          image: ghcr.io/gethomepage/homepage:latest
+          image: ghcr.io/gethomepage/homepage:v1.8.0
           imagePullPolicy:
           securityContext:
             allowPrivilegeEscalation: false

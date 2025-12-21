@@ -1,0 +1,18 @@
+---
+# Disable LoadBalancer - use HTTPRoute via gateway
+loadBalancer:
+  enabled: false
+
+# Service annotations for HTTPRoute controller
+serviceAnnotations:
+  httproute.controller/expose: "true"
+  httproute.controller/hostname: "kubeview.homelab.local"
+
+# Resource limits
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

@@ -67,6 +67,13 @@ data:
           showStats: true
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
+      - KubeView:
+          description: Cluster Resource Visualization
+          href: https://kubeview.homelab.local
+          icon: kubernetes.svg
+          showStats: true
+          namespace: kubeview
+          podSelector: app.kubernetes.io/name=kubeview
     - Observability:
       - Glances:
           description: Real-time System Monitoring
@@ -296,7 +303,7 @@ data:
         columns: 1
       DevOps:
         style: row
-        columns: 2
+        columns: 3
       Observability:
         style: row
         columns: 5

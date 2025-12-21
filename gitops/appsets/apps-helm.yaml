@@ -199,13 +199,6 @@ spec:
             chartVersion: "1.82.0"
             createNamespace: "false"
             project: networking
-          - app: kubeview
-            namespace: kubeview
-            chartRepo: https://code.benco.io/kubeview/deploy/helm
-            chartName: kubeview
-            chartVersion: "2.0.5"
-            createNamespace: "true"
-            project: observability
   template:
     metadata:
       name: "{{ .app }}"

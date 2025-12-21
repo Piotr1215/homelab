@@ -40,6 +40,7 @@ data:
     password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
   kubernetes.yaml: |
     mode: cluster
+    gateway: true
   services.yaml: |
     - GitOps:
       - ArgoCD:

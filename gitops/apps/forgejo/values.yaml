@@ -91,22 +91,3 @@ redis-cluster:
 
 memcached:
   enabled: false
-
-# Mount homelab CA for trusting internal services (Authentik OAuth)
-extraVolumes:
-  - name: homelab-ca
-    configMap:
-      name: homelab-ca
-      optional: true
-
-extraInitVolumeMounts:
-  - name: homelab-ca
-    mountPath: /homelab-ca
-    readOnly: true
-
-# Combine homelab CA with system CAs during init
-initPreScript: |
-  if [ -f /homelab-ca/ca.crt ]; then
-    cat /homelab-ca/ca.crt >> /etc/ssl/certs/ca-certificates.crt
-    echo "Homelab CA added to trust store"
-  fi

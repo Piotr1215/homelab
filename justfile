@@ -61,6 +61,10 @@ launch_homepage:
 argo-password:
   @kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
+# Get Kubernetes Dashboard token (copied to clipboard)
+dashboard-token:
+  @kubectl -n kubernetes-dashboard create token kubernetes-dashboard-web | {{copy}}
+
 # Configure Bitwarden secrets after ArgoCD sync (bootstrap External Secrets Operator)
 patch-bitwarden:
   #!/usr/bin/env bash

@@ -9,13 +9,21 @@ gitea:
 
   config:
     server:
-      DOMAIN: git.homelab.local
-      ROOT_URL: http://git.homelab.local
+      DOMAIN: forgejo.homelab.local
+      ROOT_URL: https://forgejo.homelab.local
       HTTP_PORT: 3000
       DISABLE_SSH: false
       SSH_PORT: 22
       START_SSH_SERVER: true
       LFS_START_SERVER: true
+
+    oauth2_client:
+      ENABLE_AUTO_REGISTRATION: true
+      SKIP_LOCAL_2FA: true
+      OPENID_CONNECT_SCOPES: openid profile email
+
+    certs:
+      ENABLE: false
 
     database:
       DB_TYPE: sqlite3

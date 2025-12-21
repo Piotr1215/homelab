@@ -329,3 +329,104 @@ cluster-restore:
 k8sgpt:
   kubectl get results -n k8sgpt-operator-system 2>/dev/null || echo "K8sGPT not running"
 
+# Visualize K8s namespace dependencies (opens SVG in browser)
+k8s-graph ns="":
+  #!/usr/bin/env bash
+  NS="{{ns}}"
+  [[ -z "$NS" ]] && NS=$(kubectl get ns -o name | cut -d/ -f2 | fzf -m --prompt="Namespace(s): " | paste -sd,)
+  [[ -z "$NS" ]] && exit 1
+  OUT="/tmp/k8s-graph-${NS//,/-}.svg"
+  ALL_TYPES=$(kubectl api-resources --namespaced --verbs=list -o name | grep -v '^events' | paste -sd,)
+  # Collect types across all selected namespaces
+  TYPES=""
+  for n in ${NS//,/ }; do
+    TYPES="$TYPES,$(kubectl get $ALL_TYPES -n "$n" -o jsonpath='{range .items[*]}{.kind}{"\n"}{end}' 2>/dev/null)"
+  done
+  TYPES=$(echo "$TYPES" | tr ',' '\n' | sort -u | grep . | paste -sd,)
+  [[ -z "$TYPES" ]] && { echo "No resources in namespace(s) $NS"; exit 1; }
+  # Collect pod status for enrichment
+  POD_STATUS=$(for n in ${NS//,/ }; do kubectl get pods -n "$n" -o jsonpath='{range .items[*]}{.metadata.name}={.status.phase} ({.status.containerStatuses[0].restartCount}r)|{end}' 2>/dev/null; done)
+  # Graph each namespace and merge
+  (for n in ${NS//,/ }; do kubectl graph -n "$n" $TYPES 2>/dev/null; done) | \
+    awk '/^digraph/{ if(!h){h=1; print}; next } /^}/{ next } {print} END{print "}"}' | \
+    sed 's/layout="sfdp"/layout="dot" rankdir="TB" compound="true"/' | \
+    awk -v pods="$POD_STATUS" '
+      BEGIN { n=split(pods,a,"|"); for(i=1;i<=n;i++){ split(a[i],b,"="); podinfo[b[1]]=b[2] } }
+      /^\s+"[^"]+".*tooltip=.*kind:/ && !/->/ {
+        node = $0
+        if (match($0, /kind: ([A-Za-z]+)/, knd)) {
+          kind = knd[1]
+          lbl = kind
+          if (kind == "Pod" && match($0, /name: ([a-z0-9-]+)\\n  namespace:/, pn) && podinfo[pn[1]]) lbl = lbl "\\n" podinfo[pn[1]]
+          sub(/label="[^"]*"/, "label=\"" lbl "\"", node)
+          nodes[kind] = nodes[kind] node "\n"
+        } else { other = other $0 "\n" }
+        next
+      }
+      /^\s+"[^"]+"\s*->/ {
+        if (match($0, /\[([^\]]+)\]"?\];$/, nm)) sub(/label="[^"]*"/, "label=\"" nm[1] "\"")
+        edges = edges $0 "\n"; next
+      }
+      /^digraph/ { header = $0; next }
+      /^}/ { footer = $0; next }
+      /^\s*(graph|node|edge)\s*\[/ { preamble = preamble $0 "\n"; next }
+      { other = other $0 "\n" }
+      END {
+        print header
+        print preamble
+        i = 0
+        for (k in nodes) {
+          print "  subgraph cluster_" i++ " {"
+          print "    label=\"" k "\"; style=dashed; color=gray;"
+          print nodes[k]
+          print "  }"
+        }
+        print other
+        print edges
+        print footer
+      }
+    ' | dot -Tsvg -o "$OUT"
+  echo "Generated: $OUT"
+  {{browse}} "$OUT" 2>/dev/null &
+
+# Visualize K8s app from gitops folder (auto-detects kustomize/helm/raw)
+k8s-graph-app path="":
+  #!/usr/bin/env bash
+  APP="{{path}}"
+  [[ -z "$APP" ]] && APP=$(find gitops/apps -mindepth 1 -maxdepth 1 -type d | fzf --prompt="App folder: ")
+  [[ -z "$APP" ]] && exit 1
+  NAME=$(basename "$APP")
+  OUT="/tmp/k8s-graph-$NAME.svg"
+
+  if [[ -f "$APP/kustomization.yaml" ]]; then
+    kustomize build "$APP" | kubectl graph -f - 2>/dev/null
+  elif [[ -f "$APP/values.yaml" ]] && ! grep -ql '^kind:' "$APP"/*.yaml 2>/dev/null; then
+    CHART_INFO=$(yq ".spec.generators[0].list.elements[] | select(.app == \"$NAME\")" gitops/appsets/apps-helm.yaml 2>/dev/null)
+    if [[ -z "$CHART_INFO" ]]; then
+      echo "Chart info not found. Use: just k8s-graph $NAME"
+      exit 0
+    fi
+    REPO=$(echo "$CHART_INFO" | yq '.chartRepo')
+    CHART=$(echo "$CHART_INFO" | yq '.chartName')
+    VERSION=$(echo "$CHART_INFO" | yq '.chartVersion')
+    NS=$(echo "$CHART_INFO" | yq '.namespace')
+    helm template "$NAME" "$CHART" --repo "$REPO" --version "$VERSION" -f "$APP/values.yaml" -n "$NS" --skip-tests 2>/dev/null | kubectl graph -f - 2>/dev/null
+  else
+    kubectl graph -f "$APP" 2>/dev/null
+  fi | sed 's/layout="sfdp"/layout="dot" rankdir="TB"/' | \
+    awk '
+      /label=.*tooltip=/ {
+        if (match($0, /kind: ([A-Za-z]+)/, knd)) sub(/label="[^"]*"/, "label=\"" knd[1] "\"")
+      }
+      /^\s+"[^"]+"\s*->\s*"[^"]+".*label=/ {
+        if (match($0, /->.*\[([^\]]+)\]/, tip)) sub(/label="[^"]*"/, "label=\"" tip[1] "\"")
+      }
+      { print }
+    ' | dot -Tsvg -o "$OUT"
+  if [[ -s "$OUT" ]]; then
+    echo "Generated: $OUT"
+    {{browse}} "$OUT" 2>/dev/null &
+  else
+    echo "No output generated"
+  fi
+

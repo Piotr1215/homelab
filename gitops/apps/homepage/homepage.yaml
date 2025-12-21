@@ -46,7 +46,7 @@ data:
       - ArgoCD:
           description: GitOps Continuous Delivery
           href: https://argocd.homelab.local
-          icon: argocd.svg
+          icon: argo-cd.svg
           showStats: true
           widget:
             type: argocd

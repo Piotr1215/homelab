@@ -61,6 +61,9 @@ server:
 # Machine Learning component
 machine-learning:
   enabled: true
+  controllers:
+    main:
+      strategy: Recreate
   persistence:
     cache:
       enabled: true

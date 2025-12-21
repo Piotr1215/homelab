@@ -68,6 +68,10 @@ data:
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
     - Observability:
+      - Glances:
+          description: Real-time System Monitoring
+          href: https://glances.homelab.local
+          icon: si-glances
       - Uptime Kuma:
           description: Uptime & Status Monitoring
           href: https://uptime.homelab.local
@@ -186,6 +190,14 @@ data:
           showStats: true
           namespace: default
           podSelector: app.kubernetes.io/name=mcp-agentic-framework
+    - Media:
+      - Immich:
+          description: Photo & Video Backup
+          href: https://immich.homelab.local
+          icon: immich.svg
+          showStats: true
+          namespace: immich
+          podSelector: app.kubernetes.io/name=immich-server
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management
@@ -282,7 +294,7 @@ data:
         columns: 2
       Observability:
         style: row
-        columns: 4
+        columns: 5
       Storage:
         style: row
         columns: 4

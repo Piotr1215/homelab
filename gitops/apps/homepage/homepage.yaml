@@ -193,7 +193,7 @@ data:
     - Media:
       - Immich:
           description: Photo & Video Backup
-          href: https://immich.homelab.local
+          href: https://immich.cloudrumble.net
           icon: immich.svg
           showStats: true
           namespace: immich

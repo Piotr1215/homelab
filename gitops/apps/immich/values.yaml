@@ -1,0 +1,77 @@
+# Immich Helm values
+# Chart: oci://ghcr.io/immich-app/immich-charts/immich
+
+# Override image tag for all components
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          tag: v2.4.1
+        env:
+          DB_HOSTNAME: immich-postgres-rw
+          DB_DATABASE_NAME: immich
+          DB_USERNAME:
+            valueFrom:
+              secretKeyRef:
+                name: immich-postgres-app
+                key: username
+          DB_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: immich-postgres-app
+                key: password
+
+immich:
+  metrics:
+    enabled: true
+
+  persistence:
+    library:
+      existingClaim: immich-library
+
+# Enable Redis subchart
+valkey:
+  enabled: true
+  persistence:
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      size: 1Gi
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+
+# Server component
+server:
+  enabled: true
+  service:
+    main:
+      type: ClusterIP
+      annotations:
+        httproute.controller/expose: "true"
+        httproute.controller/hostname: "immich.homelab.local"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+# Machine Learning component
+machine-learning:
+  enabled: true
+  persistence:
+    cache:
+      enabled: true
+      type: persistentVolumeClaim
+      size: 10Gi
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: "4"
+      memory: 4Gi

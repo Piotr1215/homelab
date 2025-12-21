@@ -177,6 +177,21 @@ spec:
             chartVersion: "2.4.0"
             createNamespace: "false"
             project: observability
+          - app: cloudnative-pg
+            namespace: cnpg-system
+            chartRepo: https://cloudnative-pg.github.io/charts
+            chartName: cloudnative-pg
+            chartVersion: "0.27.0"
+            createNamespace: "true"
+            serverSideApply: "true"
+            project: storage
+          - app: immich
+            namespace: immich
+            chartRepo: oci://ghcr.io/immich-app/immich-charts/immich
+            chartName: immich
+            chartVersion: "0.10.3"
+            createNamespace: "false"
+            project: apps
   template:
     metadata:
       name: "{{ .app }}"

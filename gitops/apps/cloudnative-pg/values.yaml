@@ -1,0 +1,5 @@
+# CloudNative-PG Operator
+# Minimal config - operator only, clusters defined per-app
+---
+monitoring:
+  podMonitorEnabled: true

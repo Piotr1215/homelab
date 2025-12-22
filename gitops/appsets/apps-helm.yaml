@@ -106,13 +106,6 @@ spec:
             createNamespace: "true"
             project: cluster-management
             serverSideApply: "true"
-          - app: authentik
-            namespace: authentik
-            chartRepo: https://charts.goauthentik.io
-            chartName: authentik
-            chartVersion: "2025.10.2"
-            createNamespace: "false"
-            project: security
           - app: beyla
             namespace: tempo
             chartRepo: https://grafana.github.io/helm-charts

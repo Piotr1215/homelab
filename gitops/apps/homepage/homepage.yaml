@@ -130,13 +130,6 @@ data:
           namespace: git-mirror
           podSelector: app.kubernetes.io/name=forgejo
     - Security:
-      - Authentik:
-          description: Identity Provider & SSO
-          href: https://authentik.homelab.local
-          icon: authentik.svg
-          showStats: true
-          namespace: authentik
-          podSelector: app.kubernetes.io/name=authentik,app.kubernetes.io/component=server
       - Falco:
           description: Runtime Security Events
           href: https://falco.homelab.local

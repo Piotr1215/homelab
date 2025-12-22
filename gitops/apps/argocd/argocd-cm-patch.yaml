@@ -1,5 +1,4 @@
 ---
-# ArgoCD ConfigMap - With Authentik SSO via Dex
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,23 +13,5 @@ data:
   accounts.homepage.enabled: "true"
   # Application instance label
   application.instanceLabelKey: argocd.argoproj.io/instance
-
-  # ArgoCD URL - HTTPS!
+  # ArgoCD URL
   url: https://argocd.homelab.local
-
-  # Dex configuration for Authentik OIDC
-  dex.config: |
-    connectors:
-    - config:
-        issuer: https://authentik.homelab.local/application/o/argo-cd/
-        clientID: cC5rwGcBk5ooxqE0cNyVhoznI4qXshZaVaOhajSA
-        clientSecret: $dex.authentik.clientSecret
-        insecureEnableGroups: true
-        insecureSkipVerify: true
-        scopes:
-          - openid
-          - profile
-          - email
-      name: authentik
-      type: oidc
-      id: authentik

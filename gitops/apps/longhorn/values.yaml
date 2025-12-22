@@ -3,6 +3,7 @@ preUpgradeChecker:
   jobEnabled: false
 defaultSettings:
   defaultReplicaCount: "2"
+  replicaAutoBalance: "best-effort"
   replicaSoftAntiAffinity: "true"
   backupTarget: "nfs://192.168.178.138:/volume1/Kubernetes/longhorn-backups"
   autoDeletePodWhenVolumeDetachedUnexpectedly: "true"

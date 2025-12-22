@@ -18,7 +18,8 @@ data:
     replication_factor = 1
 
     rpc_bind_addr = "[::]:3901"
-    rpc_secret_file = "/data/rpc_secret"
+    rpc_public_addr = "127.0.0.1:3901"
+    rpc_secret_file = "/secrets/rpc_secret"
 
     [s3_api]
     s3_region = "garage"
@@ -31,6 +32,8 @@ data:
 
     [admin]
     api_bind_addr = "[::]:3903"
+    admin_token_file = "/secrets/admin_token"
+    metrics_token_file = "/secrets/metrics_token"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -60,20 +63,6 @@ spec:
       labels:
         app: garage
     spec:
-      initContainers:
-        - name: init-rpc-secret
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              if [ ! -f /data/rpc_secret ]; then
-                head -c 32 /dev/urandom | xxd -p -c 64 > /data/rpc_secret
-              fi
-              chmod 600 /data/rpc_secret
-          volumeMounts:
-            - name: data
-              mountPath: /data
       containers:
         - name: garage
           image: dxflrs/garage:v1.0.1
@@ -96,6 +85,9 @@ spec:
             - name: config
               mountPath: /etc/garage.toml
               subPath: garage.toml
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
           env:
             - name: GARAGE_CONFIG_FILE
               value: /etc/garage.toml
@@ -125,6 +117,17 @@ spec:
         - name: config
           configMap:
             name: garage-config
+        - name: secrets
+          secret:
+            secretName: garage-secrets
+            defaultMode: 0600
+            items:
+              - key: rpc-secret
+                path: rpc_secret
+              - key: admin-token
+                path: admin_token
+              - key: metrics-token
+                path: metrics_token
 ---
 apiVersion: v1
 kind: Service

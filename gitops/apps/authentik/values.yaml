@@ -93,7 +93,7 @@ postgresql:
   image:
     registry: docker.io
     repository: library/postgres
-    tag: "16-alpine"
+    tag: "18-alpine"
 
   auth:
     username: authentik

@@ -430,3 +430,26 @@ k8s-graph-app path="":
     echo "No output generated"
   fi
 
+# Create Garage S3 bucket (usage: just garage-bucket docs)
+garage-bucket name:
+  kubectl exec -n garage deploy/garage -- /garage bucket create {{name}}
+  kubectl exec -n garage deploy/garage -- /garage bucket allow --read --write --owner {{name}} --key garage-admin
+
+# Upload file or folder to Garage S3 bucket (usage: just garage-upload ./folder mybucket)
+garage-upload path bucket:
+  #!/usr/bin/env bash
+  set -eo pipefail
+  CREDS=$(kubectl exec -n garage deploy/garage -- /garage key info garage-admin --show-secret 2>/dev/null)
+  export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | grep "Key ID:" | awk '{print $3}')
+  export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | grep "Secret key:" | awk '{print $3}')
+  if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+    echo "Error: Could not get Garage credentials"
+    exit 1
+  fi
+  if [[ -d "{{path}}" ]]; then
+    aws s3 sync "{{path}}" "s3://{{bucket}}/" --endpoint-url https://s3.garage.homelab.local --no-verify-ssl
+  else
+    aws s3 cp "{{path}}" "s3://{{bucket}}/" --endpoint-url https://s3.garage.homelab.local --no-verify-ssl
+  fi
+  echo "Uploaded to s3://{{bucket}}/"
+

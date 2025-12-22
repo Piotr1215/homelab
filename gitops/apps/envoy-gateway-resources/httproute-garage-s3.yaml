@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: garage-s3
+  namespace: envoy-gateway-system
+spec:
+  parentRefs:
+  - name: homelab-gateway
+    namespace: envoy-gateway-system
+    sectionName: https
+  hostnames:
+  - "s3.garage.homelab.local"
+  - "*.s3.garage.homelab.local"
+  rules:
+  - backendRefs:
+    - name: garage
+      namespace: garage
+      port: 3900
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: garage-s3-backend
+  namespace: garage
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: envoy-gateway-system
+  to:
+  - group: ""
+    kind: Service
+    name: garage

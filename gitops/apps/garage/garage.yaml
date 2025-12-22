@@ -141,6 +141,9 @@ spec:
     - name: s3-api
       port: 3900
       targetPort: 3900
+    - name: web
+      port: 3902
+      targetPort: 3902
     - name: admin
       port: 3903
       targetPort: 3903

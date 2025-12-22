@@ -108,13 +108,13 @@ data:
           showStats: true
           namespace: longhorn-system
           podSelector: app=longhorn-ui
-      - MinIO:
+      - Garage:
           description: S3-Compatible Object Storage
-          href: https://minio.homelab.local
-          icon: minio.svg
+          href: https://garage.homelab.local
+          icon: si-rust
           showStats: true
-          namespace: minio
-          podSelector: app=minio
+          namespace: garage
+          podSelector: app=garage
       - Harbor:
           description: Container Registry
           href: https://harbor.homelab.local

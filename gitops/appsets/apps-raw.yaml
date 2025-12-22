@@ -46,8 +46,8 @@ spec:
           - app: metallb
             namespace: metallb-system
             project: networking
-          - app: minio
-            namespace: minio
+          - app: garage
+            namespace: garage
             project: storage
           - app: ntfy-alertmanager
             namespace: ntfy-alertmanager

@@ -1,0 +1,148 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: garage
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: garage-config
+  namespace: garage
+data:
+  garage.toml: |
+    metadata_dir = "/data/meta"
+    data_dir = "/data/blocks"
+    db_engine = "lmdb"
+    block_size = "1M"
+    replication_factor = 1
+
+    rpc_bind_addr = "[::]:3901"
+    rpc_secret_file = "/data/rpc_secret"
+
+    [s3_api]
+    s3_region = "garage"
+    api_bind_addr = "[::]:3900"
+    root_domain = ".s3.garage.homelab.local"
+
+    [s3_web]
+    bind_addr = "[::]:3902"
+    root_domain = ".web.garage.homelab.local"
+
+    [admin]
+    api_bind_addr = "[::]:3903"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: garage-pvc
+  namespace: garage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage
+  namespace: garage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garage
+  template:
+    metadata:
+      labels:
+        app: garage
+    spec:
+      initContainers:
+        - name: init-rpc-secret
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /data/rpc_secret ]; then
+                head -c 32 /dev/urandom | xxd -p -c 64 > /data/rpc_secret
+              fi
+              chmod 600 /data/rpc_secret
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: garage
+          image: dxflrs/garage:v1.0.1
+          command:
+            - /garage
+          args:
+            - server
+          ports:
+            - containerPort: 3900
+              name: s3-api
+            - containerPort: 3901
+              name: rpc
+            - containerPort: 3902
+              name: web
+            - containerPort: 3903
+              name: admin
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+          env:
+            - name: GARAGE_CONFIG_FILE
+              value: /etc/garage.toml
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3903
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3903
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: garage-pvc
+        - name: config
+          configMap:
+            name: garage-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage
+  namespace: garage
+  annotations:
+    httproute.controller/expose: "true"
+    httproute.controller/hostname: "garage.homelab.local"
+    httproute.controller/port: "3900"
+spec:
+  selector:
+    app: garage
+  ports:
+    - name: s3-api
+      port: 3900
+      targetPort: 3900
+    - name: admin
+      port: 3903
+      targetPort: 3903
+  type: ClusterIP

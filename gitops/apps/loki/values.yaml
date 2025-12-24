@@ -1,6 +1,5 @@
 # Deploy Loki in SingleBinary mode (perfect for homelab)
 deploymentMode: SingleBinary
-
 loki:
   # Enable structured metadata and log volume API
   schemaConfig:
@@ -12,7 +11,6 @@ loki:
         index:
           prefix: loki_index_
           period: 24h
-
   # Configure storage
   storage:
     type: 'filesystem'
@@ -23,27 +21,22 @@ loki:
     filesystem:
       chunks_directory: /var/loki/chunks
       rules_directory: /var/loki/rules
-
   # Enable log volume API and set limits
   limits_config:
-    retention_period: 168h  # 7 days retention
+    retention_period: 168h # 7 days retention
     volume_enabled: true
     max_cache_freshness_per_query: 10m
     split_queries_by_interval: 15m
     query_timeout: 300s
-
   # Disable multi-tenancy (single-tenant mode for homelab)
   auth_enabled: false
-
   # Resource limits
   commonConfig:
-    replication_factor: 1  # Single binary mode
-
+    replication_factor: 1 # Single binary mode
   # Storage retention
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
-
   # Ruler configuration for alerting
   ruler:
     enable_api: true
@@ -57,7 +50,6 @@ loki:
     ring:
       kvstore:
         store: inmemory
-
 # SingleBinary configuration
 singleBinary:
   replicas: 1
@@ -72,7 +64,6 @@ singleBinary:
     limits:
       cpu: 1
       memory: 1Gi
-
 # Disable other deployment modes
 backend:
   replicas: 0
@@ -80,7 +71,6 @@ read:
   replicas: 0
 write:
   replicas: 0
-
 # ServiceMonitor for Prometheus metrics
 monitoring:
   serviceMonitor:
@@ -93,21 +83,24 @@ monitoring:
       installOperator: false
   lokiCanary:
     enabled: false
-
 # Disable loki-canary (test pods that spam logs)
 lokiCanary:
   enabled: false
-
 # Disable cache components (not needed for SingleBinary)
 chunksCache:
   enabled: false
 resultsCache:
   enabled: false
-
 # Configure test framework
 test:
   enabled: false
-
 # Gateway configuration
 gateway:
   enabled: false
+resources:
+  requests:
+    cpu: 25m
+    memory: 454Mi
+  limits:
+    cpu: 25m
+    memory: 454Mi

@@ -6,7 +6,6 @@ gitea:
   admin:
     # Credentials pulled from ExternalSecret (forgejo-admin-credentials)
     existingSecret: forgejo-admin-credentials
-
   config:
     server:
       DOMAIN: forgejo.homelab.local
@@ -16,32 +15,24 @@ gitea:
       SSH_PORT: 22
       START_SSH_SERVER: true
       LFS_START_SERVER: true
-
     oauth2_client:
       ENABLE_AUTO_REGISTRATION: true
       SKIP_LOCAL_2FA: true
       OPENID_CONNECT_SCOPES: openid profile email
-
     certs:
       ENABLE: false
-
     database:
       DB_TYPE: sqlite3
-
     repository:
       ROOT: /data/git/repositories
       ENABLE_PUSH_CREATE_USER: true
-
     security:
       INSTALL_LOCK: true
-
     service:
       DISABLE_REGISTRATION: false
       REQUIRE_SIGNIN_VIEW: false
-
     metrics:
       ENABLED: true
-
 # Use Forgejo image instead of Gitea
 image:
   registry: code.forgejo.org
@@ -49,16 +40,14 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
   rootless: true
-
 persistence:
   enabled: true
-  create: false  # Using existing PVC from gitea-pvc.yaml
+  create: false # Using existing PVC from gitea-pvc.yaml
   claimName: gitea-shared-storage
   size: 10Gi
   storageClass: longhorn
   accessModes:
     - ReadWriteOnce
-
 service:
   http:
     type: LoadBalancer
@@ -66,28 +55,22 @@ service:
   ssh:
     type: ClusterIP
     port: 22
-
 resources:
   limits:
-    cpu: 1000m
-    memory: 1Gi
+    cpu: 15m
+    memory: 422Mi
   requests:
-    cpu: 100m
-    memory: 256Mi
-
+    cpu: 15m
+    memory: 422Mi
 # Ingress disabled - using LoadBalancer
 ingress:
   enabled: false
-
 # Disable external dependencies (using SQLite)
 postgresql:
   enabled: false
-
 postgresql-ha:
   enabled: false
-
 redis-cluster:
   enabled: false
-
 memcached:
   enabled: false

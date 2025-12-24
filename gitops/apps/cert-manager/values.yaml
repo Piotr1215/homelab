@@ -1,15 +1,13 @@
 installCRDs: true
-
 config:
   apiVersion: controller.config.cert-manager.io/v1alpha1
   kind: ControllerConfiguration
   enableGatewayAPI: true
-
 # VPA recommendations (auto-synced)
 resources:
   requests:
     cpu: 15m
-    memory: 105Mi
+    memory: 104Mi
   limits:
     cpu: 15m
-    memory: 105Mi
+    memory: 104Mi

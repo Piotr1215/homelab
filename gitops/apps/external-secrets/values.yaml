@@ -1,7 +1,5 @@
 installCRDs: true
-
 replicaCount: 1
-
 # Enable Bitwarden SDK Server for Bitwarden Secrets Manager support
 bitwarden-sdk-server:
   enabled: true
@@ -16,7 +14,6 @@ bitwarden-sdk-server:
     requests:
       cpu: 50m
       memory: 128Mi
-
 webhook:
   replicaCount: 1
   resources:
@@ -26,7 +23,6 @@ webhook:
     requests:
       cpu: 50m
       memory: 64Mi
-
 certController:
   replicaCount: 1
   resources:
@@ -36,11 +32,10 @@ certController:
     requests:
       cpu: 50m
       memory: 64Mi
-
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 15m
+    memory: 100Mi
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 15m
+    memory: 100Mi

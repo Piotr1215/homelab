@@ -11,10 +11,10 @@ controller:
 # Resource limits appropriate for homelab
 resources:
   requests:
-    cpu: 35m
+    cpu: 25m
     memory: 137Mi
   limits:
-    cpu: 35m
+    cpu: 25m
     memory: 137Mi
 # Falco configuration
 falco:

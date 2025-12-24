@@ -32,14 +32,14 @@ ports:
     enabled: true
     port: 3001
     protocol: TCP
-# Resource limits
+# Resource limits - uptime-kuma needs decent CPU to start
 resources:
   limits:
-    cpu: 15m
-    memory: 155Mi
+    cpu: 200m
+    memory: 256Mi
   requests:
-    cpu: 15m
-    memory: 155Mi
+    cpu: 50m
+    memory: 128Mi
 # Controller configuration
 controller:
   enabled: true

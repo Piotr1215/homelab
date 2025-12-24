@@ -33,13 +33,14 @@ ports:
     port: 3001
     protocol: TCP
 # Resource limits - uptime-kuma needs decent CPU to start
+# DO NOT let VPA set below these - app won't start
 resources:
   limits:
-    cpu: 15m
-    memory: 236Mi
+    cpu: 200m
+    memory: 256Mi
   requests:
-    cpu: 15m
-    memory: 236Mi
+    cpu: 50m
+    memory: 128Mi
 # Controller configuration
 controller:
   enabled: true

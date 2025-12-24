@@ -329,6 +329,10 @@ cluster-restore:
 k8sgpt:
   kubectl get results -n k8sgpt-operator-system 2>/dev/null || echo "K8sGPT not running"
 
+# DR pre-flight check - verify backup readiness
+dr-check:
+  ./scripts/dr-preflight.sh
+
 # Visualize K8s namespace dependencies (opens SVG in browser)
 k8s-graph ns="":
   #!/usr/bin/env bash

@@ -162,31 +162,43 @@ generate_resources_yaml() {
     cpu_target="${cpu_milli}m"
   fi
 
-  # Round memory to reasonable values (minimum 32Mi)
-  local mem_value
-  mem_value=$(echo "$mem_target" | sed -E 's/([0-9]+)(Mi|Gi|Ki)/\1 \2/')
-  local mem_num="${mem_value% *}"
-  local mem_unit="${mem_value#* }"
-
-  if [[ "$mem_unit" == "Ki" ]]; then
-    # Convert Ki to Mi
-    mem_num=$(( mem_num / 1024 ))
+  # Parse memory - handle bytes, Ki, Mi, Gi
+  local mem_num mem_unit
+  if [[ "$mem_target" =~ ^([0-9]+)(Ki|Mi|Gi)$ ]]; then
+    # Has unit suffix
+    mem_num="${BASH_REMATCH[1]}"
+    mem_unit="${BASH_REMATCH[2]}"
+  elif [[ "$mem_target" =~ ^[0-9]+$ ]]; then
+    # Pure bytes - convert to Mi
+    mem_num=$(( mem_target / 1048576 ))
+    mem_unit="Mi"
+  else
+    # Fallback
+    mem_num=64
     mem_unit="Mi"
   fi
 
-  # Round to reasonable values
-  if [[ "$mem_unit" == "Mi" && $mem_num -lt 32 ]]; then
-    mem_num=32
+  # Normalize to Mi
+  if [[ "$mem_unit" == "Ki" ]]; then
+    mem_num=$(( mem_num / 1024 ))
+    mem_unit="Mi"
+  elif [[ "$mem_unit" == "Gi" ]]; then
+    mem_num=$(( mem_num * 1024 ))
+    mem_unit="Mi"
   fi
+
+  # Round to reasonable values (minimum 32Mi)
+  [[ $mem_num -lt 32 ]] && mem_num=32
   mem_target="${mem_num}${mem_unit}"
 
-  echo "  resources:"
-  echo "    requests:"
-  echo "      cpu: $cpu_target"
-  echo "      memory: $mem_target"
-  echo "    limits:"
-  echo "      cpu: $cpu_target"
-  echo "      memory: $mem_target"
+  # Root level indentation for values.yaml
+  echo "resources:"
+  echo "  requests:"
+  echo "    cpu: $cpu_target"
+  echo "    memory: $mem_target"
+  echo "  limits:"
+  echo "    cpu: $cpu_target"
+  echo "    memory: $mem_target"
 }
 
 # Main sync logic

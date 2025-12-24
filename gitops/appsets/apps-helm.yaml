@@ -250,19 +250,6 @@ spec:
             - .metadata.annotations["metallb.universe.tf/loadBalancerIPs"]
             - .status
             - .spec.ports[].nodePort
-        # VPA dynamic resource management - let VPA mutate without ArgoCD reverting
-        - group: apps
-          kind: Deployment
-          jqPathExpressions:
-            - .spec.template.spec.containers[].resources
-        - group: apps
-          kind: StatefulSet
-          jqPathExpressions:
-            - .spec.template.spec.containers[].resources
-        - group: apps
-          kind: DaemonSet
-          jqPathExpressions:
-            - .spec.template.spec.containers[].resources
         - group: external-secrets.io
           kind: ExternalSecret
           jqPathExpressions:

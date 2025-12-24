@@ -3,24 +3,21 @@ config:
   authType: token
   existingSecret: github-exporter-token
   tokenKey: token
-
 # Resources
 resources:
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 15m
+    memory: 100Mi
   limits:
-    cpu: 200m
-    memory: 128Mi
-
+    cpu: 15m
+    memory: 100Mi
 # ServiceMonitor for Prometheus
 serviceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
-  interval: 5m  # Scrape every 5 minutes (respect GitHub API rate limits)
-  timeout: 4m30s  # Allow 4.5 minutes to fetch all repos from GitHub API
-
+  interval: 5m # Scrape every 5 minutes (respect GitHub API rate limits)
+  timeout: 4m30s # Allow 4.5 minutes to fetch all repos from GitHub API
 # Specify which repos to scrape
 # Use comma-separated list: "owner/repo1,owner/repo2" or leave empty to scrape all accessible
 exporter:

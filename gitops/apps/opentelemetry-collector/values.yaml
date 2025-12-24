@@ -1,11 +1,9 @@
 # Deployment mode
 mode: deployment
 replicaCount: 1
-
 # Image configuration
 image:
   repository: otel/opentelemetry-collector-k8s
-
 # OpenTelemetry Collector configuration
 config:
   receivers:
@@ -16,7 +14,6 @@ config:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-
     # Jaeger receiver - for Jaeger-compatible clients
     jaeger:
       protocols:
@@ -26,23 +23,19 @@ config:
           endpoint: 0.0.0.0:14268
         thrift_compact:
           endpoint: 0.0.0.0:6831
-
     # Zipkin receiver - for Zipkin-compatible clients
     zipkin:
       endpoint: 0.0.0.0:9411
-
   processors:
     # Batch processor - improves performance
     batch:
       timeout: 10s
       send_batch_size: 1024
-
     # Memory limiter - prevents OOM
     memory_limiter:
       check_interval: 1s
       limit_percentage: 80
       spike_limit_percentage: 25
-
     # Filter processor - drop Prometheus scrape traces
     filter:
       error_mode: ignore
@@ -51,18 +44,15 @@ config:
           - 'attributes["http.user_agent"] != nil and IsMatch(attributes["http.user_agent"], "^Prometheus/.*")'
           - 'attributes["http.target"] == "/metrics"'
           - 'attributes["http.target"] == "/health"'
-
   exporters:
     # Export to Tempo
     otlp:
       endpoint: tempo.tempo.svc.cluster.local:4317
       tls:
         insecure: true
-
     # Debug exporter for troubleshooting (optional)
     debug:
       verbosity: normal
-
   service:
     pipelines:
       # Traces pipeline
@@ -70,16 +60,14 @@ config:
         receivers: [otlp, jaeger, zipkin]
         processors: [memory_limiter, filter, batch]
         exporters: [otlp, debug]
-
 # Service configuration
 service:
   type: ClusterIP
-
 # Resource limits
 resources:
   requests:
-    cpu: 50m
-    memory: 128Mi
+    cpu: 25m
+    memory: 100Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 25m
+    memory: 100Mi

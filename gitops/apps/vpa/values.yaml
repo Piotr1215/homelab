@@ -1,0 +1,12 @@
+recommender:
+  enabled: true
+
+updater:
+  enabled: true
+  extraArgs:
+    min-replicas: 1
+
+admissionController:
+  enabled: true
+  certGen:
+    enabled: true

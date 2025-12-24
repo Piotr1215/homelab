@@ -100,6 +100,13 @@ data:
           showStats: true
           namespace: pyroscope
           podSelector: app.kubernetes.io/name=pyroscope
+      - Goldilocks:
+          description: Resource Recommendations
+          href: https://goldilocks.homelab.local
+          icon: mdi-scale-balance
+          showStats: true
+          namespace: goldilocks
+          podSelector: app.kubernetes.io/name=goldilocks
     - Storage:
       - Longhorn:
           description: Distributed Block Storage
@@ -299,7 +306,7 @@ data:
         columns: 2
       Observability:
         style: row
-        columns: 5
+        columns: 6
       Storage:
         style: row
         columns: 4

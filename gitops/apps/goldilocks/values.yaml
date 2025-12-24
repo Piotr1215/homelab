@@ -1,0 +1,15 @@
+vpa:
+  enabled: false
+
+controller:
+  enabled: true
+  flags:
+    on-by-default: "true"
+
+dashboard:
+  enabled: true
+  service:
+    type: ClusterIP
+    annotations:
+      httproute.controller/expose: "true"
+      httproute.controller/hostname: "goldilocks.homelab.local"

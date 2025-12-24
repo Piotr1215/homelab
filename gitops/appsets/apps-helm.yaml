@@ -199,6 +199,20 @@ spec:
             chartVersion: "3.7.0"
             createNamespace: "true"
             project: security
+          - app: vpa
+            namespace: vpa
+            chartRepo: https://charts.fairwinds.com/stable
+            chartName: vpa
+            chartVersion: "4.10.1"
+            createNamespace: "true"
+            project: observability
+          - app: goldilocks
+            namespace: goldilocks
+            chartRepo: https://charts.fairwinds.com/stable
+            chartName: goldilocks
+            chartVersion: "10.2.0"
+            createNamespace: "true"
+            project: observability
   template:
     metadata:
       name: "{{ .app }}"
@@ -236,6 +250,19 @@ spec:
             - .metadata.annotations["metallb.universe.tf/loadBalancerIPs"]
             - .status
             - .spec.ports[].nodePort
+        # VPA dynamic resource management - let VPA mutate without ArgoCD reverting
+        - group: apps
+          kind: Deployment
+          jqPathExpressions:
+            - .spec.template.spec.containers[].resources
+        - group: apps
+          kind: StatefulSet
+          jqPathExpressions:
+            - .spec.template.spec.containers[].resources
+        - group: apps
+          kind: DaemonSet
+          jqPathExpressions:
+            - .spec.template.spec.containers[].resources
         - group: external-secrets.io
           kind: ExternalSecret
           jqPathExpressions:

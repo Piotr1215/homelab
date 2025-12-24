@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vpa-gitops-sync
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-gitops-sync
+  namespace: vpa-gitops-sync
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vpa-gitops-sync
+rules:
+  # Watch VPA objects
+  - apiGroups: ["autoscaling.k8s.io"]
+    resources: ["verticalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  # Get deployment info for mapping
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vpa-gitops-sync
+subjects:
+  - kind: ServiceAccount
+    name: vpa-gitops-sync
+    namespace: vpa-gitops-sync
+roleRef:
+  kind: ClusterRole
+  name: vpa-gitops-sync
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: git-credentials
+  namespace: vpa-gitops-sync
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: bitwarden-secretsmanager
+    kind: ClusterSecretStore
+  target:
+    name: git-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: affa9c27-7ed0-425e-b118-b37a00d83843
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: affa9c27-7ed0-425e-b118-b37a00d83843
+        property: password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-gitops-sync
+  namespace: vpa-gitops-sync
+  labels:
+    app: vpa-gitops-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vpa-gitops-sync
+  template:
+    metadata:
+      labels:
+        app: vpa-gitops-sync
+    spec:
+      serviceAccountName: vpa-gitops-sync
+      containers:
+        - name: shell-operator
+          image: piotrzan/vpa-gitops-sync:v1
+          imagePullPolicy: Always
+          env:
+            - name: GIT_REPO_URL
+              value: "https://github.com/Piotr1215/homelab.git"
+            - name: GIT_BRANCH
+              value: "main"
+            - name: GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: username
+            - name: GIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: git-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: run
+              mountPath: /var/run/shell-operator
+      volumes:
+        - name: run
+          emptyDir: {}

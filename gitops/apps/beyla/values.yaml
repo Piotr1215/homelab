@@ -4,17 +4,13 @@
 image:
   repository: grafana/beyla
   tag: "2.8.4"
-
 # Deployment mode - application (DaemonSet is the default)
 preset: application
-
 # Enable privileged mode for eBPF
 privileged: true
-
 # Enable context propagation
 contextPropagation:
   enabled: true
-
 # Beyla configuration
 config:
   create: true
@@ -47,87 +43,72 @@ config:
         - k8s_namespace: "retina"
         - k8s_namespace: "envoy-gateway-system"
         - k8s_namespace: "cluster-scanning"
-
     # eBPF settings
     ebpf:
       # Trace context propagation
       trace_map_size: 4096
       # Performance tuning
       wakeup_len: 100
-
     # OTEL traces export to OpenTelemetry Collector
     otel_traces_export:
       # Send to OTel Collector via HTTP
       endpoint: http://opentelemetry-collector.tempo.svc.cluster.local:4318
       protocol: http/protobuf
-
     # Optional: Export Beyla's own metrics
     otel_metrics_export:
       endpoint: http://opentelemetry-collector.tempo.svc.cluster.local:4318
       protocol: http/protobuf
       interval: 60s
-
     # Continuous Profiling - send to Pyroscope
     profiles:
       enabled: true
-
     # Export profiles in Pyroscope format
     pyroscope_export:
       endpoint: http://pyroscope.pyroscope.svc.cluster.local:4040
-
     # Kubernetes metadata
     attributes:
       kubernetes:
         enable: true
-
     # Logging
     log_level: info
-
     # Network configuration
     network:
       enable: true
-
 # Disable service - we only export via OTLP, no Prometheus metrics
 service:
   enabled: false
-
 # Resource limits (per pod/node)
 resources:
   requests:
-    cpu: 100m
-    memory: 512Mi
+    cpu: 25m
+    memory: 683Mi
   limits:
-    cpu: 1000m
-    memory: 2Gi
-
+    cpu: 25m
+    memory: 683Mi
 # Security context for eBPF operations
 securityContext:
-  privileged: true  # Required for eBPF
+  privileged: true # Required for eBPF
   capabilities:
     add:
       - SYS_ADMIN
       - SYS_RESOURCE
       - SYS_PTRACE
       - NET_ADMIN
-
 # Node selector - only Linux nodes, exclude control plane
 nodeSelector:
   kubernetes.io/os: linux
-
 # Node affinity - avoid control plane (kube-main) to prevent port 9090 conflict
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-      - matchExpressions:
-        - key: node-role.kubernetes.io/control-plane
-          operator: DoesNotExist
-
+        - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
 # Tolerations for all nodes
 tolerations:
   - effect: NoSchedule
     operator: Exists
-
 # Environment variables
 env:
   BEYLA_KUBE_METADATA_ENABLE: "autodetect"

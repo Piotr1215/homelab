@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: audit-missing-resources
+  annotations:
+    policies.kyverno.io/title: Audit Missing Resource Requests
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/description: >-
+      Reports pods without resource requests.
+      Helps identify pods that could cause scheduling issues.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: audit-missing-requests
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-node-lease
+      validate:
+        message: "Container '{{request.object.spec.containers[].name}}' missing resource requests. Consider adding requests for better scheduling."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"

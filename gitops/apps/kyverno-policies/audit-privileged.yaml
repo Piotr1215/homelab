@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: audit-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Audit Privileged Containers
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/description: >-
+      Reports privileged containers outside system namespaces.
+      Audit mode - review before blocking.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: audit-privileged
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - falco
+                - longhorn-system
+                - calico-system
+      validate:
+        message: "Privileged container detected. Review if this is necessary."
+        pattern:
+          spec:
+            containers:
+              - =(securityContext):
+                  =(privileged): false

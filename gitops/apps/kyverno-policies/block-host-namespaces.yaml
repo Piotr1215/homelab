@@ -1,0 +1,52 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-host-namespaces
+  annotations:
+    policies.kyverno.io/title: Block Host Namespaces
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Blocks hostPID and hostIPC which allow container escape.
+      These are rarely needed and dangerous.
+      Excludes system namespaces.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: block-host-pid
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - falco
+                - longhorn-system
+      validate:
+        message: "hostPID is not allowed. If you need this, add namespace to exclusion list."
+        pattern:
+          spec:
+            =(hostPID): false
+    - name: block-host-ipc
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - falco
+                - longhorn-system
+      validate:
+        message: "hostIPC is not allowed. If you need this, add namespace to exclusion list."
+        pattern:
+          spec:
+            =(hostIPC): false

@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: audit-readonly-rootfs
+  annotations:
+    policies.kyverno.io/title: Audit Read-Only Root Filesystem
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/description: >-
+      Reports containers without readOnlyRootFilesystem.
+      Helps identify containers that could be hardened.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: audit-readonly-rootfs
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - falco
+                - longhorn-system
+      validate:
+        message: "Container should set readOnlyRootFilesystem: true for better security"
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  readOnlyRootFilesystem: true

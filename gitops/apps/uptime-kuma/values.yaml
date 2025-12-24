@@ -35,11 +35,11 @@ ports:
 # Resource limits - uptime-kuma needs decent CPU to start
 resources:
   limits:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 15m
+    memory: 236Mi
   requests:
-    cpu: 50m
-    memory: 128Mi
+    cpu: 15m
+    memory: 236Mi
 # Controller configuration
 controller:
   enabled: true

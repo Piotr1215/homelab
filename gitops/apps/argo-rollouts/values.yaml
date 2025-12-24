@@ -12,3 +12,12 @@ dashboard:
     annotations:
       httproute.controller/expose: "true"
       httproute.controller/hostname: "rollouts.homelab.local"
+
+# VPA recommendations (auto-synced)
+resources:
+  requests:
+    cpu: 15m
+    memory: 100Mi
+  limits:
+    cpu: 15m
+    memory: 100Mi

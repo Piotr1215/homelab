@@ -6,14 +6,12 @@
 # Container image configuration
 image:
   repository: louislam/uptime-kuma
-  tag: ""  # Use chart appVersion
+  tag: "" # Use chart appVersion
   pullPolicy: IfNotPresent
-
 # Environment variables
 env:
   - name: TZ
     value: "Europe/Berlin"
-
 # Persistent storage
 persistentVolumeClaim:
   create: true
@@ -21,7 +19,6 @@ persistentVolumeClaim:
   accessMode: ReadWriteOnce
   size: 2Gi
   mountPath: /app/data
-
 # Service configuration
 service:
   enabled: true
@@ -29,39 +26,32 @@ service:
   annotations:
     httproute.controller/expose: "true"
     httproute.controller/hostname: "uptime.homelab.local"
-
 # Port configuration
 ports:
   http:
     enabled: true
     port: 3001
     protocol: TCP
-
 # Resource limits
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 15m
+    memory: 155Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
-
+    cpu: 15m
+    memory: 155Mi
 # Controller configuration
 controller:
   enabled: true
   kind: Deployment
   replicas: 1
-
 # Security context - use chart defaults
 securityContext: {}
-
 # Disable ingress and IngressRoute (using HTTPRoute via gateway)
 ingressRoute:
   create: false
-
 certificate:
   create: false
-
 # ServiceMonitor for Prometheus (optional)
 serviceMonitor:
   enabled: false

@@ -62,7 +62,7 @@ serviceMonitor:
 resources:
   requests:
     cpu: 25m
-    memory: 3496Mi
+    memory: 3877Mi
   limits:
     cpu: 25m
-    memory: 3496Mi
+    memory: 3877Mi

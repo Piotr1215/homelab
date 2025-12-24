@@ -170,6 +170,24 @@ spec:
             summary: "No successful backup for schedule {{ $labels.schedule }}"
             description: "No successful Velero backup has been created for schedule {{ $labels.schedule }} in the last 24 hours."
 
+        - alert: LonghornBackupFailed
+          expr: longhorn_backup_state == 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn backup failed for {{ $labels.volume }}"
+            description: "Longhorn backup {{ $labels.backup }} for volume {{ $labels.volume }} is in error state."
+
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc }} is degraded"
+            description: "Longhorn volume {{ $labels.volume }} in namespace {{ $labels.pvc_namespace }} has degraded robustness."
+
     # ArgoCD Alerts
     - name: argocd.rules
       interval: 30s

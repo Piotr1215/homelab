@@ -80,7 +80,7 @@ spec:
       serviceAccountName: vpa-gitops-sync
       containers:
         - name: shell-operator
-          image: piotrzan/vpa-gitops-sync:v4
+          image: piotrzan/vpa-gitops-sync:v5
           imagePullPolicy: Always
           env:
             - name: GIT_REPO_URL

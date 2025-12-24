@@ -37,7 +37,7 @@ roleRef:
   name: vpa-gitops-sync
   apiGroup: rbac.authorization.k8s.io
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: git-credentials

@@ -3,7 +3,6 @@
 # Disable legacy scraping agent
 agent:
   enabled: false
-
 # Enable Alloy for pprof scraping
 alloy:
   enabled: true
@@ -128,7 +127,6 @@ alloy:
             url = "http://pyroscope.pyroscope.svc.cluster.local:4040"
           }
         }
-
 # Minimal resource configuration for homelab
 querier:
   replicas: 1
@@ -139,7 +137,6 @@ querier:
     limits:
       cpu: 500m
       memory: 512Mi
-
 queryFrontend:
   replicas: 1
   service:
@@ -151,7 +148,6 @@ queryFrontend:
     limits:
       cpu: 200m
       memory: 256Mi
-
 distributor:
   replicas: 1
   resources:
@@ -161,7 +157,6 @@ distributor:
     limits:
       cpu: 200m
       memory: 256Mi
-
 ingester:
   replicas: 1
   resources:
@@ -175,7 +170,6 @@ ingester:
     enabled: true
     storageClass: longhorn
     size: 10Gi
-
 compactor:
   replicas: 1
   resources:
@@ -189,7 +183,6 @@ compactor:
     enabled: true
     storageClass: longhorn
     size: 10Gi
-
 storeGateway:
   replicas: 1
   resources:
@@ -203,9 +196,15 @@ storeGateway:
     enabled: true
     storageClass: longhorn
     size: 10Gi
-
 # Monitoring
 serviceMonitor:
   enabled: true
   labels:
     release: kube-prometheus-stack
+resources:
+  requests:
+    cpu: 25m
+    memory: 236Mi
+  limits:
+    cpu: 25m
+    memory: 236Mi

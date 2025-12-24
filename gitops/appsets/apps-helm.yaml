@@ -192,6 +192,13 @@ spec:
             chartVersion: "1.82.0"
             createNamespace: "false"
             project: networking
+          - app: policy-reporter
+            namespace: policy-reporter
+            chartRepo: https://kyverno.github.io/policy-reporter
+            chartName: policy-reporter
+            chartVersion: "3.7.0"
+            createNamespace: "true"
+            project: security
   template:
     metadata:
       name: "{{ .app }}"

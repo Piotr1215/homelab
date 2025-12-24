@@ -130,6 +130,13 @@ data:
           namespace: git-mirror
           podSelector: app.kubernetes.io/name=forgejo
     - Security:
+      - Policy Reporter:
+          description: Kyverno Policy Results
+          href: https://policy-reporter.homelab.local
+          icon: si-kyverno
+          showStats: true
+          namespace: policy-reporter
+          podSelector: app.kubernetes.io/name=policy-reporter-ui
       - Falco:
           description: Runtime Security Events
           href: https://falco.homelab.local
@@ -298,7 +305,7 @@ data:
         columns: 4
       Security:
         style: row
-        columns: 4
+        columns: 5
       Media:
         style: row
         columns: 1

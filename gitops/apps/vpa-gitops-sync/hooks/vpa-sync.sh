@@ -191,28 +191,34 @@ update_resources() {
   local cpu="$2"
   local mem="$3"
 
-  # Round CPU to nearest 5m, minimum 10m
+  # Round CPU to nearest 5m, minimum 25m (apps need room to start)
   local cpu_milli
   cpu_milli=$(echo "$cpu" | sed 's/m$//')
   if [[ "$cpu_milli" =~ ^[0-9]+$ ]]; then
     cpu_milli=$(( (cpu_milli + 4) / 5 * 5 ))
-    [[ $cpu_milli -lt 10 ]] && cpu_milli=10
+    [[ $cpu_milli -lt 25 ]] && cpu_milli=25
     cpu="${cpu_milli}m"
   fi
 
-  # Convert memory to Mi, minimum 32Mi
+  # Convert memory to Mi, minimum 64Mi
   local mem_mi
   mem_mi=$(bytes_to_mi "$mem")
   local mem_num="${mem_mi%Mi}"
-  [[ $mem_num -lt 32 ]] && mem_mi="32Mi"
+  [[ $mem_num -lt 64 ]] && mem_mi="64Mi"
 
-  log "Setting resources: CPU=$cpu, Memory=$mem_mi"
+  # Calculate limits with headroom (2x requests for burst capacity)
+  local cpu_limit_milli=$(( cpu_milli * 2 ))
+  local mem_limit_num=$(( ${mem_mi%Mi} * 2 ))
+  local cpu_limit="${cpu_limit_milli}m"
+  local mem_limit="${mem_limit_num}Mi"
+
+  log "Setting resources: requests=$cpu/$mem_mi, limits=$cpu_limit/$mem_limit"
 
   # Use yq to update or create resources section
   yq -i ".resources.requests.cpu = \"$cpu\" |
          .resources.requests.memory = \"$mem_mi\" |
-         .resources.limits.cpu = \"$cpu\" |
-         .resources.limits.memory = \"$mem_mi\"" "$values_path"
+         .resources.limits.cpu = \"$cpu_limit\" |
+         .resources.limits.memory = \"$mem_limit\"" "$values_path"
 
   # Return formatted values for commit message
   echo "$cpu $mem_mi"

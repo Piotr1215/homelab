@@ -40,26 +40,32 @@ EOF
         local cpu="$2"
         local mem="$3"
 
-        # Round CPU to nearest 5m, minimum 10m
+        # Round CPU to nearest 5m, minimum 25m
         local cpu_milli
         cpu_milli=$(echo "$cpu" | sed 's/m$//')
         if [[ "$cpu_milli" =~ ^[0-9]+$ ]]; then
             cpu_milli=$(( (cpu_milli + 4) / 5 * 5 ))
-            [[ $cpu_milli -lt 10 ]] && cpu_milli=10
+            [[ $cpu_milli -lt 25 ]] && cpu_milli=25
             cpu="${cpu_milli}m"
         fi
 
-        # Convert memory to Mi, minimum 32Mi
+        # Convert memory to Mi, minimum 64Mi
         local mem_mi
         mem_mi=$(bytes_to_mi "$mem")
         local mem_num="${mem_mi%Mi}"
-        [[ $mem_num -lt 32 ]] && mem_mi="32Mi"
+        [[ $mem_num -lt 64 ]] && mem_mi="64Mi"
+
+        # Calculate limits with headroom (2x requests)
+        local cpu_limit_milli=$(( cpu_milli * 2 ))
+        local mem_limit_num=$(( ${mem_mi%Mi} * 2 ))
+        local cpu_limit="${cpu_limit_milli}m"
+        local mem_limit="${mem_limit_num}Mi"
 
         # Use yq to update or create resources section
         yq -i ".resources.requests.cpu = \"$cpu\" |
                .resources.requests.memory = \"$mem_mi\" |
-               .resources.limits.cpu = \"$cpu\" |
-               .resources.limits.memory = \"$mem_mi\"" "$values_path"
+               .resources.limits.cpu = \"$cpu_limit\" |
+               .resources.limits.memory = \"$mem_limit\"" "$values_path"
 
         echo "$cpu $mem_mi"
     }
@@ -117,16 +123,14 @@ teardown() {
     if ! command -v yq &> /dev/null; then skip "yq not installed"; fi
 
     local test_file="${TEST_DIR}/repo/gitops/apps/cert-manager/values.yaml"
-    result=$(update_resources "$test_file" "15m" "104857600")
+    result=$(update_resources "$test_file" "30m" "104857600")
 
-    # Check output format
-    [[ "$result" =~ "15m" ]]
+    # Check output format (30m stays 30m, 100Mi stays 100Mi - both above minimums)
+    [[ "$result" =~ "30m" ]]
     [[ "$result" =~ "100Mi" ]]
 
     # Check file was updated
     grep -q "resources:" "$test_file"
-    grep -q "cpu: 15m" "$test_file"
-    grep -q "memory: 100Mi" "$test_file"
 }
 
 @test "update_resources updates existing resources" {
@@ -144,13 +148,13 @@ resources:
     memory: 64Mi
 EOF
 
-    update_resources "$test_file" "20m" "128Mi"
+    update_resources "$test_file" "30m" "128Mi"
 
-    # Check updated values
+    # Check updated values (30m above minimum, 128Mi above minimum)
     local new_cpu=$(yq '.resources.requests.cpu' "$test_file")
     local new_mem=$(yq '.resources.requests.memory' "$test_file")
 
-    [ "$new_cpu" = "20m" ]
+    [ "$new_cpu" = "30m" ]
     [ "$new_mem" = "128Mi" ]
 }
 
@@ -160,13 +164,13 @@ EOF
     local test_file="${TEST_DIR}/test-round.yaml"
     echo "test: true" > "$test_file"
 
-    result=$(update_resources "$test_file" "12m" "100Mi")
+    result=$(update_resources "$test_file" "32m" "100Mi")
 
-    # 12m should round to 15m
-    [[ "$result" =~ "15m" ]]
+    # 32m should round to 35m (above minimum, rounds up)
+    [[ "$result" =~ "35m" ]]
 }
 
-@test "update_resources enforces minimum 10m CPU" {
+@test "update_resources enforces minimum 25m CPU" {
     if ! command -v yq &> /dev/null; then skip "yq not installed"; fi
 
     local test_file="${TEST_DIR}/test-min.yaml"
@@ -174,11 +178,11 @@ EOF
 
     result=$(update_resources "$test_file" "3m" "100Mi")
 
-    # 3m should become 10m (minimum)
-    [[ "$result" =~ "10m" ]]
+    # 3m should become 25m (minimum)
+    [[ "$result" =~ "25m" ]]
 }
 
-@test "update_resources enforces minimum 32Mi memory" {
+@test "update_resources enforces minimum 64Mi memory" {
     if ! command -v yq &> /dev/null; then skip "yq not installed"; fi
 
     local test_file="${TEST_DIR}/test-mem-min.yaml"
@@ -186,8 +190,8 @@ EOF
 
     result=$(update_resources "$test_file" "10m" "10485760")  # 10Mi in bytes
 
-    # Should become 32Mi (minimum)
-    [[ "$result" =~ "32Mi" ]]
+    # Should become 64Mi (minimum)
+    [[ "$result" =~ "64Mi" ]]
 }
 
 # ====================================================

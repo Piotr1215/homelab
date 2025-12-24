@@ -3,14 +3,42 @@ set -eo pipefail
 
 # VPA GitOps Sync Hook
 # Watches VPA objects and commits resource recommendations to Git
+#
+# FLOW:
+# 1. Label namespace: kubectl label ns <name> goldilocks.fairwinds.com/enabled=true
+# 2. Goldilocks creates VPAs for all deployments in namespace
+# 3. VPAs get label: source=goldilocks
+# 4. This hook watches VPAs with that label
+# 5. On VPA update, commits recommendations to gitops/apps/<app>/values.yaml
+# 6. ArgoCD syncs and applies resources
 
 REPO_URL="${GIT_REPO_URL:-https://github.com/Piotr1215/homelab.git}"
 REPO_DIR="/tmp/homelab"
 BRANCH="${GIT_BRANCH:-main}"
 VALUES_BASE_PATH="gitops/apps"
+LOCK_FILE="/tmp/vpa-sync.lock"
+MIN_COMMIT_INTERVAL=300  # 5 minutes between commits
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
+
+# Convert bytes to human-readable Mi
+bytes_to_mi() {
+  local bytes="$1"
+  if [[ "$bytes" =~ ^([0-9]+)(Ki|Mi|Gi)$ ]]; then
+    local num="${BASH_REMATCH[1]}"
+    local unit="${BASH_REMATCH[2]}"
+    case "$unit" in
+      Ki) echo "$(( num / 1024 ))Mi" ;;
+      Gi) echo "$(( num * 1024 ))Mi" ;;
+      Mi) echo "${num}Mi" ;;
+    esac
+  elif [[ "$bytes" =~ ^[0-9]+$ ]]; then
+    echo "$(( bytes / 1048576 ))Mi"
+  else
+    echo "64Mi"
+  fi
 }
 
 # Shell-operator config
@@ -37,6 +65,25 @@ EOF
   exit 0
 fi
 
+# Acquire lock to prevent concurrent git operations
+exec 200>"$LOCK_FILE"
+if ! flock -n 200; then
+  log "Another sync in progress, skipping"
+  exit 0
+fi
+
+# Check minimum interval between commits
+LAST_COMMIT_FILE="/tmp/vpa-sync-last-commit"
+if [[ -f "$LAST_COMMIT_FILE" ]]; then
+  last_commit=$(cat "$LAST_COMMIT_FILE")
+  now=$(date +%s)
+  elapsed=$((now - last_commit))
+  if [[ $elapsed -lt $MIN_COMMIT_INTERVAL ]]; then
+    log "Last commit was ${elapsed}s ago, waiting for ${MIN_COMMIT_INTERVAL}s interval"
+    exit 0
+  fi
+fi
+
 # Get binding context
 BINDING_CONTEXT_PATH="${BINDING_CONTEXT_PATH:-}"
 if [[ -z "$BINDING_CONTEXT_PATH" || ! -f "$BINDING_CONTEXT_PATH" ]]; then
@@ -60,7 +107,6 @@ for i in $(seq 0 $((EVENT_COUNT - 1))); do
   # For Event type, get filterResult
   VPA_DATA=$(jq -c ".[$i].filterResult // empty" "$BINDING_CONTEXT_PATH")
   if [[ -z "$VPA_DATA" || "$VPA_DATA" == "null" ]]; then
-    # Try getting from object directly
     VPA_DATA=$(jq -c ".[$i].object | {name: .metadata.name, namespace: .metadata.namespace, updateMode: .spec.updatePolicy.updateMode, recommendations: .status.recommendation.containerRecommendations}" "$BINDING_CONTEXT_PATH" 2>/dev/null)
     if [[ -z "$VPA_DATA" || "$VPA_DATA" == "null" ]]; then
       log "No VPA data in event $i, skipping"
@@ -79,8 +125,6 @@ for i in $(seq 0 $((EVENT_COUNT - 1))); do
   fi
 
   log "Event $i: VPA $VPA_NAME in $VPA_NS (mode: $UPDATE_MODE)"
-
-  # Process this VPA (break out of loop to process one at a time)
   break
 done
 
@@ -97,15 +141,13 @@ if [[ "$RECOMMENDATIONS" == "null" || -z "$RECOMMENDATIONS" ]]; then
   exit 0
 fi
 
-# Skip if not in Off or Auto mode (we sync both)
-# Off = recommendations only (GitOps sync), Auto = VPA also evicts pods
-if [[ "$UPDATE_MODE" != "Auto" && "$UPDATE_MODE" != "Off" ]]; then
-  log "VPA $VPA_NAME in unsupported mode ($UPDATE_MODE), skipping"
+# Skip if not in Off mode (we only sync Off mode - GitOps managed)
+if [[ "$UPDATE_MODE" != "Off" ]]; then
+  log "VPA $VPA_NAME in $UPDATE_MODE mode (not Off), skipping - only Off mode syncs to Git"
   exit 0
 fi
 
 # Goldilocks VPA naming: goldilocks-<deployment-name>
-# Extract app name from VPA name using parameter expansion
 if [[ "$VPA_NAME" == goldilocks-* ]]; then
   APP_NAME="${VPA_NAME#goldilocks-}"
 else
@@ -114,15 +156,12 @@ fi
 
 log "Mapped VPA $VPA_NAME to app: $APP_NAME"
 
-# Check if values.yaml exists for this app
 VALUES_FILE="$VALUES_BASE_PATH/$APP_NAME/values.yaml"
 
-# Clone/update repo with credential auth
+# Clone/update repo
 setup_git() {
-  # Configure git to use credentials for GitHub
   local auth_url
   if [[ -n "${GIT_USERNAME:-}" && -n "${GIT_PASSWORD:-}" ]]; then
-    # URL encode special characters in password
     local encoded_pass
     encoded_pass=$(printf '%s' "$GIT_PASSWORD" | sed 's/@/%40/g; s/:/%3A/g; s/\//%2F/g')
     auth_url="https://${GIT_USERNAME}:${encoded_pass}@github.com/Piotr1215/homelab.git"
@@ -146,59 +185,37 @@ setup_git() {
   git config user.name "VPA GitOps Sync"
 }
 
-# Generate resources YAML fragment for a container
-generate_resources_yaml() {
-  local container_name="$1"
-  local cpu_target="$2"
-  local mem_target="$3"
+# Update resources using yq (proper YAML handling)
+update_resources() {
+  local values_path="$1"
+  local cpu="$2"
+  local mem="$3"
 
-  # Round CPU to reasonable values (minimum 10m, step by 5m)
+  # Round CPU to nearest 5m, minimum 10m
   local cpu_milli
-  cpu_milli=$(echo "$cpu_target" | sed 's/m$//')
+  cpu_milli=$(echo "$cpu" | sed 's/m$//')
   if [[ "$cpu_milli" =~ ^[0-9]+$ ]]; then
-    # Round to nearest 5m, minimum 10m
     cpu_milli=$(( (cpu_milli + 4) / 5 * 5 ))
     [[ $cpu_milli -lt 10 ]] && cpu_milli=10
-    cpu_target="${cpu_milli}m"
+    cpu="${cpu_milli}m"
   fi
 
-  # Parse memory - handle bytes, Ki, Mi, Gi
-  local mem_num mem_unit
-  if [[ "$mem_target" =~ ^([0-9]+)(Ki|Mi|Gi)$ ]]; then
-    # Has unit suffix
-    mem_num="${BASH_REMATCH[1]}"
-    mem_unit="${BASH_REMATCH[2]}"
-  elif [[ "$mem_target" =~ ^[0-9]+$ ]]; then
-    # Pure bytes - convert to Mi
-    mem_num=$(( mem_target / 1048576 ))
-    mem_unit="Mi"
-  else
-    # Fallback
-    mem_num=64
-    mem_unit="Mi"
-  fi
+  # Convert memory to Mi, minimum 32Mi
+  local mem_mi
+  mem_mi=$(bytes_to_mi "$mem")
+  local mem_num="${mem_mi%Mi}"
+  [[ $mem_num -lt 32 ]] && mem_mi="32Mi"
 
-  # Normalize to Mi
-  if [[ "$mem_unit" == "Ki" ]]; then
-    mem_num=$(( mem_num / 1024 ))
-    mem_unit="Mi"
-  elif [[ "$mem_unit" == "Gi" ]]; then
-    mem_num=$(( mem_num * 1024 ))
-    mem_unit="Mi"
-  fi
+  log "Setting resources: CPU=$cpu, Memory=$mem_mi"
 
-  # Round to reasonable values (minimum 32Mi)
-  [[ $mem_num -lt 32 ]] && mem_num=32
-  mem_target="${mem_num}${mem_unit}"
+  # Use yq to update or create resources section
+  yq -i ".resources.requests.cpu = \"$cpu\" |
+         .resources.requests.memory = \"$mem_mi\" |
+         .resources.limits.cpu = \"$cpu\" |
+         .resources.limits.memory = \"$mem_mi\"" "$values_path"
 
-  # Root level indentation for values.yaml
-  echo "resources:"
-  echo "  requests:"
-  echo "    cpu: $cpu_target"
-  echo "    memory: $mem_target"
-  echo "  limits:"
-  echo "    cpu: $cpu_target"
-  echo "    memory: $mem_target"
+  # Return formatted values for commit message
+  echo "$cpu $mem_mi"
 }
 
 # Main sync logic
@@ -214,65 +231,59 @@ sync_vpa_to_git() {
 
   log "Found values.yaml at $values_path"
 
-  # Extract recommendations
-  local container_recs
-  container_recs=$(echo "$RECOMMENDATIONS" | jq -c '.[]')
+  # Get first container recommendation (most apps have one container)
+  local cpu_target mem_target container_name
+  container_name=$(echo "$RECOMMENDATIONS" | jq -r '.[0].containerName')
+  cpu_target=$(echo "$RECOMMENDATIONS" | jq -r '.[0].target.cpu')
+  mem_target=$(echo "$RECOMMENDATIONS" | jq -r '.[0].target.memory')
 
-  local changes_made=false
+  log "Container: $container_name - CPU: $cpu_target, Memory: $mem_target"
 
-  while IFS= read -r rec; do
-    local container_name cpu_target mem_target
-    container_name=$(echo "$rec" | jq -r '.containerName')
-    cpu_target=$(echo "$rec" | jq -r '.target.cpu')
-    mem_target=$(echo "$rec" | jq -r '.target.memory')
+  # Check current values
+  local current_cpu current_mem
+  current_cpu=$(yq '.resources.requests.cpu // ""' "$values_path" 2>/dev/null || echo "")
+  current_mem=$(yq '.resources.requests.memory // ""' "$values_path" 2>/dev/null || echo "")
 
-    log "Container: $container_name - CPU: $cpu_target, Memory: $mem_target"
+  # Normalize for comparison
+  local new_mem_mi
+  new_mem_mi=$(bytes_to_mi "$mem_target")
 
-    # Check if values.yaml already has resources section
-    if grep -q "resources:" "$values_path"; then
-      log "Resources section exists, checking if update needed..."
+  if [[ "$current_cpu" == "$cpu_target" && "$current_mem" == "$new_mem_mi" ]]; then
+    log "Resources unchanged ($cpu_target, $new_mem_mi), skipping"
+    return 0
+  fi
 
-      # Extract current values
-      local current_cpu current_mem
-      current_cpu=$(grep -A5 "requests:" "$values_path" | grep "cpu:" | head -1 | awk '{print $2}' | tr -d '"')
-      current_mem=$(grep -A5 "requests:" "$values_path" | grep "memory:" | head -1 | awk '{print $2}' | tr -d '"')
+  log "Updating resources: $current_cpu,$current_mem -> $cpu_target,$new_mem_mi"
 
-      if [[ "$current_cpu" == "$cpu_target" && "$current_mem" == "$mem_target" ]]; then
-        log "Resources unchanged, skipping"
-        continue
-      fi
-    fi
+  # Update the values.yaml
+  local formatted
+  formatted=$(update_resources "$values_path" "$cpu_target" "$mem_target")
+  local new_cpu="${formatted% *}"
+  local new_mem="${formatted#* }"
 
-    # For now, append resources to the end of values.yaml if not present
-    # This is a simple approach - more sophisticated would use yq
-    if ! grep -q "resources:" "$values_path"; then
-      log "Adding resources section to $values_path"
-      echo "" >> "$values_path"
-      echo "# VPA recommendations (auto-synced)" >> "$values_path"
-      generate_resources_yaml "$container_name" "$cpu_target" "$mem_target" >> "$values_path"
-      changes_made=true
-    else
-      log "Resources section exists - manual update may be needed"
-      # Could use yq here for precise YAML editing
-    fi
+  # Check if there are actual changes
+  if git diff --quiet "$VALUES_FILE"; then
+    log "No actual changes to commit"
+    return 0
+  fi
 
-  done <<< "$container_recs"
+  log "Committing changes..."
+  git add "$VALUES_FILE"
+  git commit -m "chore($APP_NAME): update resources from VPA recommendations
 
-  if [[ "$changes_made" == "true" ]]; then
-    log "Committing changes..."
-    git add "$VALUES_FILE"
-    git commit -m "chore($APP_NAME): update resources from VPA recommendations
-
-Container recommendations from VPA $VPA_NAME:
-$(echo "$RECOMMENDATIONS" | jq -r '.[] | "- \(.containerName): CPU \(.target.cpu), Memory \(.target.memory)"')
+Container: $container_name
+- CPU: $new_cpu
+- Memory: $new_mem
 
 Auto-synced by vpa-gitops-sync operator"
 
-    log "Pushing to origin/$BRANCH..."
-    git push origin "$BRANCH"
+  log "Pushing to origin/$BRANCH..."
+  if git push origin "$BRANCH"; then
     log "Successfully synced VPA recommendations for $APP_NAME"
+    # Record commit time for rate limiting
+    date +%s > "$LAST_COMMIT_FILE"
   else
-    log "No changes to commit"
+    log "Failed to push, will retry on next event"
   fi
 }
 

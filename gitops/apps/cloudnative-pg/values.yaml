@@ -3,3 +3,12 @@
 ---
 monitoring:
   podMonitorEnabled: true
+
+# VPA recommendations (auto-synced)
+resources:
+  requests:
+    cpu: 15m
+    memory: 100Mi
+  limits:
+    cpu: 15m
+    memory: 100Mi

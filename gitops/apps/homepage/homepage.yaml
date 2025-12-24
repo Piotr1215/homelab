@@ -305,7 +305,7 @@ data:
         columns: 4
       Security:
         style: row
-        columns: 5
+        columns: 4
       Media:
         style: row
         columns: 1

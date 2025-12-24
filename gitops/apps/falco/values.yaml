@@ -2,23 +2,20 @@
 driver:
   enabled: true
   kind: modern_ebpf
-
 # Controller configuration
 controller:
   kind: daemonset
   daemonset:
     updateStrategy:
       type: RollingUpdate
-
 # Resource limits appropriate for homelab
 resources:
   requests:
-    cpu: 100m
-    memory: 512Mi
+    cpu: 35m
+    memory: 137Mi
   limits:
-    cpu: 1000m
-    memory: 1024Mi
-
+    cpu: 35m
+    memory: 137Mi
 # Falco configuration
 falco:
   # Enable gRPC output for future integrations
@@ -26,12 +23,10 @@ falco:
     enabled: true
     bind_address: "unix:///run/falco/falco.sock"
     threadiness: 0
-
   # Enable HTTP output for webhook integrations
   http_output:
     enabled: false
     url: ""
-
   # Metrics configuration - native Prometheus support
   metrics:
     enabled: true
@@ -43,23 +38,18 @@ falco:
     kernel_event_counters_enabled: true
     libbpf_stats_enabled: true
     plugins_metrics_enabled: true
-
   # JSON output for better parsing
   json_output: true
   json_include_output_property: true
   json_include_tags_property: true
-
   # Log stderr and syslog
   log_stderr: true
   log_syslog: true
   log_level: info
-
   # Priority levels to log
   priority: debug
-
   # Disable config file watching to avoid inotify issues
   watch_config_files: false
-
 # Disable falcoctl automatic rules updates (use bundled rules)
 falcoctl:
   artifact:
@@ -67,7 +57,6 @@ falcoctl:
       enabled: false
     follow:
       enabled: false
-
 # Falcosidekick for event routing and Web UI
 falcosidekick:
   enabled: true
@@ -103,25 +92,21 @@ falcosidekick:
         limits:
           cpu: 200m
           memory: 1536Mi
-
 # Enable ServiceMonitor for Prometheus scraping
 serviceMonitor:
   enabled: true
   interval: "30s"
   scrapeTimeout: "10s"
   additionalLabels: {}
-
 # Prometheus rules for alerting
 prometheusRules:
   enabled: true
   additionalLabels: {}
-
 # Grafana dashboard
 grafanaDashboard:
   enabled: true
   namespace: prometheus
   prometheusDatasourceName: Prometheus
-
 # Enable services
 services:
   - name: metrics
@@ -131,20 +116,17 @@ services:
         targetPort: 8765
         protocol: TCP
         name: metrics
-
 # Tolerations to run on all nodes including control plane
 tolerations:
   - effect: NoSchedule
     key: node-role.kubernetes.io/control-plane
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
-
 # Pod Security Context
 podSecurityContext:
   runAsUser: 0
   runAsGroup: 0
   fsGroup: 0
-
 # Container Security Context
 securityContext:
   privileged: true

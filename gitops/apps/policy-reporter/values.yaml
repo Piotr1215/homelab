@@ -4,3 +4,10 @@ ui:
     annotations:
       httproute.controller/expose: "true"
       httproute.controller/hostname: "policy-reporter.homelab.local"
+resources:
+  requests:
+    cpu: 15m
+    memory: 100Mi
+  limits:
+    cpu: 15m
+    memory: 100Mi

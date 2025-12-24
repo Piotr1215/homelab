@@ -2,30 +2,25 @@
 config:
   clients:
     - url: http://loki:3100/loki/api/v1/push
-
 # DaemonSet configuration
 daemonset:
   enabled: true
-
 # ServiceAccount
 serviceAccount:
   create: true
   name: promtail
-
 # RBAC
 rbac:
   create: true
   pspEnabled: false
-
 # Resource limits
 resources:
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 35m
+    memory: 137Mi
   limits:
-    cpu: 200m
-    memory: 128Mi
-
+    cpu: 35m
+    memory: 137Mi
 # ServiceMonitor for Prometheus
 serviceMonitor:
   enabled: true

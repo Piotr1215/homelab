@@ -26,10 +26,15 @@ configs:
 server:
   service:
     type: LoadBalancer
-  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
   extraArgs:
     - --insecure
-  
   config:
     repositories: |
       - type: git
@@ -38,7 +43,13 @@ server:
 
 controller:
   replicas: 1
-  
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
   metrics:
     enabled: true
     service:
@@ -48,7 +59,13 @@ controller:
 
 repoServer:
   replicas: 1
-  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
   metrics:
     enabled: true
     service:
@@ -58,6 +75,13 @@ repoServer:
 
 redis:
   enabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
 dex:
   enabled: false
@@ -68,3 +92,10 @@ notifications:
 applicationSet:
   enabled: true
   replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi

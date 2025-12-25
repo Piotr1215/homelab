@@ -32,19 +32,21 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
-  version    = "9.1.9"
+  version    = "9.2.1"
 
   values = [
     file("${path.module}/values.yaml")
   ]
 
-  set {
-    name  = "server.service.type"
-    value = "LoadBalancer"
-  }
+  set = [
+    {
+      name  = "server.service.type"
+      value = "LoadBalancer"
+    },
+    {
+      name  = "configs.params.server\\.insecure"
+      value = "true"
+    }
+  ]
 
-  set {
-    name  = "configs.params.server\\.insecure"
-    value = "true"
-  }
 }

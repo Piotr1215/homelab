@@ -4,6 +4,13 @@ installCRDs: false
 
 controller:
   replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
 
 dashboard:
   enabled: true
@@ -12,12 +19,10 @@ dashboard:
     annotations:
       httproute.controller/expose: "true"
       httproute.controller/hostname: "rollouts.homelab.local"
-
-# VPA recommendations (auto-synced)
-resources:
-  requests:
-    cpu: 15m
-    memory: 100Mi
-  limits:
-    cpu: 15m
-    memory: 100Mi
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

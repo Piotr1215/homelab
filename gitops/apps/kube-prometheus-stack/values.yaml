@@ -127,9 +127,9 @@ alertmanager:
           group_by: ['pod']
           group_wait: 5s
           repeat_interval: 5m
-        # Watchdog (health check - silence)
+        # Noise alerts - silence
         - matchers:
-            - alertname = "Watchdog"
+            - alertname =~ "Watchdog|InfoInhibitor"
           receiver: "null"
     receivers:
       - name: 'null'

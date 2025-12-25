@@ -70,9 +70,6 @@ spec:
           - app: kyverno-policies
             namespace: kyverno
             project: cluster-management
-          - app: vpa-gitops-sync
-            namespace: vpa-gitops-sync
-            project: observability
   template:
     metadata:
       name: "{{ .app }}"

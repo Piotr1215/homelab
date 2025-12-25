@@ -25,6 +25,24 @@ spec:
                 - kube-system
                 - falco
                 - longhorn-system
+                - metallb-system
+                - prometheus
+                - argocd
+                - pyroscope
+                - tailscale
+                - cert-manager
+                - tempo
+                - loki
+                - velero
+                - envoy-gateway-system
+                - kyverno
+                - harbor
+                - immich
+                - kubernetes-dashboard
+                - local-path-storage
+                - argo-rollouts
+                - cnpg-system
+                - policy-reporter
       validate:
         message: "Container should set readOnlyRootFilesystem: true for better security"
         pattern:

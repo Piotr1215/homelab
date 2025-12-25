@@ -26,6 +26,15 @@ spec:
                 - falco
                 - longhorn-system
                 - calico-system
+                - metallb-system
+                - prometheus
+                - tailscale
+                - velero
+                - envoy-gateway-system
+                - kubernetes-dashboard
+                - local-path-storage
+                - argo-rollouts
+                - cnpg-system
       validate:
         message: "Privileged container detected. Review if this is necessary."
         pattern:

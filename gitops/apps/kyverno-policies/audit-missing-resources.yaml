@@ -24,6 +24,26 @@ spec:
               namespaces:
                 - kube-system
                 - kube-node-lease
+                - longhorn-system
+                - metallb-system
+                - prometheus
+                - argocd
+                - pyroscope
+                - tailscale
+                - falco
+                - cert-manager
+                - tempo
+                - loki
+                - policy-reporter
+                - velero
+                - envoy-gateway-system
+                - kyverno
+                - kubernetes-dashboard
+                - local-path-storage
+                - argo-rollouts
+                - cnpg-system
+                - harbor
+                - immich
       validate:
         message: "Container '{{request.object.spec.containers[].name}}' missing resource requests. Consider adding requests for better scheduling."
         pattern:

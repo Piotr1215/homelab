@@ -67,9 +67,6 @@ spec:
           - app: shell-operator
             namespace: metallb-system
             project: networking
-          - app: kyverno-policies
-            namespace: kyverno
-            project: cluster-management
   template:
     metadata:
       name: "{{ .app }}"

@@ -106,13 +106,6 @@ spec:
             createNamespace: "true"
             project: cluster-management
             serverSideApply: "true"
-          - app: beyla
-            namespace: tempo
-            chartRepo: https://grafana.github.io/helm-charts
-            chartName: beyla
-            chartVersion: "1.9.9"
-            createNamespace: "false"
-            project: observability
           - app: falco
             namespace: falco
             chartRepo: https://falcosecurity.github.io/charts

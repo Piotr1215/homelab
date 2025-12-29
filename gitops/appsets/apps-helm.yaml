@@ -191,6 +191,13 @@ spec:
             chartVersion: "10.2.0"
             createNamespace: "true"
             project: observability
+          - app: descheduler
+            namespace: descheduler
+            chartRepo: https://kubernetes-sigs.github.io/descheduler/
+            chartName: descheduler
+            chartVersion: "0.34.0"
+            createNamespace: "true"
+            project: cluster-management
   template:
     metadata:
       name: "{{ .app }}"

@@ -1,0 +1,52 @@
+kind: CronJob
+schedule: "*/5 * * * *"
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+
+cmdOptions:
+  v: 5
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+deschedulerPolicy:
+  profiles:
+    - name: default
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            ignorePvcPods: true
+            evictLocalStoragePods: false
+        - name: LowNodeUtilization
+          args:
+            thresholds:
+              cpu: 55
+              memory: 30
+              pods: 30
+            targetThresholds:
+              cpu: 70
+              memory: 70
+              pods: 50
+        - name: RemovePodsViolatingNodeTaints
+        - name: RemovePodsViolatingNodeAffinity
+          args:
+            nodeAffinityType:
+              - requiredDuringSchedulingIgnoredDuringExecution
+        - name: RemovePodsHavingTooManyRestarts
+          args:
+            podRestartThreshold: 50
+            includingInitContainers: true
+      plugins:
+        balance:
+          enabled:
+            - LowNodeUtilization
+        deschedule:
+          enabled:
+            - RemovePodsViolatingNodeTaints
+            - RemovePodsViolatingNodeAffinity
+            - RemovePodsHavingTooManyRestarts

@@ -121,6 +121,8 @@ metadata:
     app: ntopng
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: ntopng

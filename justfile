@@ -329,6 +329,20 @@ cluster-restore:
 k8sgpt:
   kubectl get results -n k8sgpt-operator-system 2>/dev/null || echo "K8sGPT not running"
 
+# Lint: fail if Deployment uses PVC without Recreate strategy (raw manifests only)
+lint-pvc-strategy:
+  #!/usr/bin/env bash
+  set -eo pipefail
+  FAIL=0
+  for f in $(grep -rl "persistentVolumeClaim" gitops/apps --include="*.yaml" 2>/dev/null | grep -v values.yaml); do
+    if grep -q "^kind: Deployment" "$f" && ! grep -q "type: Recreate" "$f"; then
+      echo "FAIL: $f - Deployment with PVC missing strategy: Recreate"
+      FAIL=1
+    fi
+  done
+  [[ $FAIL -eq 0 ]] && echo "OK: All raw manifests with PVCs use Recreate strategy"
+  exit $FAIL
+
 # DR pre-flight check - verify backup readiness
 dr-check:
   ./scripts/dr-preflight.sh

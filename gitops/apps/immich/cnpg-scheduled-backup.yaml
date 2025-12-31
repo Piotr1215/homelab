@@ -1,0 +1,14 @@
+---
+# Daily scheduled backup for immich postgres
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: immich-postgres-daily
+  namespace: immich
+spec:
+  # Daily at 3:00 AM
+  schedule: "0 3 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: immich-postgres
+  immediate: true  # Take first backup immediately

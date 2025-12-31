@@ -5,6 +5,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: immich-library
   namespace: immich
+  labels:
+    # Enable Longhorn daily backups (7-day retention)
+    recurring-job.longhorn.io/backup-daily: enabled
 spec:
   accessModes:
     - ReadWriteOnce

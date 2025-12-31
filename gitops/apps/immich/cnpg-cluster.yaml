@@ -43,20 +43,5 @@ spec:
   monitoring:
     enablePodMonitor: true
 
-  # Backup to Garage S3 - critical for disaster recovery
-  backup:
-    barmanObjectStore:
-      destinationPath: s3://immich-backups/cnpg
-      endpointURL: http://garage.garage.svc.cluster.local:3900
-      s3Credentials:
-        accessKeyId:
-          name: immich-cnpg-s3-creds
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: immich-cnpg-s3-creds
-          key: ACCESS_SECRET_KEY
-      wal:
-        compression: gzip
-      data:
-        compression: gzip
-    retentionPolicy: "7d"
+  # NOTE: CNPG S3 backup disabled - Garage S3 incompatible with barman-cloud (400 errors)
+  # Using Longhorn daily snapshots instead (label on PVC: recurring-job.longhorn.io/backup-daily)

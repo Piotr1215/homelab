@@ -1,0 +1,23 @@
+# Minimal - admission controller only, fail-open
+backgroundController:
+  enabled: false
+cleanupController:
+  enabled: false
+reportsController:
+  enabled: false
+
+admissionController:
+  replicas: 1
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+crds:
+  install: true
+
+features:
+  forceFailurePolicyIgnore:
+    enabled: true

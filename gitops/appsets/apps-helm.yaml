@@ -261,6 +261,13 @@ spec:
             - .spec.data[].remoteRef.conversionStrategy
             - .spec.data[].remoteRef.decodingStrategy
             - .spec.data[].remoteRef.metadataPolicy
+        - group: kyverno.io
+          kind: ClusterPolicy
+          jqPathExpressions:
+            - .status
+            - .spec.admission
+            - .spec.emitWarning
+            - .spec.rules[].skipBackgroundRequests
         - group: apiextensions.k8s.io
           kind: CustomResourceDefinition
           jqPathExpressions:

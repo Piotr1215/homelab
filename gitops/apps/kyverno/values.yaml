@@ -1,10 +1,21 @@
 # Minimal - admission controller only, fail-open
+# Use ghcr.io registry (reg.kyverno.io times out)
+global:
+  image:
+    registry: ghcr.io
+
 backgroundController:
   enabled: false
 cleanupController:
   enabled: false
 reportsController:
-  enabled: false
+  enabled: true
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 25m
+      memory: 64Mi
 
 admissionController:
   replicas: 1

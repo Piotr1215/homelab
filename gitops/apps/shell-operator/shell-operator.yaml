@@ -50,7 +50,7 @@ spec:
       serviceAccountName: shell-operator
       containers:
       - name: shell-operator
-        image: piotrzan/shell-operator-metallb:v2
+        image: piotrzan/shell-operator-metallb:v3
         imagePullPolicy: Always
         resources:
           requests:

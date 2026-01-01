@@ -2,7 +2,6 @@
 set -eo pipefail
 
 NTFY_TOPIC="https://ntfy.sh/homelab-piotr1215-warning"
-L2_NODE="kube-worker2"  # Node configured for L2 advertisement
 
 send_ntfy() {
   local title="$1" priority="$2" tags="$3" message="$4"
@@ -14,35 +13,17 @@ send_ntfy() {
 }
 
 check_speaker_health() {
-  # Get speaker pod on L2 node
-  local pod
-  pod=$(kubectl get pods -n metallb-system -l component=speaker \
-    --field-selector spec.nodeName="$L2_NODE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+  # Count Ready speakers (need at least 1 for L2 announcements)
+  local ready_count
+  ready_count=$(kubectl get pods -n metallb-system -l component=speaker \
+    -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' 2>/dev/null | grep -c "True" || echo "0")
 
-  if [[ -z "$pod" ]]; then
-    echo "ERROR: No speaker pod found on $L2_NODE"
+  if [[ "$ready_count" -lt 1 ]]; then
+    echo "ERROR: No Ready speaker pods"
     return 1
   fi
 
-  # Check pod is Ready (not just Running)
-  local ready
-  ready=$(kubectl get pod "$pod" -n metallb-system -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
-
-  if [[ "$ready" != "True" ]]; then
-    echo "ERROR: Speaker pod $pod not Ready (status: $ready)"
-    return 1
-  fi
-
-  # Check for recent errors in speaker logs (last 2 minutes)
-  local errors
-  errors=$(kubectl logs "$pod" -n metallb-system --since=2m 2>/dev/null | grep -ci "error\|failed\|unable" || true)
-
-  if [[ "$errors" -gt 5 ]]; then
-    echo "WARNING: Speaker $pod has $errors errors in last 2 minutes"
-    return 1
-  fi
-
-  echo "OK: Speaker $pod on $L2_NODE is healthy"
+  echo "OK: $ready_count speaker pods Ready"
   return 0
 }
 

@@ -29,7 +29,7 @@ spec:
   avoidBuggyIPs: true
 ---
 # L2 Advertisement - Announce IPs on Layer 2 network
-# Pinned to kube-worker2 to prevent ARP flapping
+# All speakers participate; MetalLB elects one leader per IP
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
@@ -40,7 +40,4 @@ spec:
   - static-pool
   - dynamic-pool
   interfaces:
-  - eth0  # Network interface on worker nodes
-  nodeSelectors:
-  - matchLabels:
-      kubernetes.io/hostname: kube-worker2  # Pin to single node for stability
+  - eth0

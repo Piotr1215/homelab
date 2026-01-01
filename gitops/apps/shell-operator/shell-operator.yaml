@@ -11,14 +11,11 @@ metadata:
   name: shell-operator-metallb
 rules:
 - apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch", "delete"]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
 - apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "patch"]
-- apiGroups: ["apps"]
-  resources: ["deployments/scale"]
-  verbs: ["patch"]
+  resources: ["daemonsets"]
+  verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -53,7 +50,7 @@ spec:
       serviceAccountName: shell-operator
       containers:
       - name: shell-operator
-        image: piotrzan/shell-operator-metallb:v1
+        image: piotrzan/shell-operator-metallb:v2
         imagePullPolicy: Always
         resources:
           requests:

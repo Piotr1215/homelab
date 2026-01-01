@@ -158,6 +158,13 @@ data:
           showStats: true
           namespace: ntopng
           podSelector: app=ntopng
+      - Policy Reporter:
+          description: Kyverno Policy Results
+          href: https://policy-reporter.homelab.local
+          icon: si-kubernetes
+          showStats: true
+          namespace: policy-reporter
+          podSelector: app.kubernetes.io/name=policy-reporter
     - Media:
       - Immich:
           description: Photo & Video Backup

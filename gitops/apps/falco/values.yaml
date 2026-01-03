@@ -88,10 +88,10 @@ falcosidekick:
       resources:
         requests:
           cpu: 50m
-          memory: 512Mi
+          memory: 1Gi
         limits:
           cpu: 200m
-          memory: 1536Mi
+          memory: 2560Mi
 # Enable ServiceMonitor for Prometheus scraping
 serviceMonitor:
   enabled: true

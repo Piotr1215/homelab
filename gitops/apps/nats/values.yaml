@@ -1,0 +1,23 @@
+nats:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+service:
+  merge:
+    spec:
+      type: LoadBalancer
+      loadBalancerIP: 192.168.178.93
+
+promExporter:
+  enabled: true
+  podMonitor:
+    enabled: true
+    merge:
+      metadata:
+        labels:
+          release: kube-prometheus-stack

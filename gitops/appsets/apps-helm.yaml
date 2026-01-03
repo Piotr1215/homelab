@@ -213,6 +213,13 @@ spec:
             chartVersion: "0.34.0"
             createNamespace: "true"
             project: cluster-management
+          - app: nats
+            namespace: nats
+            chartRepo: https://nats-io.github.io/k8s/helm/charts/
+            chartName: nats
+            chartVersion: "2.12.3"
+            createNamespace: "true"
+            project: apps
   template:
     metadata:
       name: "{{ .app }}"

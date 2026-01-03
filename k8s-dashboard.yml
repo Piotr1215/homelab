@@ -1,0 +1,156 @@
+variables:
+  KUBECONFIG: ./kubeconfig
+  kubectl: kubectl --kubeconfig=./kubeconfig
+  homepage_url: https://homepage.homelab.local/
+  argocd_url: https://argocd.homelab.local/
+
+barcharts:
+  - title: Node CPU %
+    position: [[0, 0], [27, 8]]
+    rate-ms: 5000
+    scale: 0
+    items:
+      - label: main
+        sample: $kubectl top nodes --no-headers | awk '/kube-main/{gsub(/%/,"",$3); print $3}'
+      - label: w1
+        sample: $kubectl top nodes --no-headers | awk '/worker1/{gsub(/%/,"",$3); print $3}'
+      - label: w2
+        sample: $kubectl top nodes --no-headers | awk '/worker2/{gsub(/%/,"",$3); print $3}'
+      - label: w3
+        sample: $kubectl top nodes --no-headers | awk '/worker3/{gsub(/%/,"",$3); print $3}'
+      - label: w4
+        sample: $kubectl top nodes --no-headers | awk '/worker4/{gsub(/%/,"",$3); print $3}'
+      - label: w5
+        sample: $kubectl top nodes --no-headers | awk '/worker5/{gsub(/%/,"",$3); print $3}'
+      - label: w6
+        sample: $kubectl top nodes --no-headers | awk '/worker6/{gsub(/%/,"",$3); print $3}'
+
+  - title: Node Memory %
+    position: [[27, 0], [26, 8]]
+    rate-ms: 5000
+    scale: 0
+    items:
+      - label: main
+        sample: $kubectl top nodes --no-headers | awk '/kube-main/{gsub(/%/,"",$5); print $5}'
+      - label: w1
+        sample: $kubectl top nodes --no-headers | awk '/worker1/{gsub(/%/,"",$5); print $5}'
+      - label: w2
+        sample: $kubectl top nodes --no-headers | awk '/worker2/{gsub(/%/,"",$5); print $5}'
+      - label: w3
+        sample: $kubectl top nodes --no-headers | awk '/worker3/{gsub(/%/,"",$5); print $5}'
+      - label: w4
+        sample: $kubectl top nodes --no-headers | awk '/worker4/{gsub(/%/,"",$5); print $5}'
+      - label: w5
+        sample: $kubectl top nodes --no-headers | awk '/worker5/{gsub(/%/,"",$5); print $5}'
+      - label: w6
+        sample: $kubectl top nodes --no-headers | awk '/worker6/{gsub(/%/,"",$5); print $5}'
+
+  - title: Node Storage %
+    position: [[53, 0], [27, 8]]
+    rate-ms: 10000
+    scale: 0
+    items:
+      - label: w1
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker1 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker1 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+      - label: w2
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker2 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker2 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+      - label: w3
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker3 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker3 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+      - label: w4
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker4 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker4 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+      - label: w5
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker5 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker5 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+      - label: w6
+        sample: avail=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker6 -o jsonpath='{.status.diskStatus.*.storageAvailable}'); max=$($kubectl get nodes.longhorn.io -n longhorn-system kube-worker6 -o jsonpath='{.status.diskStatus.*.storageMaximum}'); echo $((100 - avail * 100 / max))
+
+gauges:
+  - title: Cluster CPU
+    position: [[0, 8], [20, 5]]
+    rate-ms: 5000
+    scale: 0
+    percent-only: true
+    color: 178
+    cur:
+      sample: $kubectl top nodes --no-headers | awk '{gsub(/%/,"",$3); sum+=$3; n++} END {print int(sum/n)}'
+    max:
+      sample: echo 100
+    min:
+      sample: echo 0
+
+  - title: Cluster Memory
+    position: [[20, 8], [20, 5]]
+    rate-ms: 5000
+    scale: 0
+    percent-only: true
+    color: 43
+    cur:
+      sample: $kubectl top nodes --no-headers | awk '{gsub(/%/,"",$5); sum+=$5; n++} END {print int(sum/n)}'
+    max:
+      sample: echo 100
+    min:
+      sample: echo 0
+
+lists:
+  - title: Pods
+    position: [[40, 8], [20, 5]]
+    rate-ms: 5000
+    triggers:
+      - title: Pod restart detected
+        condition: '[ $label = "Restarts" ] && [ $cur -gt $prev ] && echo 1 || echo 0'
+        actions:
+          visual: true
+          script: notify-send -u critical "K8s Alert" "Pod restarts increased to $cur"
+    items:
+      - label: Running
+        sample: $kubectl get pods -A --no-headers | grep -c Running
+      - label: Restarts
+        sample: $kubectl get pods -A --no-headers | awk '{sum+=$4} END {print sum}'
+      - label: PVC Pend
+        sample: $kubectl get pvc -A --no-headers | grep -c Pending || echo 0
+
+  - title: GitOps
+    position: [[60, 8], [20, 5]]
+    rate-ms: 10000
+    items:
+      - label: Synced
+        sample: $kubectl get applications.argoproj.io -n argocd -o custom-columns=S:.status.sync.status --no-headers | grep -c Synced
+      - label: OutOfSync
+        sample: $kubectl get applications.argoproj.io -n argocd -o custom-columns=S:.status.sync.status --no-headers | grep -cv Synced || echo 0
+      - label: LB IPs
+        sample: $kubectl get svc -A --no-headers | grep LoadBalancer | wc -l
+
+sparklines:
+  - title: Homepage (ms)
+    position: [[0, 13], [40, 5]]
+    rate-ms: 5000
+    scale: 0
+    triggers:
+      - title: Homepage down
+        condition: '[ $cur -eq 0 ] && echo 1 || echo 0'
+        actions:
+          visual: true
+          script: notify-send -u critical "Uptime Alert" "Homepage is DOWN!"
+    sample: curl -s -o /dev/null -w "%{time_total}" --connect-timeout 5 $homepage_url 2>/dev/null | awk '{printf "%.0f", $1*1000}' || echo 0
+
+  - title: ArgoCD (ms)
+    position: [[40, 13], [40, 5]]
+    rate-ms: 5000
+    scale: 0
+    triggers:
+      - title: ArgoCD down
+        condition: '[ $cur -eq 0 ] && echo 1 || echo 0'
+        actions:
+          visual: true
+          script: notify-send -u critical "Uptime Alert" "ArgoCD is DOWN!"
+    sample: curl -s -o /dev/null -w "%{time_total}" --connect-timeout 5 $argocd_url 2>/dev/null | awk '{printf "%.0f", $1*1000}' || echo 0
+
+textboxes:
+  - title: k8sgpt
+    position: [[0, 18], [80, 8]]
+    rate-ms: 15000
+    sample: just k8sgpt
+
+  - title: Events
+    position: [[0, 26], [80, 14]]
+    rate-ms: 5000
+    sample: $kubectl get events -A --sort-by='.lastTimestamp' --field-selector type!=Normal | tail -14

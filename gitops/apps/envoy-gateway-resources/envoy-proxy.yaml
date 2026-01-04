@@ -19,6 +19,7 @@ spec:
                     values:
                     - kube-worker2
       envoyService:
+        externalTrafficPolicy: Cluster
         annotations:
           metallb.universe.tf/address-pool: static-pool
           metallb.universe.tf/loadBalancerIPs: "192.168.178.92"

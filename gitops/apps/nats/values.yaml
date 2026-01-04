@@ -1,11 +1,25 @@
-nats:
+# PROJECT: claude-automation
+config:
+  jetstream:
+    enabled: true
+    memoryStore:
+      enabled: true
+      maxSize: 256Mi
+    fileStore:
+      enabled: true
+      pvc:
+        enabled: true
+        size: 1Gi
+        storageClassName: longhorn
+
+container:
   resources:
     requests:
       cpu: 10m
-      memory: 64Mi
-    limits:
-      cpu: 100m
       memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
 
 service:
   merge:

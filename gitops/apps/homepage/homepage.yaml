@@ -380,8 +380,6 @@ metadata:
     app.kubernetes.io/name: homepage
     app.kubernetes.io/version: v1.8.0
     helm.sh/chart: homepage-2.1.0
-  annotations:
-    values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
 spec:
   revisionHistoryLimit: 3
   replicas: 1
@@ -394,8 +392,7 @@ spec:
   template:
     metadata:
       annotations:
-        
-        values-checksum: b26f45ae23dfed6328b4a032aed4c21a3a892ab7c6ddd98dd4b51de37079deb5
+        reloader.stakater.com/auto: "true"
       labels:
         app.kubernetes.io/name: homepage
         app.kubernetes.io/instance: homepage

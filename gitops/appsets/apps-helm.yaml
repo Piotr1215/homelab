@@ -220,6 +220,13 @@ spec:
             chartVersion: "2.12.3"
             createNamespace: "true"
             project: apps
+          - app: reloader
+            namespace: reloader
+            chartRepo: https://stakater.github.io/stakater-charts
+            chartName: reloader
+            chartVersion: "2.2.7"
+            createNamespace: "true"
+            project: cluster-management
   template:
     metadata:
       name: "{{ .app }}"

@@ -136,8 +136,16 @@ jobservice:
     limits:
       memory: 512Mi
       cpu: 500m
-  # Increase delays to avoid startup race with core
-  readinessProbe:
-    initialDelaySeconds: 60  # Increased from default 20s
-  livenessProbe:
-    initialDelaySeconds: 300  # Keep at 300s
+  initContainers:
+    - name: wait-for-core
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for harbor-core..."
+          until wget -q --spider http://harbor-core:80/api/v2.0/ping 2>/dev/null; do
+            echo "harbor-core not ready, retrying in 5s..."
+            sleep 5
+          done
+          echo "harbor-core is ready"

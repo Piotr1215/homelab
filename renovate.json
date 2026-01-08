@@ -5,6 +5,7 @@
     ":ignoreUnstable"
   ],
   "dependencyDashboard": true,
+  "platformAutomerge": true,
   "description": "Renovate configuration for homelab GitOps repository",
   "timezone": "Europe/Berlin",
   "labels": [

@@ -1,0 +1,68 @@
+---
+# Auto-mirrors new GitHub repos to Forgejo
+# When you create a repo on GitHub, it appears in Forgejo within 24 hours
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-mirror
+  namespace: git-mirror
+  labels:
+    app.kubernetes.io/name: github-mirror
+    app.kubernetes.io/component: sync
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: github-mirror
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: github-mirror
+    spec:
+      containers:
+        - name: mirror
+          image: jaedle/mirror-to-gitea:2.0.1
+          env:
+            # GitHub source
+            - name: GITHUB_USERNAME
+              value: "Piotr1215"
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-token
+                  key: token
+            # Forgejo target (internal cluster DNS)
+            - name: GITEA_URL
+              value: "http://forgejo-http.git-mirror.svc.cluster.local:3000"
+            - name: GITEA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-api-token
+                  key: token
+            # Behavior
+            - name: MIRROR_PRIVATE_REPOSITORIES
+              value: "true"
+            - name: SKIP_FORKS
+              value: "true"
+            - name: DELAY
+              value: "86400"
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

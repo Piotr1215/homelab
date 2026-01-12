@@ -67,6 +67,8 @@ spec:
           - app: shell-operator
             namespace: metallb-system
             project: networking
+          - app: sre-demo
+            namespace: sre-demo
   template:
     metadata:
       name: "{{ .app }}"

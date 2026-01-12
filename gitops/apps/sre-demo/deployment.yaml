@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-demo
+  namespace: sre-demo
+  labels:
+    app: sre-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sre-demo
+  template:
+    metadata:
+      labels:
+        app: sre-demo
+    spec:
+      containers:
+      - name: sre-demo
+        image: ghcr.io/piotr1215/sre-demo-app:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: LLM_URL
+          value: "http://ollama-mac.ai-tools.svc.cluster.local:11434"
+        - name: LLM_MODEL
+          value: "llama3.2:3b"
+        - name: LLM_API_KEY
+          value: "not-needed"
+        - name: UI_BADGE_TEXT
+          value: "Homelab"
+        - name: UI_SUBTITLE
+          value: "Powered by Ollama"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10

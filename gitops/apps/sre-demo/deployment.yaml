@@ -25,7 +25,7 @@ spec:
         - name: LLM_URL
           value: "http://ollama-mac.ai-tools.svc.cluster.local:11434"
         - name: LLM_MODEL
-          value: "llama3.2:3b"
+          value: "gpt-oss:latest"
         - name: LLM_API_KEY
           value: "not-needed"
         - name: UI_BADGE_TEXT

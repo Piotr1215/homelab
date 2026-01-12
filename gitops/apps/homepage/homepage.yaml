@@ -210,6 +210,13 @@ data:
           showStats: true
           namespace: default
           podSelector: app.kubernetes.io/name=mcp-agentic-framework
+      - SRE Haiku:
+          description: SRE Horror Haiku Generator
+          href: https://sre-demo.homelab.local
+          icon: mdi-skull
+          showStats: true
+          namespace: sre-demo
+          podSelector: app=sre-demo
     - Infrastructure:
       - Proxmox:
           description: Hypervisor Management
@@ -318,7 +325,7 @@ data:
         columns: 1
       AI Tools:
         style: row
-        columns: 3
+        columns: 4
       Infrastructure:
         style: row
         columns: 2

@@ -149,51 +149,51 @@
       "last_modified": "2025-10-24T23:52:36Z",
       "resolved": "github:NixOS/nixpkgs/02f2cb8e0feb4596d20cc52fda73ccee960e3538?lastModified=1761349956&narHash=sha256-tH3wHnOJms%2BU4k%2FrK2Nn1RfBrhffX92jLP%2F2VndSn0w%3D"
     },
-    "hubble@1.17.2": {
-      "last_modified": "2025-10-08T10:03:27Z",
-      "resolved": "github:NixOS/nixpkgs/fb5cf53218b987f2703a5bbc292a030c0fe33443#hubble",
+    "hubble@1.18.5": {
+      "last_modified": "2026-01-09T13:41:53Z",
+      "resolved": "github:NixOS/nixpkgs/5f02c91314c8ba4afe83b256b023756412218535#hubble",
       "source": "devbox-search",
-      "version": "1.17.2",
+      "version": "1.18.5",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/g41phhil6jcsmp7jgq29brrmkdbl2x35-hubble-1.17.2",
+              "path": "/nix/store/3k0pd72vl1v4sy0c99q844h9bnn4di7q-hubble-1.18.5",
               "default": true
             }
           ],
-          "store_path": "/nix/store/g41phhil6jcsmp7jgq29brrmkdbl2x35-hubble-1.17.2"
+          "store_path": "/nix/store/3k0pd72vl1v4sy0c99q844h9bnn4di7q-hubble-1.18.5"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/34h7bjgllxa9sl474qir9k532ziggzf3-hubble-1.17.2",
+              "path": "/nix/store/39y2z1k1f1w1p2n2grp5vpdvk2jaj901-hubble-1.18.5",
               "default": true
             }
           ],
-          "store_path": "/nix/store/34h7bjgllxa9sl474qir9k532ziggzf3-hubble-1.17.2"
+          "store_path": "/nix/store/39y2z1k1f1w1p2n2grp5vpdvk2jaj901-hubble-1.18.5"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/88060jfivrczdhljkjy6gwm3xn0khzkl-hubble-1.17.2",
+              "path": "/nix/store/ycg8jr2k5vlzn4rlccyqm1w7r5ld7jnn-hubble-1.18.5",
               "default": true
             }
           ],
-          "store_path": "/nix/store/88060jfivrczdhljkjy6gwm3xn0khzkl-hubble-1.17.2"
+          "store_path": "/nix/store/ycg8jr2k5vlzn4rlccyqm1w7r5ld7jnn-hubble-1.18.5"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/i8yag99q40icp5m1mmsysav6k9zph58h-hubble-1.17.2",
+              "path": "/nix/store/swb5jdqdzp75zrraf8y4f3dld1bs82rg-hubble-1.18.5",
               "default": true
             }
           ],
-          "store_path": "/nix/store/i8yag99q40icp5m1mmsysav6k9zph58h-hubble-1.17.2"
+          "store_path": "/nix/store/swb5jdqdzp75zrraf8y4f3dld1bs82rg-hubble-1.18.5"
         }
       }
     },

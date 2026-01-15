@@ -69,6 +69,8 @@ spec:
             project: networking
           - app: sre-demo
             namespace: sre-demo
+          - app: taskchampion-sync-server
+            namespace: taskchampion
   template:
     metadata:
       name: "{{ .app }}"

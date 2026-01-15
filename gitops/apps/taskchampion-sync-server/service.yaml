@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: taskchampion-sync-server
+  labels:
+    app.kubernetes.io/name: taskchampion-sync-server
+    app.kubernetes.io/instance: taskchampion-sync-server
+  annotations:
+    homelab.io/expose: "true"
+    homelab.io/hostname: taskchampion
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: taskchampion-sync-server
+    app.kubernetes.io/instance: taskchampion-sync-server
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http

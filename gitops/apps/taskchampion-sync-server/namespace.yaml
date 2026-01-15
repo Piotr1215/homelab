@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskchampion
+  labels:
+    app.kubernetes.io/name: taskchampion-sync-server

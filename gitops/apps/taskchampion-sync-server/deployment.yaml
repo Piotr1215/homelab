@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taskchampion-sync-server
+  labels:
+    app.kubernetes.io/name: taskchampion-sync-server
+    app.kubernetes.io/instance: taskchampion-sync-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: taskchampion-sync-server
+      app.kubernetes.io/instance: taskchampion-sync-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: taskchampion-sync-server
+        app.kubernetes.io/instance: taskchampion-sync-server
+    spec:
+      securityContext:
+        runAsUser: 100
+        runAsGroup: 100
+        fsGroup: 100
+      containers:
+        - name: taskchampion-sync-server
+          image: ghcr.io/gothenburgbitfactory/taskchampion-sync-server:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: LISTEN
+              value: "0.0.0.0:8080"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/taskchampion-sync-server
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: taskchampion-sync-server-data

@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskchampion-sync-server
+  namespace: taskchampion
+  labels:
+    app.kubernetes.io/name: taskchampion-sync-server
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: taskchampion
+      rules:
+        - alert: TaskchampionDown
+          expr: |
+            absent(kube_pod_status_ready{namespace="taskchampion", pod=~"taskchampion-sync-server.*", condition="true"} == 1)
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Taskchampion sync server is down"
+            description: "Taskchampion sync server pod has been unavailable for 5 minutes"
+        - alert: TaskchampionHighRestarts
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="taskchampion", container="taskchampion-sync-server"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Taskchampion experiencing restarts"
+            description: "Taskchampion has restarted {{ $value }} times in the last hour"

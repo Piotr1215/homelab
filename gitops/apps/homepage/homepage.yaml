@@ -418,7 +418,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: homepage
-          image: ghcr.io/gethomepage/homepage:v1.8.0
+          image: ghcr.io/gethomepage/homepage:v1.9.0
           imagePullPolicy:
           securityContext:
             allowPrivilegeEscalation: false

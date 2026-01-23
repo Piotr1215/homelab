@@ -17,10 +17,6 @@ spec:
         app.kubernetes.io/name: talks-tracker
         app.kubernetes.io/instance: talks-tracker
     spec:
-      securityContext:
-        runAsUser: 101
-        runAsGroup: 101
-        fsGroup: 101
       containers:
         - name: nginx
           image: piotrzan/talks-tracker:latest

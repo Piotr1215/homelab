@@ -71,6 +71,8 @@ spec:
             namespace: sre-demo
           - app: taskchampion-sync-server
             namespace: taskchampion
+          - app: talks-tracker
+            namespace: talks-tracker
   template:
     metadata:
       name: "{{ .app }}"

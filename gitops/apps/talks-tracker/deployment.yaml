@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talks-tracker
+  labels:
+    app.kubernetes.io/name: talks-tracker
+    app.kubernetes.io/instance: talks-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: talks-tracker
+      app.kubernetes.io/instance: talks-tracker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: talks-tracker
+        app.kubernetes.io/instance: talks-tracker
+    spec:
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: nginx
+          image: piotrzan/talks-tracker:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10

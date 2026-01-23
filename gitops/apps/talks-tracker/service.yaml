@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: talks-tracker
+  labels:
+    app.kubernetes.io/name: talks-tracker
+    app.kubernetes.io/instance: talks-tracker
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: talks-tracker
+    app.kubernetes.io/instance: talks-tracker
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http

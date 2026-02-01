@@ -158,13 +158,6 @@ data:
           showStats: true
           namespace: kube-system
           podSelector: app.kubernetes.io/name=hubble-ui
-      - ntopng:
-          description: Network Traffic Analysis
-          href: https://ntopng.homelab.local
-          icon: https://www.ntop.org/wp-content/uploads/2019/06/ntopng_logo_square.png
-          showStats: true
-          namespace: ntopng
-          podSelector: app=ntopng
       - Policy Reporter:
           description: Kyverno Policy Results
           href: https://policy-reporter.homelab.local

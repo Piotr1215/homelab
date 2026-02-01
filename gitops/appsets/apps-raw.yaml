@@ -52,9 +52,6 @@ spec:
           - app: ntfy-alertmanager
             namespace: ntfy-alertmanager
             project: observability
-          - app: ntopng
-            namespace: ntopng
-            project: networking
           - app: retina
             namespace: kube-system
             project: networking

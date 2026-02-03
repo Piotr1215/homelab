@@ -4,4 +4,4 @@ resources:
   - deployment.yaml
 images:
   - name: piotrzan/vcluster-yaml-mcp-server
-    newTag: 1.4.0
+    newTag: 1.4.1

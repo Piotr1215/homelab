@@ -4,7 +4,7 @@
     "istioctl@1.28.3",
     "kn@1.20.0",
     "fluxcd@2.7.2",
-    "ollama@0.15.2",
+    "ollama@0.15.4",
     "vault@1.20.4",
     "cilium-cli@0.18.8",
     "hubble@1.18.5",

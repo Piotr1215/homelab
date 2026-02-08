@@ -389,51 +389,51 @@
         }
       }
     },
-    "vault@1.20.4": {
-      "last_modified": "2025-10-08T10:03:27Z",
-      "resolved": "github:NixOS/nixpkgs/fb5cf53218b987f2703a5bbc292a030c0fe33443#vault",
+    "vault@1.21.2": {
+      "last_modified": "2026-02-01T05:13:08Z",
+      "resolved": "github:NixOS/nixpkgs/207d15f1a6603226e1e223dc79ac29c7846da32e#vault",
       "source": "devbox-search",
-      "version": "1.20.4",
+      "version": "1.21.2",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/0xigkampydc711m7zhcnd4w6ssy1zbdr-vault-1.20.4",
+              "path": "/nix/store/xgsiihwwiqkr1yy1lqx1hpfry7sscg89-vault-1.21.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/0xigkampydc711m7zhcnd4w6ssy1zbdr-vault-1.20.4"
+          "store_path": "/nix/store/xgsiihwwiqkr1yy1lqx1hpfry7sscg89-vault-1.21.2"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/1yz5yk6182rxmzzg1gsg0404jqhls6zr-vault-1.20.4",
+              "path": "/nix/store/ijmpfhf4nw0ch3r85ngzij3z34861cc3-vault-1.21.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/1yz5yk6182rxmzzg1gsg0404jqhls6zr-vault-1.20.4"
+          "store_path": "/nix/store/ijmpfhf4nw0ch3r85ngzij3z34861cc3-vault-1.21.2"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/00va2ckj68abi87l232lhj7cys6y3fmz-vault-1.20.4",
+              "path": "/nix/store/ak2phqdr2a0kw1413b5qdi7fscx4dmvw-vault-1.21.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/00va2ckj68abi87l232lhj7cys6y3fmz-vault-1.20.4"
+          "store_path": "/nix/store/ak2phqdr2a0kw1413b5qdi7fscx4dmvw-vault-1.21.2"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/9xjjxy2jzqysns9s45cp9h2iaihdl24c-vault-1.20.4",
+              "path": "/nix/store/lnflvqqjz21p8j4hyf9sxv5pgcm7v6cz-vault-1.21.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/9xjjxy2jzqysns9s45cp9h2iaihdl24c-vault-1.20.4"
+          "store_path": "/nix/store/lnflvqqjz21p8j4hyf9sxv5pgcm7v6cz-vault-1.21.2"
         }
       }
     },

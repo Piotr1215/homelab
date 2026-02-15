@@ -26,11 +26,11 @@ deschedulerPolicy:
           args:
             thresholds:
               cpu: 55
-              memory: 30
+              memory: 40
               pods: 30
             targetThresholds:
               cpu: 70
-              memory: 70
+              memory: 85
               pods: 50
         - name: RemovePodsViolatingNodeTaints
         - name: RemovePodsViolatingNodeAffinity

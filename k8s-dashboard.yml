@@ -96,10 +96,10 @@ lists:
     rate-ms: 5000
     triggers:
       - title: Pod restart detected
-        condition: '[ $label = "Restarts" ] && [ $cur -gt $prev ] && echo 1 || echo 0'
+        condition: '[ $label = "Restarts" ] && [ $((cur - prev)) -ge 5 ] && echo 1 || echo 0'
         actions:
           visual: true
-          script: notify-send -u critical "K8s Alert" "Pod restarts increased to $cur"
+          script: notify-send -u critical "K8s Alert" "Pod restarts increased by $((cur - prev)) to $cur"
     items:
       - label: Running
         sample: $kubectl get pods -A --no-headers | grep -c Running

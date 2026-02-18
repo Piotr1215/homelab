@@ -74,6 +74,13 @@ data:
           showStats: true
           namespace: talks-tracker
           podSelector: app.kubernetes.io/name=talks-tracker
+      - FreshRSS:
+          description: Self-hosted RSS Reader
+          href: https://freshrss.homelab.local
+          icon: mdi-rss
+          showStats: true
+          namespace: freshrss
+          podSelector: app.kubernetes.io/name=freshrss
     - Observability:
       - Glances:
           description: Real-time System Monitoring

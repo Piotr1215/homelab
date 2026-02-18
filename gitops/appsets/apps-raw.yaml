@@ -70,6 +70,8 @@ spec:
             namespace: taskchampion
           - app: talks-tracker
             namespace: talks-tracker
+          - app: freshrss
+            namespace: freshrss
   template:
     metadata:
       name: "{{ .app }}"

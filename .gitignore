@@ -1,5 +1,6 @@
 # Claude
 **/.claude/settings.local.json
+.mcp.json
 
 # Terraform
 *.tfstate

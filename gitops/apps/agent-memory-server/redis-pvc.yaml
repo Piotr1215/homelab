@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-memory-redis-data
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-redis
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi

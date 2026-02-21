@@ -72,6 +72,8 @@ spec:
             namespace: talks-tracker
           - app: freshrss
             namespace: freshrss
+          - app: agent-memory-server
+            namespace: ai-tools
   template:
     metadata:
       name: "{{ .app }}"

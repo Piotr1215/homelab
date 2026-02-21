@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-memory-mcp
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-mcp
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-mcp
+      app.kubernetes.io/component: mcp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-memory-mcp
+        app.kubernetes.io/instance: agent-memory-server
+        app.kubernetes.io/component: mcp
+    spec:
+      containers:
+        - name: mcp
+          image: redislabs/agent-memory-server:0.13.1
+          command: ["agent-memory", "mcp", "--mode", "sse"]
+          ports:
+            - containerPort: 9000
+              name: sse
+          env:
+            - name: REDIS_URL
+              value: redis://agent-memory-redis.ai-tools.svc:6379
+            - name: PORT
+              value: "9000"
+            - name: LONG_TERM_MEMORY
+              value: "true"
+            - name: ENABLE_TOPIC_EXTRACTION
+              value: "true"
+            - name: ENABLE_NER
+              value: "true"
+            - name: DISABLE_AUTH
+              value: "true"
+            - name: GENERATION_MODEL
+              value: ollama/llama3.2
+            - name: EMBEDDING_MODEL
+              value: ollama/nomic-embed-text
+            - name: OLLAMA_API_BASE
+              value: http://ollama-mac.ai-tools.svc:11434
+            - name: REDISVL_VECTOR_DIMENSIONS
+              value: "768"
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-memory-mcp
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-mcp
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: mcp
+spec:
+  selector:
+    app.kubernetes.io/name: agent-memory-mcp
+    app.kubernetes.io/component: mcp
+  ports:
+    - port: 9000
+      targetPort: sse
+      name: sse

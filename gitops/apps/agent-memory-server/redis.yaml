@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-memory-redis
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-redis
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-redis
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-memory-redis
+        app.kubernetes.io/instance: agent-memory-server
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis/redis-stack-server:7.4.0-v8
+          args:
+            - "--appendonly"
+            - "yes"
+            - "--maxmemory"
+            - "512mb"
+            - "--maxmemory-policy"
+            - "allkeys-lru"
+          ports:
+            - containerPort: 6379
+              name: redis
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            limits:
+              cpu: 500m
+              memory: 768Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: agent-memory-redis-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-memory-redis
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-redis
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: redis
+spec:
+  selector:
+    app.kubernetes.io/name: agent-memory-redis
+    app.kubernetes.io/component: redis
+  ports:
+    - port: 6379
+      targetPort: redis
+      name: redis

@@ -6,7 +6,7 @@ spec:
   parentRefs:
   - name: homelab-gateway
     namespace: envoy-gateway-system
-    sectionName: https
+    sectionName: http
   hostnames:
   - "agent-memory.homelab.local"
   rules:

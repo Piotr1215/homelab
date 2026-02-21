@@ -36,6 +36,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /config
+            - name: crontab
+              mountPath: /etc/crontabs/abc
+              subPath: abc
           resources:
             limits:
               cpu: 200m
@@ -59,3 +62,6 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: freshrss-data
+        - name: crontab
+          configMap:
+            name: freshrss-crontab

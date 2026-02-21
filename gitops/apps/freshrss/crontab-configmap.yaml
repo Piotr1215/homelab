@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: freshrss-crontab
+  namespace: freshrss
+data:
+  abc: |
+    # min   hour    day     month   weekday command
+    3       */2     *       *       *       /usr/bin/php /app/www/app/actualize_script.php > /tmp/FreshRSS.log 2>&1

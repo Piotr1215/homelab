@@ -26,6 +26,8 @@ gitea:
     repository:
       ROOT: /data/git/repositories
       ENABLE_PUSH_CREATE_USER: true
+    packages:
+      ENABLED: true
     security:
       INSTALL_LOCK: true
     service:

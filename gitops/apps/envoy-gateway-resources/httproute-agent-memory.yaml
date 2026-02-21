@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: agent-memory
+spec:
+  parentRefs:
+  - name: homelab-gateway
+    namespace: envoy-gateway-system
+    sectionName: https
+  hostnames:
+  - "agent-memory.homelab.local"
+  rules:
+  - backendRefs:
+    - name: agent-memory-mcp
+      namespace: ai-tools
+      port: 9000
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: agent-memory-backend
+  namespace: ai-tools
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: envoy-gateway-system
+  to:
+  - group: ""
+    kind: Service
+    name: agent-memory-mcp

@@ -1,0 +1,30 @@
+diff --git a/agent_memory_server/mcp.py b/agent_memory_server/mcp.py
+index 50f65ef..fd1c59f 100644
+--- a/agent_memory_server/mcp.py
++++ b/agent_memory_server/mcp.py
+@@ -86,10 +86,11 @@ class FastMCP(_FastMCPBase):
+         from starlette.applications import Starlette
+         from starlette.requests import Request
+         from starlette.routing import Mount, Route
++        from starlette.responses import Response
+ 
+         sse = SseServerTransport(self.settings.message_path)
+ 
+-        async def handle_sse(request: Request) -> None:
++        async def handle_sse(request: Request):
+             # Store the request in the FastMCP instance so call_tool can access it
+             self._current_request = request
+ 
+@@ -103,10 +104,12 @@ class FastMCP(_FastMCPBase):
+                         read_stream,
+                         write_stream,
+                         self._mcp_server.create_initialization_options(),
++                        stateless=True,
+                     )
+             finally:
+                 # Clean up request reference
+                 self._current_request = None
++            return Response()
+ 
+         return Starlette(
+             debug=self.settings.debug,

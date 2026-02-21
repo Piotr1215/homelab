@@ -33,6 +33,10 @@ spec:
               value: redis://agent-memory-redis.ai-tools.svc:6379
             - name: PORT
               value: "9000"
+            - name: FASTMCP_HOST
+              value: "0.0.0.0"
+            - name: FASTMCP_PORT
+              value: "9000"
             - name: LONG_TERM_MEMORY
               value: "true"
             - name: ENABLE_TOPIC_EXTRACTION
@@ -51,11 +55,11 @@ spec:
               value: "768"
           resources:
             requests:
-              memory: 128Mi
+              memory: 256Mi
               cpu: 100m
             limits:
-              memory: 256Mi
-              cpu: 250m
+              memory: 512Mi
+              cpu: 500m
 ---
 apiVersion: v1
 kind: Service

@@ -23,11 +23,11 @@ spec:
     spec:
       containers:
         - name: mcp
-          image: piotrzan/agent-memory-server:0.13.2-custom-v2
-          command: ["agent-memory", "mcp", "--mode", "sse"]
+          image: piotrzan/agent-memory-server:0.13.2-custom-v3
+          command: ["agent-memory", "mcp", "--mode", "streamable-http"]
           ports:
             - containerPort: 9000
-              name: sse
+              name: http
           env:
             - name: REDIS_URL
               value: redis://agent-memory-redis.ai-tools.svc:6379
@@ -72,5 +72,5 @@ spec:
     app.kubernetes.io/component: mcp
   ports:
     - port: 9000
-      targetPort: sse
-      name: sse
+      targetPort: http
+      name: http

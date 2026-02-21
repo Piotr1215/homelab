@@ -1,8 +1,39 @@
+diff --git a/agent_memory_server/cli.py b/agent_memory_server/cli.py
+index cf54382..a806a10 100644
+--- a/agent_memory_server/cli.py
++++ b/agent_memory_server/cli.py
+@@ -320,7 +320,7 @@ def api(port: int, host: str, reload: bool, no_worker: bool, task_backend: str):
+     "--mode",
+     default="stdio",
+     help="Run the MCP server in SSE or stdio mode",
+-    type=click.Choice(["stdio", "sse"]),
++    type=click.Choice(["stdio", "sse", "streamable-http"]),
+ )
+ @click.option(
+     "--task-backend",
+@@ -362,6 +362,9 @@ def mcp(port: int, mode: str, task_backend: str):
+         if mode == "sse":
+             logger.info(f"Starting MCP server on port {port}\n")
+             await mcp_app.run_sse_async()
++        elif mode == "streamable-http":
++            logger.info(f"Starting MCP server (streamable HTTP) on port {port}\n")
++            await mcp_app.run_streamable_http_async()
+         elif mode == "stdio":
+             await mcp_app.run_stdio_async()
+         else:
 diff --git a/agent_memory_server/mcp.py b/agent_memory_server/mcp.py
-index 50f65ef..fd1c59f 100644
+index 50f65ef..51d6fb1 100644
 --- a/agent_memory_server/mcp.py
 +++ b/agent_memory_server/mcp.py
-@@ -86,10 +86,11 @@ class FastMCP(_FastMCPBase):
+@@ -77,6 +77,7 @@ class FastMCP(_FastMCPBase):
+     """Extend FastMCP to support optional URL namespace and default STDIO namespace."""
+ 
+     def __init__(self, *args, default_namespace=None, **kwargs):
++        kwargs.setdefault("stateless_http", True)
+         super().__init__(*args, **kwargs)
+         self.default_namespace = default_namespace
+         self._current_request = None  # Initialize the attribute
+@@ -86,10 +87,11 @@ class FastMCP(_FastMCPBase):
          from starlette.applications import Starlette
          from starlette.requests import Request
          from starlette.routing import Mount, Route
@@ -15,7 +46,7 @@ index 50f65ef..fd1c59f 100644
              # Store the request in the FastMCP instance so call_tool can access it
              self._current_request = request
  
-@@ -103,10 +104,12 @@ class FastMCP(_FastMCPBase):
+@@ -103,10 +105,12 @@ class FastMCP(_FastMCPBase):
                          read_stream,
                          write_stream,
                          self._mcp_server.create_initialization_options(),
@@ -28,3 +59,11 @@ index 50f65ef..fd1c59f 100644
  
          return Starlette(
              debug=self.settings.debug,
+@@ -188,6 +192,7 @@ INSTRUCTIONS = """
+ 
+ mcp_app = FastMCP(
+     "Redis Agent Memory Server",
++    host="0.0.0.0",
+     port=settings.mcp_port,
+     instructions=INSTRUCTIONS,
+     default_namespace=settings.default_mcp_namespace,

@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: redislabs/agent-memory-server:0.13.1
+          image: piotrzan/agent-memory-server:0.13.2-custom
           ports:
             - containerPort: 8000
               name: http

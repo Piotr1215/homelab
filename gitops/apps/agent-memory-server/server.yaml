@@ -42,6 +42,10 @@ spec:
               value: "true"
             - name: GENERATION_MODEL
               value: ollama/llama3.2:3b
+            - name: FAST_MODEL
+              value: ollama/llama3.2:3b
+            - name: SLOW_MODEL
+              value: ollama/llama3.2:3b
             - name: EMBEDDING_MODEL
               value: ollama/nomic-embed-text
             - name: OLLAMA_API_BASE

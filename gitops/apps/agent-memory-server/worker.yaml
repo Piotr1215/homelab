@@ -40,6 +40,8 @@ spec:
               value: ollama/nomic-embed-text
             - name: OLLAMA_API_BASE
               value: http://ollama-mac.ai-tools.svc:11434
+            - name: OPENAI_API_KEY
+              value: "sk-dummy"
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
           resources:

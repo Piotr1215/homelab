@@ -210,13 +210,6 @@ data:
                 query: sum(k8sgpt_number_of_failed_backend_ai_calls)
                 format:
                   type: number
-      - MCP Framework:
-          description: Agentic MCP Framework
-          href: https://mcp.homelab.local
-          icon: mdi-robot
-          showStats: true
-          namespace: default
-          podSelector: app.kubernetes.io/name=mcp-agentic-framework
       - SRE Haiku:
           description: SRE Horror Haiku Generator
           href: https://sre-demo.homelab.local

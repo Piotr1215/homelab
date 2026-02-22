@@ -55,9 +55,6 @@ spec:
           - app: retina
             namespace: kube-system
             project: networking
-          - app: mcp-agentic-framework
-            namespace: default
-            project: apps
           - app: nas-monitor
             namespace: monitoring
             project: observability

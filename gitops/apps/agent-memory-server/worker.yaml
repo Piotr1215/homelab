@@ -35,7 +35,7 @@ spec:
             - name: ENABLE_NER
               value: "true"
             - name: GENERATION_MODEL
-              value: anthropic/claude-3-5-haiku-latest
+              value: anthropic/claude-haiku-4-5
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:

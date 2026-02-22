@@ -120,11 +120,11 @@ alertmanager:
             - alertname =~ "VeleroBackup.*|VaultSnapshot.*"
           receiver: ntfy-backup
           repeat_interval: 12h
-        # VCluster MCP alerts
+        # VCluster MCP alerts - only fires on actual tool calls
         - matchers:
-            - alertname = VClusterMCPServerUsed
+            - alertname = VClusterMCPToolUsed
           receiver: ntfy-vcluster-mcp
-          group_by: ['pod']
+          group_by: ['tool_name']
           group_wait: 5s
           repeat_interval: 5m
         # Noise alerts - silence

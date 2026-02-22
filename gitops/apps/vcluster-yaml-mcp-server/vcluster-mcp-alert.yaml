@@ -12,13 +12,13 @@ spec:
   - name: vcluster-mcp-usage
     interval: 30s
     rules:
-    - alert: VClusterMCPServerUsed
+    - alert: VClusterMCPToolUsed
       expr: |
-        rate(mcp_requests_total{job="vcluster-yaml-mcp"}[1m]) > 0
+        rate(mcp_requests_total{job="vcluster-yaml-mcp",mcp_method="tools/call"}[5m]) > 0
       for: 10s
       labels:
-        severity: warning
+        severity: info
         component: vcluster-mcp
       annotations:
-        summary: "vCluster YAML MCP Server is being used"
-        description: "Someone is actively using the vcluster-yaml-mcp server ({{ $value }} requests/sec)"
+        summary: "vCluster YAML MCP tool called"
+        description: "Tool {{ $labels.tool_name }} called ({{ $value }} req/sec)"

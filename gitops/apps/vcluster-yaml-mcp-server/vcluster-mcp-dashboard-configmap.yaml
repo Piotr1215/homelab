@@ -111,8 +111,8 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(mcp_requests_total{namespace=\"default\"}[5m])",
-              "legendFormat": "{{method}} - {{status}}",
+              "expr": "rate(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\"}[5m])",
+              "legendFormat": "{{tool_name}}",
               "refId": "A"
             }
           ],
@@ -338,13 +338,77 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(increase(mcp_requests_total{namespace=\"default\"}[24h]))",
-              "legendFormat": "Total Requests (24h)",
+              "expr": "sum(increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\"}[24h]))",
+              "legendFormat": "Tool Calls (24h)",
               "refId": "A"
             }
           ],
-          "title": "Total Requests (24h)",
+          "title": "Tool Calls (24h)",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "id": 10,
+          "options": {
+            "barWidth": 0.8,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "horizontal",
+            "showValue": "always",
+            "stacking": "none",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (tool_name) (increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\",tool_name!=\"\"}[1h]))",
+              "legendFormat": "{{tool_name}}",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Tool Usage (1h)",
+          "type": "barchart"
         },
         {
           "datasource": {
@@ -404,7 +468,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 16
+            "y": 24
           },
           "id": 5,
           "options": {
@@ -773,7 +837,7 @@ data:
                 "type": "loki",
                 "uid": "loki"
               },
-              "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST request from\" | regexp `from (?P<client_ip>[\\d.]+)`",
+              "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `MCP POST (?P<mcp_method>\\S+).*from (?P<client_ip>[\\d.]+)`",
               "refId": "A"
             }
           ],

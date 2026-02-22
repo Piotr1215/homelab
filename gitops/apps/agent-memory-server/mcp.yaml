@@ -46,11 +46,11 @@ spec:
             - name: DISABLE_AUTH
               value: "true"
             - name: GENERATION_MODEL
-              value: ollama/llama3.2:3b
+              value: ollama/qwen2.5:7b
             - name: FAST_MODEL
-              value: ollama/llama3.2:3b
+              value: ollama/qwen2.5:7b
             - name: SLOW_MODEL
-              value: ollama/llama3.2:3b
+              value: ollama/qwen2.5:7b
             - name: EMBEDDING_MODEL
               value: ollama/nomic-embed-text
             - name: OLLAMA_API_BASE

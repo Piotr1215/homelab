@@ -55,6 +55,8 @@ spec:
               value: "768"
             - name: COMPACT_SEMANTIC_DUPLICATES
               value: "true"
+            - name: COMPACTION_EVERY_MINUTES
+              value: "360"
           resources:
             requests:
               memory: 128Mi

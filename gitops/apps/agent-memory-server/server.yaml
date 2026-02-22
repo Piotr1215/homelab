@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: piotrzan/agent-memory-server:0.13.2-custom-v5
+          image: piotrzan/agent-memory-server:0.13.2-custom-v6
           ports:
             - containerPort: 8000
               name: http

@@ -10,7 +10,7 @@ set -eo pipefail
 #   tag defaults to "0.13.2-custom-v2"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TAG="${1:-0.13.2-custom-v5}"
+TAG="${1:-0.13.2-custom-v6}"
 IMAGE="piotrzan/agent-memory-server:${TAG}"
 UPSTREAM="https://github.com/redis/agent-memory-server.git"
 UPSTREAM_REF="main"

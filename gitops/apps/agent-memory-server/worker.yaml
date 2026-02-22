@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: piotrzan/agent-memory-server:0.13.2-custom-v5
+          image: piotrzan/agent-memory-server:0.13.2-custom-v6
           command: ["agent-memory", "task-worker"]
           env:
             - name: REDIS_URL
@@ -48,6 +48,8 @@ spec:
               value: "sk-dummy"
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
+            - name: COMPACT_SEMANTIC_DUPLICATES
+              value: "false"
           resources:
             requests:
               memory: 128Mi

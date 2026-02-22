@@ -35,7 +35,12 @@ spec:
             - name: ENABLE_NER
               value: "true"
             - name: GENERATION_MODEL
-              value: ollama/qwen2.5:7b
+              value: anthropic/claude-3-5-haiku-latest
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anthropic-api-key
+                  key: api-key
             - name: FAST_MODEL
               value: ollama/qwen2.5:7b
             - name: SLOW_MODEL
@@ -49,7 +54,7 @@ spec:
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
             - name: COMPACT_SEMANTIC_DUPLICATES
-              value: "false"
+              value: "true"
           resources:
             requests:
               memory: 128Mi

@@ -19,6 +19,11 @@ data:
     base_model = "nomic-embed-text"
     base_dimension = 768
 
+    [completion_embedding]
+    provider = "ollama"
+    base_model = "nomic-embed-text"
+    base_dimension = 768
+
     [ingestion]
     provider = "r2r"
 

@@ -10,12 +10,8 @@ metadata:
     app.kubernetes.io/component: database
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:18-bookworm
+  imageName: pgvector/pgvector:pg17
   postgresql:
-    extensions:
-      - name: pgvector
-        image:
-          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-bookworm
     shared_preload_libraries: []
   bootstrap:
     initdb:

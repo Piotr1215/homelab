@@ -56,8 +56,11 @@ spec:
                   key: password
             - name: R2R_POSTGRES_MAX_CONNECTIONS
               value: "50"
-            - name: OPENAI_API_KEY
-              value: "sk-dummy"
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anthropic-api-key
+                  key: api-key
             - name: OLLAMA_API_BASE
               value: http://ollama-pc.ai-tools.svc:11434
             - name: R2R_SECRET_KEY

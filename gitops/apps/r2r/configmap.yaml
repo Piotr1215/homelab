@@ -14,6 +14,10 @@ data:
     provider = "litellm"
     concurrent_request_limit = 16
 
+    [app]
+    quality_llm = "anthropic/claude-3-5-haiku-latest"
+    fast_llm = "anthropic/claude-3-5-haiku-latest"
+
     [embedding]
     provider = "ollama"
     base_model = "nomic-embed-text"

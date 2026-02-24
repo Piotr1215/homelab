@@ -1,0 +1,178 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-memory-sync-script
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: sync
+data:
+  sync.py: |
+    #!/usr/bin/env python3
+    """Sync agent-memory entries into R2R as searchable documents.
+
+    Pulls memories from agent-memory MCP (streamable-http), ingests each
+    as an R2R document with deterministic UUID for idempotent upserts.
+    """
+    import json
+    import os
+    import ssl
+    import urllib.request
+    import uuid
+    from datetime import datetime, timedelta, timezone
+
+    R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
+    MEMORY_URL = os.environ.get("MEMORY_URL", "http://agent-memory-mcp.ai-tools.svc:9000/mcp")
+    SYNC_HOURS = int(os.environ.get("SYNC_HOURS", "1"))  # how far back to look
+    NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+
+    def mcp_call(method, params):
+        """Call agent-memory MCP via streamable-http."""
+        payload = json.dumps({
+            "jsonrpc": "2.0", "id": "sync",
+            "method": method, "params": params,
+        }).encode()
+        req = urllib.request.Request(MEMORY_URL, data=payload, headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        })
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode()
+        for line in raw.splitlines():
+            if line.startswith("data: "):
+                return json.loads(line[6:])
+        return {}
+
+    def search_recent_memories():
+        """Get memories created/updated in the last SYNC_HOURS."""
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=SYNC_HOURS)).isoformat()
+        result = mcp_call("tools/call", {
+            "name": "search_long_term_memory",
+            "arguments": {
+                "text": "",
+                "limit": 50,
+                "created_at": {"gte": cutoff},
+            },
+        })
+        content = result.get("result", {}).get("content", [])
+        for c in content:
+            if c.get("type") == "text":
+                try:
+                    return json.loads(c["text"]).get("memories", [])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        return []
+
+    def ingest_memory(mem):
+        """Ingest a single memory into R2R."""
+        mem_id = mem.get("id", "")
+        text = mem.get("text", "").strip()
+        if not text or len(text) < 20:
+            return False
+
+        topics = mem.get("topics", [])
+        namespace = mem.get("namespace", "default")
+        doc_id = str(uuid.uuid5(NAMESPACE, f"memory:{mem_id}"))
+
+        # Delete existing (ignore errors)
+        try:
+            req = urllib.request.Request(f"{R2R_URL}/documents/{doc_id}", method="DELETE")
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+
+        # Ingest
+        # Build multipart form data manually
+        boundary = "----SyncBoundary"
+        body = []
+        body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n{doc_id}")
+        body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"raw_text\"\r\n\r\n{text}")
+        metadata = json.dumps({
+            "title": f"memory-{mem_id[:12]}",
+            "source": "agent-memory",
+            "namespace": namespace,
+            "topics": topics,
+            "memory_id": mem_id,
+        })
+        body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"metadata\"\r\n\r\n{metadata}")
+        body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"run_with_orchestration\"\r\n\r\nfalse")
+        body.append(f"--{boundary}--")
+        data = "\r\n".join(body).encode()
+
+        req = urllib.request.Request(
+            f"{R2R_URL}/documents",
+            data=data,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read())
+                return bool(result.get("results", {}).get("document_id"))
+        except Exception as e:
+            print(f"FAIL {mem_id[:12]}: {e}")
+            return False
+
+    def main():
+        print(f"Searching memories from last {SYNC_HOURS}h...")
+        memories = search_recent_memories()
+        print(f"Found {len(memories)} memories")
+
+        synced = 0
+        for mem in memories:
+            if ingest_memory(mem):
+                synced += 1
+
+        print(f"Synced {synced}/{len(memories)} memories to R2R")
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: r2r-memory-sync
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: sync
+spec:
+  schedule: "0 * * * *"  # every hour
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: sync
+              image: python:3.12-slim
+              command: ["python3", "/scripts/sync.py"]
+              env:
+                - name: R2R_URL
+                  value: "http://r2r-api.ai-tools.svc:7272/v3"
+                - name: MEMORY_URL
+                  value: "http://agent-memory-mcp.ai-tools.svc:9000/mcp"
+                - name: SYNC_HOURS
+                  value: "1"
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+          volumes:
+            - name: script
+              configMap:
+                name: r2r-memory-sync-script

@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-config
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: api
+data:
+  r2r.toml: |
+    [completion]
+    provider = "litellm"
+    concurrent_request_limit = 16
+
+    [embedding]
+    provider = "ollama"
+    base_model = "nomic-embed-text"
+    base_dimension = 768
+
+    [ingestion]
+    provider = "r2r"
+
+    [orchestration]
+    provider = "simple"

@@ -1,0 +1,117 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r2r-api
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-api
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: r2r-api
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: r2r-api
+        app.kubernetes.io/instance: r2r
+        app.kubernetes.io/component: api
+    spec:
+      containers:
+        - name: r2r
+          image: sciphiai/r2r:3.6.6
+          ports:
+            - containerPort: 7272
+              name: http
+          env:
+            - name: R2R_HOST
+              value: "0.0.0.0"
+            - name: R2R_PORT
+              value: "7272"
+            - name: R2R_LOG_LEVEL
+              value: INFO
+            - name: R2R_PROJECT_NAME
+              value: r2r_homelab
+            - name: R2R_CONFIG_PATH
+              value: /app/config/r2r.toml
+            - name: R2R_POSTGRES_HOST
+              value: r2r-db-rw.ai-tools.svc
+            - name: R2R_POSTGRES_PORT
+              value: "5432"
+            - name: R2R_POSTGRES_DBNAME
+              value: r2r
+            - name: R2R_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: r2r-db-credentials
+                  key: username
+            - name: R2R_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: r2r-db-credentials
+                  key: password
+            - name: R2R_POSTGRES_MAX_CONNECTIONS
+              value: "50"
+            - name: OPENAI_API_KEY
+              value: "sk-dummy"
+            - name: OLLAMA_API_BASE
+              value: http://ollama-mac.ai-tools.svc:11434
+            - name: R2R_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: r2r-secret-key
+                  key: secret-key
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /v3/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /v3/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: r2r-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: r2r-api
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-api
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: api
+  annotations:
+    httproute.controller/expose: "true"
+    httproute.controller/hostname: r2r.homelab.local
+spec:
+  selector:
+    app.kubernetes.io/name: r2r-api
+    app.kubernetes.io/component: api
+  ports:
+    - port: 7272
+      targetPort: http
+      name: http

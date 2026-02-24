@@ -1,0 +1,40 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: r2r-db
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-db
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-bookworm
+  postgresql:
+    extensions:
+      - name: pgvector
+        image:
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-bookworm
+    shared_preload_libraries: []
+  bootstrap:
+    initdb:
+      database: r2r
+      owner: r2r
+      secret:
+        name: r2r-db-credentials
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "vector";
+  enableSuperuserAccess: false
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  monitoring:
+    enablePodMonitor: true

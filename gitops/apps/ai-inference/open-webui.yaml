@@ -39,7 +39,7 @@ spec:
           name: http
         env:
         - name: OLLAMA_BASE_URL
-          value: "http://ollama-mac:11434"
+          value: "http://ollama-pc:11434"
         - name: WEBUI_SECRET_KEY
           value: "change-me-in-production"
         resources:

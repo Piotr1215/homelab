@@ -9,7 +9,7 @@ spec:
     enabled: true
     model: gpt-oss
     backend: localai
-    baseUrl: http://ollama-mac.ai-tools.svc.cluster.local:11434/v1
+    baseUrl: http://ollama-pc.ai-tools.svc.cluster.local:11434/v1
     anonymized: false
     language: english
     backOff:

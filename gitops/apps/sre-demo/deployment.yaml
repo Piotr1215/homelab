@@ -23,7 +23,7 @@ spec:
           name: http
         env:
         - name: LLM_URL
-          value: "http://ollama-mac.ai-tools.svc.cluster.local:11434"
+          value: "http://ollama-pc.ai-tools.svc.cluster.local:11434"
         - name: LLM_MODEL
           value: "llama3.2:3b"
         - name: LLM_API_KEY

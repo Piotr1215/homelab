@@ -71,6 +71,7 @@ spec:
             namespace: freshrss
           - app: agent-memory-server
             namespace: ai-tools
+            selfHeal: "false"
           - app: r2r
             namespace: ai-tools
   template:
@@ -106,7 +107,7 @@ spec:
       syncPolicy:
         automated:
           prune: true
-          selfHeal: true
+          selfHeal: {{ dig "selfHeal" "true" . }}
         syncOptions:
           - CreateNamespace=true
           - RespectIgnoreDifferences=true

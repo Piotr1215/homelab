@@ -26,6 +26,7 @@ data:
 
     [ingestion]
     provider = "r2r"
+    skip_document_summary = true
 
     [orchestration]
     provider = "simple"

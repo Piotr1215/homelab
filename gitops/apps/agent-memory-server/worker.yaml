@@ -57,12 +57,6 @@ spec:
               value: "true"
             - name: COMPACTION_EVERY_MINUTES
               value: "180"
-          livenessProbe:
-            exec:
-              command: ["pgrep", "-f", "task-worker"]
-            initialDelaySeconds: 10
-            periodSeconds: 30
-            failureThreshold: 3
           resources:
             requests:
               memory: 128Mi

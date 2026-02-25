@@ -65,6 +65,8 @@ metadata:
     app.kubernetes.io/name: agent-memory-redis
     app.kubernetes.io/instance: agent-memory-server
     app.kubernetes.io/component: redis
+  annotations:
+    metallb.universe.tf/address-pool: static-pool
 spec:
   type: LoadBalancer
   loadBalancerIP: 192.168.178.94

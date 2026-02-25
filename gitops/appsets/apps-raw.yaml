@@ -107,7 +107,7 @@ spec:
       syncPolicy:
         automated:
           prune: true
-          selfHeal: '{{ dig "selfHeal" "true" . }}'
+          selfHeal: true
         syncOptions:
           - CreateNamespace=true
           - RespectIgnoreDifferences=true
@@ -118,3 +118,10 @@ spec:
             duration: 5s
             factor: 2
             maxDuration: 3m
+  templatePatch: |
+    {{- if eq (dig "selfHeal" "true" .) "false" }}
+    spec:
+      syncPolicy:
+        automated:
+          selfHeal: false
+    {{- end }}

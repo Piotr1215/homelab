@@ -26,8 +26,18 @@ data:
 
     R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
     MEMORY_URL = os.environ.get("MEMORY_URL", "http://agent-memory-mcp.ai-tools.svc:9000/mcp")
+    NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
     SYNC_HOURS = int(os.environ.get("SYNC_HOURS", "1"))  # how far back to look
     NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+
+    def send_ntfy(title, message, priority="4", tags="warning,r2r,memory"):
+        try:
+            req = urllib.request.Request(NTFY_URL, data=message.encode(), headers={
+                "Title": title, "Priority": priority, "Tags": tags,
+            })
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
 
     MAX_RETRIES = 3
     RETRY_DELAYS = [5, 10, 20]  # seconds between retries
@@ -132,15 +142,28 @@ data:
 
     def main():
         print(f"Searching memories from last {SYNC_HOURS}h...")
-        memories = search_recent_memories()
+        try:
+            memories = search_recent_memories()
+        except Exception as e:
+            send_ntfy("R2R Memory Sync Failed", f"Could not reach agent-memory MCP: {e}",
+                       priority="5", tags="rotating_light,r2r,memory")
+            raise
+
         print(f"Found {len(memories)} memories")
 
         synced = 0
+        failed = 0
         for mem in memories:
             if ingest_memory(mem):
                 synced += 1
+            else:
+                failed += 1
 
         print(f"Synced {synced}/{len(memories)} memories to R2R")
+
+        if failed > 0:
+            send_ntfy("R2R Memory Sync Partial Failure",
+                       f"{failed}/{len(memories)} memories failed to ingest into R2R")
 
     if __name__ == "__main__":
         main()

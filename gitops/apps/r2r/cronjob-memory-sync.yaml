@@ -19,6 +19,7 @@ data:
     import json
     import os
     import ssl
+    import time
     import urllib.request
     import uuid
     from datetime import datetime, timedelta, timezone
@@ -28,22 +29,37 @@ data:
     SYNC_HOURS = int(os.environ.get("SYNC_HOURS", "1"))  # how far back to look
     NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
 
+    MAX_RETRIES = 3
+    RETRY_DELAYS = [5, 10, 20]  # seconds between retries
+
     def mcp_call(method, params):
-        """Call agent-memory MCP via streamable-http."""
+        """Call agent-memory MCP via streamable-http with retry."""
         payload = json.dumps({
             "jsonrpc": "2.0", "id": "sync",
             "method": method, "params": params,
         }).encode()
-        req = urllib.request.Request(MEMORY_URL, data=payload, headers={
+        headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
-        })
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            raw = resp.read().decode()
-        for line in raw.splitlines():
-            if line.startswith("data: "):
-                return json.loads(line[6:])
-        return {}
+        }
+        last_err = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                req = urllib.request.Request(MEMORY_URL, data=payload, headers=headers)
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    raw = resp.read().decode()
+                for line in raw.splitlines():
+                    if line.startswith("data: "):
+                        return json.loads(line[6:])
+                return {}
+            except (urllib.error.URLError, ConnectionRefusedError, OSError) as e:
+                last_err = e
+                if attempt < MAX_RETRIES - 1:
+                    delay = RETRY_DELAYS[attempt]
+                    print(f"MCP call failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                    print(f"Retrying in {delay}s...")
+                    time.sleep(delay)
+        raise last_err
 
     def search_recent_memories():
         """Get memories created/updated in the last SYNC_HOURS."""
@@ -145,7 +161,7 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      backoffLimit: 1
+      backoffLimit: 2
       activeDeadlineSeconds: 300
       template:
         spec:

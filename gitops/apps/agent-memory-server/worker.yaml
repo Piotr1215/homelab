@@ -54,7 +54,7 @@ spec:
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
             - name: COMPACT_SEMANTIC_DUPLICATES
-              value: "true"
+              value: "false"
             - name: COMPACTION_EVERY_MINUTES
               value: "180"
           resources:

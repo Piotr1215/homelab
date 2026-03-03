@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: mcp
-          image: piotrzan/agent-memory-server:0.13.2-custom-v6
+          image: piotrzan/agent-memory-server:latest-custom-v7
           command: ["agent-memory", "mcp", "--mode", "streamable-http"]
           ports:
             - containerPort: 9000

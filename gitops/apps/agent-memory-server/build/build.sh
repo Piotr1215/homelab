@@ -1,28 +1,27 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# Build custom agent-memory-server image with MCP patches
-# Patches fix two issues with Claude Code SSE transport:
-#   1. stateless=True - skip MCP init handshake (Claude Code subagents don't complete it)
-#   2. return Response() - prevent TypeError on SSE client disconnect
+# Build custom agent-memory-server image with patches
+# Patches add pattern/decision memory_type variants (not yet upstream)
+# Previous SSE/transport patches are now upstream as of 2026-03
 #
 # Usage: ./build.sh [tag]
-#   tag defaults to "0.13.2-custom-v2"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TAG="${1:-0.13.2-custom-v6}"
+TAG="${1:-latest-custom-v7}"
 IMAGE="piotrzan/agent-memory-server:${TAG}"
 UPSTREAM="https://github.com/redis/agent-memory-server.git"
-UPSTREAM_REF="main"
+UPSTREAM_REF="d9d788c"  # pin: upstream main as of 2026-03-03
 BUILD_DIR=$(mktemp -d)
 
 trap 'rm -rf "$BUILD_DIR"' EXIT
 
 echo "Cloning upstream ${UPSTREAM} (ref: ${UPSTREAM_REF})..."
-git clone --depth 1 --branch "$UPSTREAM_REF" "$UPSTREAM" "$BUILD_DIR"
-
-echo "Applying MCP patches..."
+git clone "$UPSTREAM" "$BUILD_DIR"
 cd "$BUILD_DIR"
+git checkout "$UPSTREAM_REF"
+
+echo "Applying patches..."
 git apply "${SCRIPT_DIR}/mcp-patches.patch"
 
 echo "Preparing Dockerfile (stripping BuildKit cache mounts)..."

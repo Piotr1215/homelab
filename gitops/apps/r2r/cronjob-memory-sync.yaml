@@ -11,10 +11,8 @@ metadata:
 data:
   sync.py: |
     #!/usr/bin/env python3
-    """Sync agent-memory entries into R2R as searchable documents.
-
-    Pulls memories from agent-memory MCP (streamable-http), ingests each
-    as an R2R document with deterministic UUID for idempotent upserts.
+    """Sync agent-memory into R2R. Full reconciliation each run:
+    fetch all memories, diff against R2R inventory, create/delete as needed.
     """
     import json
     import os
@@ -22,25 +20,31 @@ data:
     import time
     import urllib.request
     import uuid
-    from datetime import datetime, timedelta, timezone
+
+    # SSL context for self-signed certs (local testing via https)
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
 
     R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
     MEMORY_URL = os.environ.get("MEMORY_URL", "http://agent-memory-mcp.ai-tools.svc:9000/mcp")
     NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
-    SYNC_HOURS = int(os.environ.get("SYNC_HOURS", "1"))  # how far back to look
     NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
+
+    # Skip e2e-test memories — they're transient test data
+    SKIP_NAMESPACES = {"e2e-test"}
 
     def send_ntfy(title, message, priority="4", tags="warning,r2r,memory"):
         try:
             req = urllib.request.Request(NTFY_URL, data=message.encode(), headers={
                 "Title": title, "Priority": priority, "Tags": tags,
             })
-            urllib.request.urlopen(req, timeout=5)
+            urllib.request.urlopen(req, timeout=5, context=_ssl_ctx)
         except Exception:
             pass
 
     MAX_RETRIES = 3
-    RETRY_DELAYS = [5, 10, 20]  # seconds between retries
+    RETRY_DELAYS = [5, 10, 20]
 
     def mcp_call(method, params):
         """Call agent-memory MCP via streamable-http with retry."""
@@ -56,7 +60,7 @@ data:
         for attempt in range(MAX_RETRIES):
             try:
                 req = urllib.request.Request(MEMORY_URL, data=payload, headers=headers)
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
                     raw = resp.read().decode()
                 for line in raw.splitlines():
                     if line.startswith("data: "):
@@ -71,59 +75,91 @@ data:
                     time.sleep(delay)
         raise last_err
 
-    def search_recent_memories():
-        """Get memories created/updated in the last SYNC_HOURS."""
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=SYNC_HOURS)).isoformat()
-        result = mcp_call("tools/call", {
-            "name": "search_long_term_memory",
-            "arguments": {
-                "text": "",
-                "limit": 50,
-                "created_at": {"gte": cutoff},
-            },
-        })
-        content = result.get("result", {}).get("content", [])
-        for c in content:
-            if c.get("type") == "text":
-                try:
-                    return json.loads(c["text"]).get("memories", [])
-                except (json.JSONDecodeError, TypeError):
-                    pass
-        return []
+    def mem_doc_id(mem_id):
+        """Deterministic R2R document UUID from memory ID."""
+        return str(uuid.uuid5(NAMESPACE, f"memory:{mem_id}"))
+
+    def fetch_all_memories():
+        """Fetch ALL memories from agent-memory (paginated)."""
+        all_memories = []
+        offset = 0
+        page_size = 50
+        while True:
+            result = mcp_call("tools/call", {
+                "name": "search_long_term_memory",
+                "arguments": {"text": "", "limit": page_size, "offset": offset},
+            })
+            content = result.get("result", {}).get("content", [])
+            memories = []
+            for c in content:
+                if c.get("type") == "text":
+                    try:
+                        memories = json.loads(c["text"]).get("memories", [])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                    break
+            if not memories:
+                break
+            all_memories.extend(memories)
+            if len(memories) < page_size:
+                break
+            offset += page_size
+        return all_memories
+
+    def fetch_r2r_memory_docs():
+        """Get all memory-* documents currently in R2R. Returns {doc_id: memory_id}."""
+        docs = {}
+        try:
+            req = urllib.request.Request(
+                f"{R2R_URL}/documents?limit=500",
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx) as resp:
+                data = json.loads(resp.read())
+            for doc in data.get("results", []):
+                title = doc.get("title", "")
+                if title.startswith("memory-"):
+                    doc_id = doc.get("id", "")
+                    mem_id = doc.get("metadata", {}).get("memory_id", "")
+                    docs[doc_id] = mem_id
+        except Exception as e:
+            print(f"WARNING: could not list R2R docs: {e}")
+        return docs
+
+    def delete_r2r_doc(doc_id):
+        """Delete a document from R2R."""
+        try:
+            req = urllib.request.Request(f"{R2R_URL}/documents/{doc_id}", method="DELETE")
+            urllib.request.urlopen(req, timeout=5, context=_ssl_ctx)
+            return True
+        except Exception:
+            return False
 
     def ingest_memory(mem):
-        """Ingest a single memory into R2R."""
+        """Ingest a single memory into R2R with deterministic doc ID."""
         mem_id = mem.get("id", "")
         text = mem.get("text", "").strip()
         if not text or len(text) < 20:
             return False
 
         topics = mem.get("topics", [])
-        namespace = mem.get("namespace", "default")
-        doc_id = str(uuid.uuid5(NAMESPACE, f"memory:{mem_id}"))
+        namespace = mem.get("namespace") or "default"
+        doc_id = mem_doc_id(mem_id)
 
-        # Delete existing (ignore errors)
-        try:
-            req = urllib.request.Request(f"{R2R_URL}/documents/{doc_id}", method="DELETE")
-            urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
+        title = f"memory-{mem_id[:12]}"
 
-        # Ingest
-        # Build multipart form data manually
         boundary = "----SyncBoundary"
         body = []
         body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"id\"\r\n\r\n{doc_id}")
         body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"raw_text\"\r\n\r\n{text}")
         metadata = json.dumps({
-            "title": f"memory-{mem_id[:12]}",
+            "title": title,
             "source": "agent-memory",
             "namespace": namespace,
             "topics": topics,
             "memory_id": mem_id,
         })
         body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"metadata\"\r\n\r\n{metadata}")
-        body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"run_with_orchestration\"\r\n\r\nfalse")
         body.append(f"--{boundary}--")
         data = "\r\n".join(body).encode()
 
@@ -133,37 +169,67 @@ data:
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx) as resp:
                 result = json.loads(resp.read())
                 return bool(result.get("results", {}).get("document_id"))
         except Exception as e:
-            print(f"FAIL {mem_id[:12]}: {e}")
+            print(f"FAIL ingest {mem_id[:12]}: {e}")
             return False
 
     def main():
-        print(f"Searching memories from last {SYNC_HOURS}h...")
+        print("Full reconciliation: fetching all memories...")
         try:
-            memories = search_recent_memories()
+            memories = fetch_all_memories()
         except Exception as e:
             send_ntfy("R2R Memory Sync Failed", f"Could not reach agent-memory MCP: {e}",
                        priority="5", tags="rotating_light,r2r,memory")
             raise
 
-        print(f"Found {len(memories)} memories")
+        # Filter out e2e-test and short memories
+        real = [m for m in memories if m.get("namespace") not in SKIP_NAMESPACES]
+        print(f"Found {len(memories)} total, {len(real)} real (skipped {len(memories) - len(real)} e2e-test)")
 
-        synced = 0
+        # Build expected doc IDs from memories
+        expected = {}
+        for mem in real:
+            mid = mem.get("id", "")
+            if mid:
+                expected[mem_doc_id(mid)] = mem
+
+        # Get current R2R inventory
+        r2r_docs = fetch_r2r_memory_docs()
+        print(f"R2R has {len(r2r_docs)} memory docs currently")
+
+        # Determine actions
+        to_create = {did: expected[did] for did in expected if did not in r2r_docs}
+        to_delete = {did: r2r_docs[did] for did in r2r_docs if did not in expected}
+        already_synced = len(expected) - len(to_create)
+
+        print(f"Actions: {len(to_create)} create, {len(to_delete)} delete, {already_synced} unchanged")
+
+        # Delete stale docs (memory deleted from agent-memory)
+        deleted = 0
+        for doc_id, mem_id in to_delete.items():
+            if delete_r2r_doc(doc_id):
+                deleted += 1
+                print(f"  deleted {doc_id[:8]} (memory {mem_id[:12]})")
+
+        # Create missing docs
+        created = 0
         failed = 0
-        for mem in memories:
+        for doc_id, mem in to_create.items():
+            # Delete first in case of orphaned doc with same ID
+            delete_r2r_doc(doc_id)
             if ingest_memory(mem):
-                synced += 1
+                created += 1
             else:
                 failed += 1
 
-        print(f"Synced {synced}/{len(memories)} memories to R2R")
+        print(f"Done: {created} created, {deleted} deleted, {failed} failed, {already_synced} unchanged")
 
         if failed > 0:
             send_ntfy("R2R Memory Sync Partial Failure",
-                       f"{failed}/{len(memories)} memories failed to ingest into R2R")
+                       f"{failed} memories failed to ingest into R2R")
 
     if __name__ == "__main__":
         main()
@@ -198,8 +264,6 @@ spec:
                   value: "http://r2r-api.ai-tools.svc:7272/v3"
                 - name: MEMORY_URL
                   value: "http://agent-memory-mcp.ai-tools.svc:9000/mcp"
-                - name: SYNC_HOURS
-                  value: "1"
               volumeMounts:
                 - name: script
                   mountPath: /scripts

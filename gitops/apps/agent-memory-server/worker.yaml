@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: piotrzan/agent-memory-server:latest-custom-v9
+          image: piotrzan/agent-memory-server:latest-custom-v10
           command: ["agent-memory", "task-worker"]
           env:
             - name: REDIS_URL

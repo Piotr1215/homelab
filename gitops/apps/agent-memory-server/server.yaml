@@ -54,6 +54,8 @@ spec:
               value: "sk-dummy"
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
+            - name: COMPACT_SEMANTIC_DUPLICATES
+              value: "false"
             - name: WINDOW_SIZE
               value: "12"
           startupProbe:

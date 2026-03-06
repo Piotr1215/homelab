@@ -8,7 +8,7 @@ set -eo pipefail
 # Usage: ./build.sh [tag]
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TAG="${1:-latest-custom-v7}"
+TAG="${1:-latest-custom-v9}"
 IMAGE="piotrzan/agent-memory-server:${TAG}"
 UPSTREAM="https://github.com/redis/agent-memory-server.git"
 UPSTREAM_REF="d9d788c"  # pin: upstream main as of 2026-03-03

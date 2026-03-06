@@ -1,13 +1,70 @@
-diff --git a/agent_memory_server/models.py b/agent_memory_server/models.py
-index 5eaf263..73098e6 100644
---- a/agent_memory_server/models.py
-+++ b/agent_memory_server/models.py
-@@ -36,6 +36,8 @@ class MemoryTypeEnum(str, Enum):
-     EPISODIC = "episodic"
-     SEMANTIC = "semantic"
-     MESSAGE = "message"
-+    PATTERN = "pattern"
-+    DECISION = "decision"
-
-
- # These should match the keys in MODEL_CONFIGS
+diff --git a/agent_memory_server/config.py b/agent_memory_server/config.py
+index edd65f3..ccd826a 100644
+--- a/agent_memory_server/config.py
++++ b/agent_memory_server/config.py
+@@ -489,6 +489,7 @@ Optimized query:"""
+ 
+     # Compaction settings
+     compaction_every_minutes: int = 10
++    compact_semantic_duplicates: bool = True
+ 
+     # Docket task timeout for LLM-dependent tasks (in minutes)
+     # This controls how long tasks like memory compaction, extraction, and summarization
+diff --git a/agent_memory_server/long_term_memory.py b/agent_memory_server/long_term_memory.py
+index ec88163..794e9c2 100644
+--- a/agent_memory_server/long_term_memory.py
++++ b/agent_memory_server/long_term_memory.py
+@@ -513,10 +513,19 @@ async def extract_memory_structure(
+     topics_joined = "|".join(merged_topics) if merged_topics else ""
+     entities_joined = "|".join(merged_entities) if merged_entities else ""
+ 
+-    await redis.hset(
+-        Keys.memory_key(memory.id),
+-        mapping={"topics": topics_joined, "entities": entities_joined},
+-    )  # type: ignore
++    # Guard: only update if the key still exists. A race between semantic
++    # deduplication (which deletes merged keys) and this background task
++    # can recreate deleted keys as orphaned hashes with only topics/entities.
++    key = Keys.memory_key(memory.id)
++    if await redis.exists(key):
++        await redis.hset(
++            key,
++            mapping={"topics": topics_joined, "entities": entities_joined},
++        )  # type: ignore
++    else:
++        logger.info(
++            f"Skipping topic/entity update for deleted memory {memory.id}"
++        )
+ 
+ 
+ async def merge_memories_with_llm(
+@@ -638,7 +647,7 @@ async def compact_long_term_memories(
+     redis_client: Redis | None = None,
+     vector_distance_threshold: float = 0.2,
+     compact_hash_duplicates: bool = True,
+-    compact_semantic_duplicates: bool = True,
++    compact_semantic_duplicates: bool | None = None,
+     perpetual: Perpetual = Perpetual(
+         every=timedelta(minutes=settings.compaction_every_minutes), automatic=True
+     ),
+@@ -653,6 +662,9 @@ async def compact_long_term_memories(
+ 
+     Returns the count of remaining memories after compaction.
+     """
++    if compact_semantic_duplicates is None:
++        compact_semantic_duplicates = settings.compact_semantic_duplicates
++
+     if not redis_client:
+         redis_client = await get_redis_conn()
+ 
+@@ -1018,8 +1030,8 @@ async def index_long_term_memories(
+                 else:
+                     current_memory = deduped_memory or current_memory
+ 
+-            # Check for semantic duplicates
+-            if not was_deduplicated:
++            # Check for semantic duplicates (respects compact_semantic_duplicates setting)
++            if not was_deduplicated and settings.compact_semantic_duplicates:
+                 deduped_memory, was_merged = await deduplicate_by_semantic_search(
+                     memory=current_memory,
+                     redis_client=redis,

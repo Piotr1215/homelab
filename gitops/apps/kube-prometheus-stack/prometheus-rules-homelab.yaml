@@ -39,6 +39,19 @@ spec:
             summary: "Container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }} memory usage high"
             description: "Container is using {{ $value | humanizePercentage }} of memory limit."
 
+    # Agent Memory Server (critical infrastructure)
+    - name: agent-memory.rules
+      interval: 30s
+      rules:
+        - alert: AgentMemoryPodRestarted
+          expr: increase(kube_pod_container_status_restarts_total{namespace="ai-tools", pod=~"agent-memory-.*"}[30m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "agent-memory pod {{ $labels.pod }} restarted"
+            description: "Pod {{ $labels.pod }} (container {{ $labels.container }}) restarted {{ $value | humanize }} times in the last 30 minutes."
+
     # Node Alerts
     - name: node.rules
       interval: 30s

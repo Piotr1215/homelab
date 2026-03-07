@@ -250,9 +250,6 @@ spec:
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
-    metadata:
-      annotations:
-        argocd.argoproj.io/compare-options: IgnoreExtraneous
     spec:
       backoffLimit: 2
       activeDeadlineSeconds: 300

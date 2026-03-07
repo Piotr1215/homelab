@@ -1,4 +1,16 @@
 ---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agent-memory-mcp
+  namespace: ai-tools
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-mcp
+      app.kubernetes.io/component: mcp
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,6 +20,8 @@ metadata:
     app.kubernetes.io/name: agent-memory-mcp
     app.kubernetes.io/instance: agent-memory-server
     app.kubernetes.io/component: mcp
+  annotations:
+    descheduler.alpha.kubernetes.io/evict: "false"
 spec:
   replicas: 1
   selector:

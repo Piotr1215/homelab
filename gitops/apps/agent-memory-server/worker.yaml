@@ -1,4 +1,16 @@
 ---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agent-memory-worker
+  namespace: ai-tools
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-worker
+      app.kubernetes.io/component: worker
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,6 +20,8 @@ metadata:
     app.kubernetes.io/name: agent-memory-worker
     app.kubernetes.io/instance: agent-memory-server
     app.kubernetes.io/component: worker
+  annotations:
+    descheduler.alpha.kubernetes.io/evict: "false"
 spec:
   replicas: 1
   selector:

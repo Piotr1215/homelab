@@ -52,6 +52,19 @@ spec:
             summary: "agent-memory pod {{ $labels.pod }} restarted"
             description: "Pod {{ $labels.pod }} (container {{ $labels.container }}) restarted {{ $value | humanize }} times in the last 30 minutes."
 
+    # RAG Pipeline Sync
+    - name: rag-sync.rules
+      interval: 5m
+      rules:
+        - alert: R2RMemorySyncStale
+          expr: time() - kube_cronjob_status_last_successful_time{cronjob="r2r-memory-sync", namespace="ai-tools"} > 3 * 3600
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "R2R memory sync hasn't succeeded in 3+ hours"
+            description: "CronJob r2r-memory-sync last succeeded {{ $value | humanizeDuration }} ago. New agent memories won't appear in RAG search."
+
     # Node Alerts
     - name: node.rules
       interval: 30s

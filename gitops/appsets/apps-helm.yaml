@@ -106,13 +106,6 @@ spec:
             createNamespace: "true"
             project: cluster-management
             serverSideApply: "true"
-          - app: falco
-            namespace: falco
-            chartRepo: https://falcosecurity.github.io/charts
-            chartName: falco
-            chartVersion: "4.15.1"
-            createNamespace: "true"
-            project: security
           - app: kyverno
             namespace: kyverno
             chartRepo: https://kyverno.github.io/kyverno/

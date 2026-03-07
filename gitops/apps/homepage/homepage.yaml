@@ -151,13 +151,6 @@ data:
           namespace: git-mirror
           podSelector: app.kubernetes.io/name=forgejo
     - Security:
-      - Falco:
-          description: Runtime Security Events
-          href: https://falco.homelab.local
-          icon: si-falco
-          showStats: true
-          namespace: falco
-          podSelector: app.kubernetes.io/name=falcosidekick-ui
       - Hubble:
           description: Network Flow Visualization
           href: https://hubble.homelab.local

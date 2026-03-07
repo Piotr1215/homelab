@@ -6,5 +6,4 @@ resources:
     cpu: 15m
     memory: 104Mi
   limits:
-    cpu: 15m
     memory: 104Mi

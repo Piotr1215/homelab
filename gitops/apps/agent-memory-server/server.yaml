@@ -35,6 +35,15 @@ spec:
         app.kubernetes.io/instance: agent-memory-server
         app.kubernetes.io/component: api
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: agent-memory-server
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: api
           image: piotrzan/agent-memory-server:latest-custom-v10
@@ -99,7 +108,6 @@ spec:
               cpu: 100m
             limits:
               memory: 512Mi
-              cpu: 500m
 ---
 apiVersion: v1
 kind: Service

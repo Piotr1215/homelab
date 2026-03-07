@@ -1,3 +1,16 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agent-memory-redis
+  namespace: ai-tools
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-redis
+      app.kubernetes.io/component: redis
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,6 +20,8 @@ metadata:
     app.kubernetes.io/name: agent-memory-redis
     app.kubernetes.io/instance: agent-memory-server
     app.kubernetes.io/component: redis
+  annotations:
+    descheduler.alpha.kubernetes.io/evict: "false"
 spec:
   replicas: 1
   strategy:
@@ -36,7 +51,6 @@ spec:
               mountPath: /data
           resources:
             limits:
-              cpu: 500m
               memory: 768Mi
             requests:
               cpu: 100m

@@ -158,6 +158,7 @@ data:
             "namespace": namespace,
             "topics": topics,
             "memory_id": mem_id,
+            "created_at": mem.get("created_at", ""),
         })
         body.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"metadata\"\r\n\r\n{metadata}")
         body.append(f"--{boundary}--")

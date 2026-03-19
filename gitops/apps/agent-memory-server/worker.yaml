@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: worker
-          image: piotrzan/agent-memory-server:latest-custom-v10
+          image: piotrzan/agent-memory-server:latest-custom-v11
           command: ["agent-memory", "task-worker"]
           env:
             - name: REDIS_URL
@@ -58,7 +58,7 @@ spec:
             - name: ENABLE_NER
               value: "true"
             - name: GENERATION_MODEL
-              value: anthropic/claude-haiku-4-5
+              value: anthropic/claude-sonnet-4-6
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -77,7 +77,7 @@ spec:
             - name: REDISVL_VECTOR_DIMENSIONS
               value: "768"
             - name: COMPACT_SEMANTIC_DUPLICATES
-              value: "false"
+              value: "true"
             - name: COMPACTION_EVERY_MINUTES
               value: "180"
           resources:

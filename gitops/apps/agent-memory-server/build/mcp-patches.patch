@@ -1,73 +1,57 @@
-diff --git a/agent_memory_server/config.py b/agent_memory_server/config.py
-index edd65f3..ccd826a 100644
---- a/agent_memory_server/config.py
-+++ b/agent_memory_server/config.py
-@@ -489,6 +489,7 @@ Optimized query:"""
-
-     # Compaction settings
-     compaction_every_minutes: int = 10
-+    compact_semantic_duplicates: bool = True
-
-     # Docket task timeout for LLM-dependent tasks (in minutes)
-     # This controls how long tasks like memory compaction, extraction, and summarization
 diff --git a/agent_memory_server/long_term_memory.py b/agent_memory_server/long_term_memory.py
-index ec88163..b611d43 100644
+index 93c322d..8ebd2bc 100644
 --- a/agent_memory_server/long_term_memory.py
 +++ b/agent_memory_server/long_term_memory.py
-@@ -513,10 +513,26 @@ async def extract_memory_structure(
-     topics_joined = "|".join(merged_topics) if merged_topics else ""
-     entities_joined = "|".join(merged_entities) if merged_entities else ""
-
+@@ -508,16 +508,26 @@ async def extract_memory_structure(
+     # Process messages for topic/entity extraction
+     topics, entities = await handle_extraction(memory.text)
+ 
+-    merged_topics = memory.topics + topics if memory.topics else topics
+-    merged_entities = memory.entities + entities if memory.entities else entities
+-
 -    await redis.hset(
 -        Keys.memory_key(memory.id),
--        mapping={"topics": topics_joined, "entities": entities_joined},
--    )  # type: ignore
++    merged_topics = list(dict.fromkeys((memory.topics or []) + topics))
++    merged_entities = list(dict.fromkeys((memory.entities or []) + entities))
++
 +    # Guard: only update if the key still exists. A race between semantic
 +    # deduplication (which deletes merged keys) and this background task
 +    # can recreate deleted keys as orphaned hashes with only topics/entities.
-+    # Use a Lua script to perform the existence check and HSET atomically,
-+    # closing the TOCTOU window where the key could be deleted between the
-+    # EXISTS and HSET calls.
++    # Use HSETEX with FXX to atomically update only if the fields already
++    # exist on the hash — a deleted key has no fields, so nothing is written.
 +    key = Keys.memory_key(memory.id)
-+    lua_script = """
-+    if redis.call('EXISTS', KEYS[1]) == 1 then
-+        redis.call('HSET', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4])
-+        return 1
-+    else
-+        return 0
-+    end
-+    """
-+    result = await redis.eval(
-+        lua_script, 1, key, "topics", topics_joined, "entities", entities_joined
++    result = await redis.hsetex(
++        key,
+         mapping={
+             "topics": encode_tag_values(merged_topics),
+             "entities": encode_tag_values(merged_entities),
+         },
+-    )  # type: ignore
++        data_persist_option="FXX",
++        keepttl=True,
 +    )
 +    if result == 0:
 +        logger.info(f"Skipping topic/entity update for deleted memory {memory.id}")
-
-
+ 
+ 
  async def merge_memories_with_llm(
-@@ -638,7 +654,7 @@ async def compact_long_term_memories(
-     redis_client: Redis | None = None,
-     vector_distance_threshold: float = 0.2,
-     compact_hash_duplicates: bool = True,
--    compact_semantic_duplicates: bool = True,
-+    compact_semantic_duplicates: bool | None = None,
-     perpetual: Perpetual = Perpetual(
-         every=timedelta(minutes=settings.compaction_every_minutes), automatic=True
-     ),
-@@ -653,6 +669,9 @@ async def compact_long_term_memories(
-
-     Returns the count of remaining memories after compaction.
+@@ -574,7 +584,11 @@ async def merge_memories_with_llm(
+     The merged memory:
      """
-+    if compact_semantic_duplicates is None:
-+        compact_semantic_duplicates = settings.compact_semantic_duplicates
-+
-     if not redis_client:
-         redis_client = await get_redis_conn()
-
-@@ -1018,8 +1037,8 @@ async def index_long_term_memories(
+ 
+-    model_name = settings.fast_model
++    # Use generation_model for merging — quality-critical operation.
++    # fast_model (e.g. qwen2.5:7b) produces narration/fluff instead of
++    # clean merged memories. Merging happens infrequently (compaction cycle),
++    # so the cost of a better model is negligible.
++    model_name = settings.generation_model
+ 
+     response = await LLMClient.create_chat_completion(
+         model=model_name,
+@@ -1022,8 +1036,8 @@ async def index_long_term_memories(
                  else:
                      current_memory = deduped_memory or current_memory
-
+ 
 -            # Check for semantic duplicates
 -            if not was_deduplicated:
 +            # Check for semantic duplicates (respects compact_semantic_duplicates setting)
@@ -76,7 +60,7 @@ index ec88163..b611d43 100644
                      memory=current_memory,
                      redis_client=redis,
 diff --git a/agent_memory_server/models.py b/agent_memory_server/models.py
-index 5eaf263..73098e6 100644
+index c7f59d9..9665b19 100644
 --- a/agent_memory_server/models.py
 +++ b/agent_memory_server/models.py
 @@ -36,6 +36,8 @@ class MemoryTypeEnum(str, Enum):
@@ -85,6 +69,91 @@ index 5eaf263..73098e6 100644
      MESSAGE = "message"
 +    PATTERN = "pattern"
 +    DECISION = "decision"
-
-
+ 
+ 
  # These should match the keys in MODEL_CONFIGS
+diff --git a/tests/test_long_term_memory.py b/tests/test_long_term_memory.py
+index 37d3604..0d50d6a 100644
+--- a/tests/test_long_term_memory.py
++++ b/tests/test_long_term_memory.py
+@@ -325,22 +325,73 @@ class TestLongTermMemory:
+                 memory_type=MemoryTypeEnum.SEMANTIC,
+             )
+ 
++            # Simulate key exists (HSETEX FXX returns number of fields set)
++            mock_redis.hsetex.return_value = 2
++
+             await extract_memory_structure(memory)
+ 
+             # Verify extraction was called
+             mock_extract.assert_called_once_with("Test text content")
+ 
+-            # Verify Redis was updated with topics and entities
+-            mock_redis.hset.assert_called_once()
+-            args, kwargs = mock_redis.hset.call_args
++            # Verify HSETEX was called with FXX for atomic guard
++            mock_redis.hsetex.assert_called_once()
++            call_kwargs = mock_redis.hsetex.call_args
+ 
+-            # Check the key format - it includes the memory ID in the key structure
+-            assert "memory_idx:" in args[0] and "test-id" in args[0]
++            # Check the key format
++            key = call_kwargs[0][0]
++            assert "memory_idx:" in key and "test-id" in key
+ 
+-            # Check the mapping - direct Redis writes should match the schema.
+-            mapping = kwargs["mapping"]
++            # Check comma-separated values and FXX flag
++            mapping = call_kwargs[1]["mapping"]
+             assert mapping["topics"] == "topic1,topic2"
+             assert mapping["entities"] == "entity1,entity2"
++            assert call_kwargs[1]["data_persist_option"] == "FXX"
++            assert call_kwargs[1]["keepttl"] is True
++
++    @pytest.mark.asyncio
++    async def test_extract_memory_structure_deduplicates_merged_topics(
++        self, mock_async_redis_client
++    ):
++        """Regression: merging existing and new topics must not produce duplicates.
++
++        When a memory already has topics/entities from discrete extraction,
++        and extract_memory_structure runs again via background task, the merge
++        must deduplicate rather than concatenate blindly.
++        """
++        with (
++            patch(
++                "agent_memory_server.long_term_memory.get_redis_conn"
++            ) as mock_get_redis,
++            patch(
++                "agent_memory_server.long_term_memory.handle_extraction"
++            ) as mock_extract,
++        ):
++            mock_redis = AsyncMock()
++            mock_get_redis.return_value = mock_redis
++            # Extraction returns topics/entities that overlap with existing
++            mock_extract.return_value = (
++                ["topic1", "topic2", "topic3"],
++                ["entity1", "entity2", "entity3"],
++            )
++
++            memory = MemoryRecord(
++                id="dedup-test-id",
++                text="Memory with pre-existing topics",
++                namespace="test-namespace",
++                memory_type=MemoryTypeEnum.SEMANTIC,
++                topics=["topic1", "topic2"],  # Already has topic1 and topic2
++                entities=["entity1", "entity2"],  # Already has entity1 and entity2
++            )
++
++            mock_redis.hsetex.return_value = 2
++            await extract_memory_structure(memory)
++
++            mapping = mock_redis.hsetex.call_args[1]["mapping"]
++            # Must contain all 3 unique topics, no duplicates (comma-separated)
++            topics_list = mapping["topics"].split(",")
++            entities_list = mapping["entities"].split(",")
++            assert sorted(topics_list) == ["topic1", "topic2", "topic3"]
++            assert sorted(entities_list) == ["entity1", "entity2", "entity3"]
+ 
+     @pytest.mark.asyncio
+     async def test_update_long_term_memory_preserves_decoded_tags_on_text_only_patch(

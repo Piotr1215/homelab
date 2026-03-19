@@ -1,0 +1,360 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-docs-sync-script
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: docs-sync
+data:
+  sync.py: |
+    #!/usr/bin/env python3
+    """Sync vcluster-docs MDX content to R2R vector database.
+
+    Walks versioned docs directories, extracts prose from MDX files,
+    and indexes into R2R for semantic search / RAG context injection.
+
+    Runs as a CronJob in the cluster. Expects the docs repo to be
+    cloned to /repo by an init container.
+    """
+
+    import json
+    import os
+    import re
+    import ssl
+    import sys
+    import time
+    import uuid
+    from pathlib import Path
+    from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
+
+    UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
+    NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
+    VCLUSTER_VERSION = os.environ.get("VCLUSTER_VERSION", "0.33.0")
+    PLATFORM_VERSION = os.environ.get("PLATFORM_VERSION", "4.8.0")
+    DOCS_ROOT = os.environ.get("DOCS_ROOT", "/repo")
+
+    MIN_CONTENT_LENGTH = 50
+    MAX_RETRIES = 3
+
+    RE_FRONTMATTER = re.compile(r"^---\s*\n.*?\n---\s*\n", re.DOTALL)
+    RE_IMPORT = re.compile(r"^import\s+.+$", re.MULTILINE)
+    RE_JSX_SELF_CLOSING = re.compile(r"<[A-Z]\w+[^>]*/>", re.DOTALL)
+    RE_JSX_OPEN_TAG = re.compile(r"<([A-Z]\w+)[^>]*>")
+    RE_JSX_CLOSE_TAG = re.compile(r"</[A-Z]\w+>")
+    RE_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+    RE_EXCESS_NEWLINES = re.compile(r"\n{3,}")
+
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
+
+
+    def send_ntfy(title, message, priority="4", tags="warning,r2r,docs"):
+        try:
+            req = Request(NTFY_URL, data=message.encode(), headers={
+                "Title": title, "Priority": priority, "Tags": tags,
+            })
+            urlopen(req, timeout=5, context=_ssl_ctx)
+        except Exception:
+            pass
+
+
+    def extract_frontmatter(content):
+        match = RE_FRONTMATTER.match(content)
+        if not match:
+            return {}, content
+        metadata = {}
+        for line in match.group(0).splitlines():
+            if ":" in line and not line.strip().startswith("---"):
+                key, _, value = line.partition(":")
+                key = key.strip()
+                value = value.strip().strip("\"'")
+                if key and value:
+                    metadata[key] = value
+        return metadata, content[match.end():]
+
+
+    def strip_mdx(content):
+        content = RE_IMPORT.sub("", content)
+        content = RE_HTML_COMMENT.sub("", content)
+        content = RE_JSX_SELF_CLOSING.sub("", content)
+        content = RE_JSX_OPEN_TAG.sub("", content)
+        content = RE_JSX_CLOSE_TAG.sub("", content)
+        content = RE_EXCESS_NEWLINES.sub("\n\n", content)
+        return content.strip()
+
+
+    def doc_uuid(path_key):
+        return str(uuid.uuid5(UUID_NAMESPACE, f"vcluster-docs:{path_key}"))
+
+
+    def detect_section(rel_path):
+        parts = rel_path.split("/")
+        if "versioned_docs" in parts[0] and len(parts) > 2:
+            return parts[2]
+        return "root"
+
+
+    def construct_url(rel_path, product, version):
+        path = rel_path
+        for prefix in (
+            f"vcluster_versioned_docs/version-{version}/",
+            f"platform_versioned_docs/version-{version}/",
+            "docs/",
+        ):
+            if path.startswith(prefix):
+                path = path[len(prefix):]
+                break
+        path = re.sub(r"\.mdx?$", "", path)
+        if path.endswith("/index"):
+            path = path[:-6]
+        return f"https://www.vcluster.com/docs/{product}/{version}/{path}"
+
+
+    def _build_multipart(fields):
+        boundary = f"----Boundary{uuid.uuid4().hex[:16]}"
+        parts = []
+        for key, value in fields.items():
+            parts.append(
+                f"--{boundary}\r\n"
+                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'
+                f"{value}\r\n"
+            )
+        parts.append(f"--{boundary}--\r\n")
+        return "".join(parts).encode("utf-8"), boundary
+
+
+    def r2r_request(url, method="GET", fields=None, timeout=20):
+        for attempt in range(MAX_RETRIES):
+            try:
+                if fields:
+                    body, boundary = _build_multipart(fields)
+                    req = Request(url, data=body, method=method)
+                    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+                else:
+                    req = Request(url, method=method)
+                with urlopen(req, timeout=timeout, context=_ssl_ctx) as resp:
+                    return json.loads(resp.read())
+            except HTTPError as e:
+                if e.code == 404 and method == "DELETE":
+                    return {"status": "not_found"}
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise
+            except (URLError, TimeoutError):
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise
+
+
+    def fetch_r2r_docs_inventory():
+        """Get all vcluster-docs documents currently in R2R. Returns set of doc_ids."""
+        doc_ids = set()
+        try:
+            req = Request(
+                f"{R2R_URL}/documents?limit=1000",
+                headers={"Content-Type": "application/json"},
+            )
+            with urlopen(req, timeout=30, context=_ssl_ctx) as resp:
+                data = json.loads(resp.read())
+            for doc in data.get("results", []):
+                meta = doc.get("metadata", {})
+                if meta.get("source") == "vcluster-docs":
+                    doc_ids.add(doc.get("id", ""))
+        except Exception as e:
+            print(f"WARNING: could not list R2R docs: {e}")
+        return doc_ids
+
+
+    def find_content_files(base_dir):
+        return sorted(
+            p for p in Path(base_dir).rglob("*.mdx")
+            if "_partials" not in p.parts and "_fragments" not in p.parts
+        )
+
+
+    def main():
+        root = Path(DOCS_ROOT).resolve()
+
+        targets = []
+        vdir = root / "vcluster_versioned_docs" / f"version-{VCLUSTER_VERSION}"
+        if vdir.exists():
+            targets.append(("vcluster", VCLUSTER_VERSION, vdir))
+
+        pdir = root / "platform_versioned_docs" / f"version-{PLATFORM_VERSION}"
+        if pdir.exists():
+            targets.append(("platform", PLATFORM_VERSION, pdir))
+
+        if not targets:
+            msg = f"No version dirs found in {root}"
+            print(f"ERROR: {msg}")
+            send_ntfy("R2R Docs Sync Failed", msg, priority="5",
+                       tags="rotating_light,r2r,docs")
+            sys.exit(1)
+
+        # Full reconciliation: build expected set, diff with R2R inventory
+        expected_docs = {}  # doc_id -> (product, version, mdx_file, rel_path)
+
+        for product, version, base_dir in targets:
+            files = find_content_files(base_dir)
+            print(f"{product} v{version}: {len(files)} content files")
+            for mdx_file in files:
+                rel_path = str(mdx_file.relative_to(root))
+                did = doc_uuid(rel_path)
+                expected_docs[did] = (product, version, mdx_file, rel_path)
+
+        existing = fetch_r2r_docs_inventory()
+        print(f"R2R has {len(existing)} vcluster-docs currently")
+
+        to_create = {did: v for did, v in expected_docs.items() if did not in existing}
+        to_delete = existing - set(expected_docs.keys())
+        unchanged = len(expected_docs) - len(to_create)
+
+        print(f"Actions: {len(to_create)} create, {len(to_delete)} delete, {unchanged} unchanged")
+
+        # Delete stale docs
+        deleted = 0
+        for doc_id in to_delete:
+            try:
+                r2r_request(f"{R2R_URL}/documents/{doc_id}", method="DELETE")
+                deleted += 1
+            except Exception:
+                pass
+
+        # Create missing docs
+        created = 0
+        failed = 0
+        for did, (product, version, mdx_file, rel_path) in to_create.items():
+            raw = mdx_file.read_text(errors="replace")
+            fm, prose = extract_frontmatter(raw)
+            title = fm.get("title", mdx_file.stem.replace("-", " ").title())
+            clean = strip_mdx(prose)
+
+            if len(clean) < MIN_CONTENT_LENGTH:
+                continue
+
+            section = detect_section(rel_path)
+            url = construct_url(rel_path, product, version)
+
+            metadata = json.dumps({
+                "title": title,
+                "source": "vcluster-docs",
+                "product": product,
+                "version": version,
+                "section": section,
+                "url": url,
+                "path": rel_path,
+            })
+
+            # Delete first in case of orphaned doc
+            try:
+                r2r_request(f"{R2R_URL}/documents/{did}", method="DELETE")
+            except Exception:
+                pass
+
+            try:
+                result = r2r_request(
+                    f"{R2R_URL}/documents",
+                    method="POST",
+                    fields={"id": did, "raw_text": clean, "metadata": metadata},
+                )
+                if result.get("results", {}).get("document_id"):
+                    created += 1
+                else:
+                    failed += 1
+                    print(f"  FAIL {title}: {result}")
+            except Exception as e:
+                failed += 1
+                print(f"  FAIL {title}: {e}")
+
+        print(f"Done: {created} created, {deleted} deleted, {failed} failed, {unchanged} unchanged")
+
+        if failed > 0:
+            send_ntfy("R2R Docs Sync Partial Failure",
+                       f"{failed} docs failed to ingest into R2R")
+
+        if failed > len(to_create) / 2:
+            sys.exit(1)
+
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: r2r-docs-sync
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: docs-sync
+spec:
+  schedule: "30 3 * * *"  # daily at 3:30am
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers:
+            - name: git-clone
+              image: alpine/git:2.43.0
+              command:
+                - sh
+                - -c
+                - git clone --depth 1 --single-branch --branch main https://github.com/loft-sh/vcluster-docs.git /repo
+              volumeMounts:
+                - name: repo
+                  mountPath: /repo
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          containers:
+            - name: sync
+              image: python:3.12-slim
+              command: ["python3", "/scripts/sync.py"]
+              env:
+                - name: R2R_URL
+                  value: "http://r2r-api.ai-tools.svc:7272/v3"
+                - name: VCLUSTER_VERSION
+                  value: "0.33.0"
+                - name: PLATFORM_VERSION
+                  value: "4.8.0"
+                - name: DOCS_ROOT
+                  value: "/repo"
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+                - name: repo
+                  mountPath: /repo
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          volumes:
+            - name: script
+              configMap:
+                name: r2r-docs-sync-script
+            - name: repo
+              emptyDir: {}

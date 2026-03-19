@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: api
-          image: piotrzan/agent-memory-server:latest-custom-v10
+          image: piotrzan/agent-memory-server:latest-custom-v11
           ports:
             - containerPort: 8000
               name: http
@@ -64,7 +64,12 @@ spec:
             - name: DISABLE_AUTH
               value: "true"
             - name: GENERATION_MODEL
-              value: ollama/qwen2.5:7b
+              value: anthropic/claude-sonnet-4-6
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anthropic-api-key
+                  key: api-key
             - name: FAST_MODEL
               value: ollama/qwen2.5:7b
             - name: SLOW_MODEL

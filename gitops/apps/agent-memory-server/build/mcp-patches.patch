@@ -1,8 +1,8 @@
 diff --git a/agent_memory_server/long_term_memory.py b/agent_memory_server/long_term_memory.py
-index 93c322d..2aa9a74 100644
+index 93c322d..ca91f5b 100644
 --- a/agent_memory_server/long_term_memory.py
 +++ b/agent_memory_server/long_term_memory.py
-@@ -508,16 +508,26 @@ async def extract_memory_structure(
+@@ -508,16 +508,30 @@ async def extract_memory_structure(
      # Process messages for topic/entity extraction
      topics, entities = await handle_extraction(memory.text)
  
@@ -11,31 +11,39 @@ index 93c322d..2aa9a74 100644
 -
 -    await redis.hset(
 -        Keys.memory_key(memory.id),
+-        mapping={
+-            "topics": encode_tag_values(merged_topics),
+-            "entities": encode_tag_values(merged_entities),
+-        },
+-    )  # type: ignore
 +    merged_topics = list(dict.fromkeys((memory.topics or []) + topics))
 +    merged_entities = list(dict.fromkeys((memory.entities or []) + entities))
 +
 +    # Guard: only update if the key still exists. A race between semantic
 +    # deduplication (which deletes merged keys) and this background task
 +    # can recreate deleted keys as orphaned hashes with only topics/entities.
-+    # Use HSETEX with FXX to atomically update only if the fields already
-+    # exist on the hash — a deleted key has no fields, so nothing is written.
++    # Use Lua script for atomic EXISTS+HSET (works on Redis 7.x; HSETEX FXX
++    # requires Redis 8.0+).
 +    key = Keys.memory_key(memory.id)
-+    result = await redis.hsetex(
-+        key,
-         mapping={
-             "topics": encode_tag_values(merged_topics),
-             "entities": encode_tag_values(merged_entities),
-         },
--    )  # type: ignore
-+        data_persist_option="FXX",
-+        keepttl=True,
++    _LUA_GUARDED_HSET = """
++    if redis.call('EXISTS', KEYS[1]) == 1 then
++        redis.call('HSET', KEYS[1], unpack(ARGV))
++        return 1
++    end
++    return 0
++    """
++    topics_encoded = encode_tag_values(merged_topics)
++    entities_encoded = encode_tag_values(merged_entities)
++    result = await redis.eval(
++        _LUA_GUARDED_HSET, 1, key,
++        "topics", topics_encoded, "entities", entities_encoded,
 +    )
 +    if result == 0:
 +        logger.info(f"Skipping topic/entity update for deleted memory {memory.id}")
  
  
  async def merge_memories_with_llm(
-@@ -557,11 +567,11 @@ async def merge_memories_with_llm(
+@@ -557,11 +571,11 @@ async def merge_memories_with_llm(
  
      # Construct the LLM prompt
      instruction = """
@@ -52,7 +60,7 @@ index 93c322d..2aa9a74 100644
      """
      memory_list = "\n".join([f"{i}: {text}" for i, text in enumerate(memory_texts, 1)])
  
-@@ -574,7 +584,11 @@ async def merge_memories_with_llm(
+@@ -574,7 +588,11 @@ async def merge_memories_with_llm(
      The merged memory:
      """
  
@@ -65,7 +73,7 @@ index 93c322d..2aa9a74 100644
  
      response = await LLMClient.create_chat_completion(
          model=model_name,
-@@ -1022,8 +1036,8 @@ async def index_long_term_memories(
+@@ -1022,8 +1040,8 @@ async def index_long_term_memories(
                  else:
                      current_memory = deduped_memory or current_memory
  
@@ -90,15 +98,15 @@ index c7f59d9..9665b19 100644
  
  # These should match the keys in MODEL_CONFIGS
 diff --git a/tests/test_long_term_memory.py b/tests/test_long_term_memory.py
-index 37d3604..0d50d6a 100644
+index 37d3604..b56eaad 100644
 --- a/tests/test_long_term_memory.py
 +++ b/tests/test_long_term_memory.py
-@@ -325,22 +325,73 @@ class TestLongTermMemory:
+@@ -325,22 +325,76 @@ class TestLongTermMemory:
                  memory_type=MemoryTypeEnum.SEMANTIC,
              )
  
-+            # Simulate key exists (HSETEX FXX returns number of fields set)
-+            mock_redis.hsetex.return_value = 2
++            # Simulate key exists (Lua eval returns 1)
++            mock_redis.eval.return_value = 1
 +
              await extract_memory_structure(memory)
  
@@ -108,24 +116,21 @@ index 37d3604..0d50d6a 100644
 -            # Verify Redis was updated with topics and entities
 -            mock_redis.hset.assert_called_once()
 -            args, kwargs = mock_redis.hset.call_args
-+            # Verify HSETEX was called with FXX for atomic guard
-+            mock_redis.hsetex.assert_called_once()
-+            call_kwargs = mock_redis.hsetex.call_args
- 
--            # Check the key format - it includes the memory ID in the key structure
--            assert "memory_idx:" in args[0] and "test-id" in args[0]
-+            # Check the key format
-+            key = call_kwargs[0][0]
++            # Verify Lua-guarded HSET was called
++            mock_redis.eval.assert_called_once()
++            call_args = mock_redis.eval.call_args[0]
++
++            # call_args: (lua_script, 1, key, "topics", val, "entities", val)
++            lua_script = call_args[0]
++            key = call_args[2]
++            assert "EXISTS" in lua_script and "HSET" in lua_script
 +            assert "memory_idx:" in key and "test-id" in key
- 
--            # Check the mapping - direct Redis writes should match the schema.
--            mapping = kwargs["mapping"]
-+            # Check comma-separated values and FXX flag
-+            mapping = call_kwargs[1]["mapping"]
-             assert mapping["topics"] == "topic1,topic2"
-             assert mapping["entities"] == "entity1,entity2"
-+            assert call_kwargs[1]["data_persist_option"] == "FXX"
-+            assert call_kwargs[1]["keepttl"] is True
++
++            # Check field values passed as ARGV
++            assert call_args[3] == "topics"
++            assert call_args[4] == "topic1,topic2"
++            assert call_args[5] == "entities"
++            assert call_args[6] == "entity1,entity2"
 +
 +    @pytest.mark.asyncio
 +    async def test_extract_memory_structure_deduplicates_merged_topics(
@@ -161,14 +166,22 @@ index 37d3604..0d50d6a 100644
 +                topics=["topic1", "topic2"],  # Already has topic1 and topic2
 +                entities=["entity1", "entity2"],  # Already has entity1 and entity2
 +            )
-+
-+            mock_redis.hsetex.return_value = 2
+ 
+-            # Check the key format - it includes the memory ID in the key structure
+-            assert "memory_idx:" in args[0] and "test-id" in args[0]
++            mock_redis.eval.return_value = 1
 +            await extract_memory_structure(memory)
-+
-+            mapping = mock_redis.hsetex.call_args[1]["mapping"]
-+            # Must contain all 3 unique topics, no duplicates (comma-separated)
-+            topics_list = mapping["topics"].split(",")
-+            entities_list = mapping["entities"].split(",")
+ 
+-            # Check the mapping - direct Redis writes should match the schema.
+-            mapping = kwargs["mapping"]
+-            assert mapping["topics"] == "topic1,topic2"
+-            assert mapping["entities"] == "entity1,entity2"
++            # Extract field values from eval call args
++            call_args = mock_redis.eval.call_args[0]
++            topics_val = call_args[4]  # ARGV[2] = topics value
++            entities_val = call_args[6]  # ARGV[4] = entities value
++            topics_list = topics_val.split(",")
++            entities_list = entities_val.split(",")
 +            assert sorted(topics_list) == ["topic1", "topic2", "topic3"]
 +            assert sorted(entities_list) == ["entity1", "entity2", "entity3"]
  

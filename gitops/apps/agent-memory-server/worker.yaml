@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: worker
-          image: piotrzan/agent-memory-server:latest-custom-v11
+          image: piotrzan/agent-memory-server:latest-custom-v12
           command: ["agent-memory", "task-worker"]
           env:
             - name: REDIS_URL

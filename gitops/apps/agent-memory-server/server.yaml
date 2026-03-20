@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: api
-          image: piotrzan/agent-memory-server:latest-custom-v11
+          image: piotrzan/agent-memory-server:latest-custom-v12
           ports:
             - containerPort: 8000
               name: http

@@ -5,7 +5,7 @@
     "kn@1.20.0",
     "fluxcd@2.7.2",
     "ollama@0.15.2",
-    "vault@1.20.4",
+    "vault@1.21.4",
     "cilium-cli@0.18.8",
     "hubble@1.18.5",
     "velero@1.17.2",

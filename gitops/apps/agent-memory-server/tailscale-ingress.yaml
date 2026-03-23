@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-memory-tailscale
+  namespace: ai-tools
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - agent-memory
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agent-memory-api
+                port:
+                  number: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-memory-mcp-tailscale
+  namespace: ai-tools
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - agent-memory-mcp
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agent-memory-mcp
+                port:
+                  number: 9000

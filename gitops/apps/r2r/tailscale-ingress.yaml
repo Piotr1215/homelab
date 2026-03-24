@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: r2r-tailscale
+  namespace: ai-tools
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - r2r
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: r2r-api
+                port:
+                  number: 7272

@@ -203,6 +203,13 @@ data:
                 query: sum(k8sgpt_number_of_failed_backend_ai_calls)
                 format:
                   type: number
+      - Agent Memory:
+          description: Semantic Memory + RAG
+          href: https://agent-memory.tail165ec.ts.net/docs
+          icon: mdi-brain
+          showStats: true
+          namespace: ai-tools
+          podSelector: app.kubernetes.io/name=agent-memory-api
       - SRE Haiku:
           description: SRE Horror Haiku Generator
           href: https://sre-demo.homelab.local

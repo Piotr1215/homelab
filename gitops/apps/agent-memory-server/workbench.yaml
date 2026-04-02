@@ -1,0 +1,131 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workbench-nginx
+  namespace: ai-tools
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      root /usr/share/nginx/html;
+      index index.html;
+
+      location /api/ {
+        proxy_pass http://agent-memory-api.ai-tools.svc:8000/v1/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+      }
+
+      location /mcp/ {
+        proxy_pass http://agent-memory-mcp.ai-tools.svc:9000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Accept "application/json, text/event-stream";
+        proxy_buffering off;
+        proxy_cache off;
+      }
+
+      location / {
+        try_files $uri $uri/ /index.html;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-memory-workbench
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-workbench
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: workbench
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-memory-workbench
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-memory-workbench
+        app.kubernetes.io/instance: agent-memory-server
+        app.kubernetes.io/component: workbench
+    spec:
+      initContainers:
+        - name: build
+          image: node:22-slim
+          command:
+            - sh
+            - -c
+            - |
+              apt-get update && apt-get install -y git ca-certificates && \
+              git clone --depth 1 https://github.com/redis/agent-memory-server.git /tmp/repo && \
+              cd /tmp/repo/workbench && \
+              echo 'VITE_MEMORY_SERVER_URL=/api' > .env && \
+              echo 'MEMORY_SERVER_URL=/api' >> .env && \
+              npm ci && \
+              npm run build && \
+              cp -r dist/* /output/
+          volumeMounts:
+            - name: static
+              mountPath: /output
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: static
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+      volumes:
+        - name: static
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: workbench-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-memory-workbench
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory-workbench
+    app.kubernetes.io/instance: agent-memory-server
+    app.kubernetes.io/component: workbench
+spec:
+  selector:
+    app.kubernetes.io/name: agent-memory-workbench
+  ports:
+    - port: 8080
+      targetPort: http
+      name: http

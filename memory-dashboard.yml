@@ -1,0 +1,139 @@
+variables:
+  KUBECONFIG: ./kubeconfig
+  kubectl: kubectl --kubeconfig=./kubeconfig
+  api_url: https://agent-memory.tail165ec.ts.net
+  mcp_url: https://agent-memory-mcp.tail165ec.ts.net
+
+barcharts:
+  - title: Memory Types
+    position: [[0, 0], [60, 10]]
+    rate-ms: 30000
+    scale: 0
+    items:
+      - label: semantic
+        sample: $kubectl exec -n ai-tools deployment/agent-memory-redis -- sh -c 'redis-cli --scan --pattern "memory_idx:*" --count 500 | while read k; do redis-cli HGET "$k" memory_type; done' 2>/dev/null | grep -c semantic
+      - label: episodic
+        sample: $kubectl exec -n ai-tools deployment/agent-memory-redis -- sh -c 'redis-cli --scan --pattern "memory_idx:*" --count 500 | while read k; do redis-cli HGET "$k" memory_type; done' 2>/dev/null | grep -c episodic
+
+gauges:
+  - title: Memories
+    position: [[60, 0], [35, 5]]
+    rate-ms: 30000
+    scale: 0
+    color: 178
+    cur:
+      sample: $kubectl exec -n ai-tools deployment/agent-memory-redis -- sh -c 'redis-cli --scan --pattern "memory_idx:*" --count 500 | wc -l' 2>/dev/null
+    max:
+      sample: echo 500
+    min:
+      sample: echo 0
+
+  - title: R2R Docs
+    position: [[60, 5], [35, 5]]
+    rate-ms: 60000
+    scale: 0
+    color: 43
+    cur:
+      sample: $kubectl exec -n ai-tools deployment/r2r-api -- curl -s http://localhost:7272/v3/documents?limit=1 2>/dev/null | jq -r '.total_entries // 0'
+    max:
+      sample: echo 1500
+    min:
+      sample: echo 0
+
+  - title: Vault Notes
+    position: [[95, 0], [35, 5]]
+    rate-ms: 60000
+    scale: 0
+    color: 105
+    cur:
+      sample: find ~/dev/obsidian -name '*.md' -not -path '*/.*' 2>/dev/null | wc -l
+    max:
+      sample: echo 500
+    min:
+      sample: echo 0
+
+  - title: Redis Keys
+    position: [[95, 5], [35, 5]]
+    rate-ms: 30000
+    scale: 0
+    color: 208
+    cur:
+      sample: $kubectl exec -n ai-tools deployment/agent-memory-redis -- redis-cli DBSIZE 2>/dev/null | grep -oE '[0-9]+'
+    max:
+      sample: echo 600
+    min:
+      sample: echo 0
+
+lists:
+  - title: Pods
+    position: [[0, 10], [44, 7]]
+    rate-ms: 10000
+    items:
+      - label: API
+        sample: $kubectl get pod -n ai-tools -l app.kubernetes.io/name=agent-memory-api --no-headers -o custom-columns='S:.status.phase' 2>/dev/null
+      - label: MCP
+        sample: $kubectl get pod -n ai-tools -l app.kubernetes.io/name=agent-memory-mcp --no-headers -o custom-columns='S:.status.phase' 2>/dev/null
+      - label: Worker
+        sample: $kubectl get pod -n ai-tools -l app.kubernetes.io/name=agent-memory-worker --no-headers -o custom-columns='S:.status.phase' 2>/dev/null
+      - label: Redis
+        sample: $kubectl get pod -n ai-tools -l app.kubernetes.io/name=agent-memory-redis --no-headers -o custom-columns='S:.status.phase' 2>/dev/null
+
+  - title: CronJobs
+    position: [[44, 10], [44, 7]]
+    rate-ms: 30000
+    items:
+      - label: E2E Health
+        sample: $kubectl get cronjob -n ai-tools agent-memory-e2e-healthcheck -o jsonpath='{.status.lastSuccessfulTime}' 2>/dev/null | sed 's/T/ /' | cut -d. -f1 || echo "never"
+      - label: Mem Sync
+        sample: $kubectl get cronjob -n ai-tools r2r-memory-sync -o jsonpath='{.status.lastSuccessfulTime}' 2>/dev/null | sed 's/T/ /' | cut -d. -f1 || echo "never"
+      - label: Obs Sync
+        sample: tail -1 ~/.local/state/r2r-obsidian-sync.log 2>/dev/null | awk '{print $1, $2}' || echo "unknown"
+
+  - title: Config
+    position: [[88, 10], [42, 7]]
+    rate-ms: 60000
+    items:
+      - label: Image
+        sample: $kubectl get deployment -n ai-tools agent-memory-api -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null | sed 's|.*/||'
+      - label: Merge Model
+        sample: $kubectl get deployment -n ai-tools agent-memory-worker -o jsonpath='{.spec.template.spec.containers[0].env}' 2>/dev/null | jq -r '.[] | select(.name=="FAST_MODEL") | .value' | sed 's|.*/||'
+      - label: Embed Model
+        sample: $kubectl get deployment -n ai-tools agent-memory-api -o jsonpath='{.spec.template.spec.containers[0].env}' 2>/dev/null | jq -r '.[] | select(.name=="EMBEDDING_MODEL") | .value' | sed 's|.*/||'
+      - label: Compact Every
+        sample: $kubectl get deployment -n ai-tools agent-memory-worker -o jsonpath='{.spec.template.spec.containers[0].env}' 2>/dev/null | jq -r '.[] | select(.name=="COMPACTION_EVERY_MINUTES") | .value + "m"'
+
+sparklines:
+  - title: API latency (ms)
+    position: [[0, 17], [65, 6]]
+    rate-ms: 10000
+    scale: 0
+    triggers:
+      - title: API down
+        condition: '[ $cur -eq 0 ] && echo 1 || echo 0'
+        actions:
+          visual: true
+          script: notify-send -u critical "Agent Memory" "API is DOWN!"
+    sample: curl -sk -o /dev/null -w "%{time_total}" --connect-timeout 5 $api_url/v1/health 2>/dev/null | awk '{printf "%.0f", $1*1000}' || echo 0
+
+  - title: MCP latency (ms)
+    position: [[65, 17], [65, 6]]
+    rate-ms: 10000
+    scale: 0
+    triggers:
+      - title: MCP down
+        condition: '[ $cur -eq 0 ] && echo 1 || echo 0'
+        actions:
+          visual: true
+          script: notify-send -u critical "Agent Memory" "MCP is DOWN!"
+    sample: curl -sk -o /dev/null -w "%{time_total}" --connect-timeout 5 -X POST $mcp_url/mcp -H 'Content-Type:application/json' -H 'Accept:application/json,text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"sampler","version":"1.0"}}}' 2>/dev/null | awk '{printf "%.0f", $1*1000}' || echo 0
+
+textboxes:
+  - title: Compaction
+    position: [[0, 23], [130, 6]]
+    rate-ms: 60000
+    sample: $kubectl logs -n ai-tools deployment/agent-memory-worker 2>/dev/null | grep -E 'compaction completed|Merged new memory|hash-based.*Removed|semantic duplicate' | tail -5 | sed 's/agent_memory_server.long_term_memory INFO   //' || echo "no compaction logs yet"
+
+  - title: Recent Memories
+    position: [[0, 29], [130, 14]]
+    rate-ms: 60000
+    sample: $kubectl exec -n ai-tools deployment/agent-memory-redis -- sh -c 'for k in $(redis-cli --scan --pattern "memory_idx:*" --count 500 | sort -r | head -10); do redis-cli HGET "$k" text | head -c 200; echo; done' 2>/dev/null

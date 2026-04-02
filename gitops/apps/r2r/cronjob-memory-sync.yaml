@@ -190,6 +190,12 @@ data:
         real = [m for m in memories if m.get("namespace") not in SKIP_NAMESPACES]
         print(f"Found {len(memories)} total, {len(real)} real (skipped {len(memories) - len(real)} e2e-test)")
 
+        if len(real) == 0:
+            send_ntfy("R2R Memory Sync Warning",
+                       "0 memories returned from agent-memory — possible server-side error",
+                       priority="4", tags="warning,r2r,memory")
+            return
+
         # Build expected doc IDs from memories
         expected = {}
         for mem in real:

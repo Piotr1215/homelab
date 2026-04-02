@@ -327,7 +327,7 @@ spec:
                   memory: 256Mi
           containers:
             - name: sync
-              image: python:3.12-slim
+              image: python:3.14-slim
               command: ["python3", "/scripts/sync.py"]
               env:
                 - name: R2R_URL

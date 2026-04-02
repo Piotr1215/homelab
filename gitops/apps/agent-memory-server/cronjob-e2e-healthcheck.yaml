@@ -68,7 +68,10 @@ data:
         return new_text
 
     def test_delete(memory_id):
-        api_call("DELETE", "/v1/long-term-memory", {"memory_ids": [memory_id]})
+        url = f"{API_URL}/v1/long-term-memory?memory_ids={memory_id}"
+        req = urllib.request.Request(url, method="DELETE")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
 
     def test_verify_deleted(memory_id):
         try:

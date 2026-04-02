@@ -65,9 +65,9 @@ spec:
                   name: anthropic-api-key
                   key: api-key
             - name: FAST_MODEL
-              value: ollama/qwen2.5:7b
+              value: anthropic/claude-sonnet-4-6
             - name: SLOW_MODEL
-              value: ollama/qwen2.5:7b
+              value: anthropic/claude-sonnet-4-6
             - name: EMBEDDING_MODEL
               value: ollama/nomic-embed-text
             - name: OLLAMA_API_BASE

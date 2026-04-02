@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: mcp
-          image: piotrzan/agent-memory-server:latest-custom-v12
+          image: redislabs/agent-memory-server:0.15.1
           command: ["agent-memory", "mcp", "--mode", "streamable-http"]
           ports:
             - containerPort: 9000
@@ -56,9 +56,9 @@ spec:
               value: redis://agent-memory-redis.ai-tools.svc:6379
             - name: PORT
               value: "9000"
-            - name: FASTMCP_HOST
+            - name: MCP_HOST
               value: "0.0.0.0"
-            - name: FASTMCP_PORT
+            - name: MCP_PORT
               value: "9000"
             - name: LONG_TERM_MEMORY
               value: "true"

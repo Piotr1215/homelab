@@ -1,0 +1,186 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-memory-e2e-script
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory
+    app.kubernetes.io/component: e2e-healthcheck
+data:
+  healthcheck.py: |
+    #!/usr/bin/env python3
+    """Agent-memory e2e health check via REST API.
+    Exercises create/search/edit/delete cycle every 6 hours.
+    Alerts via ntfy on failure.
+    """
+    import json
+    import os
+    import sys
+    import time
+    import urllib.request
+    import uuid
+
+    API_URL = os.environ.get("API_URL", "http://agent-memory-api.ai-tools.svc:8000")
+    NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
+    CANARY_NS = "e2e-test"
+
+    def send_ntfy(title, message, priority="4", tags="warning,agent-memory"):
+        try:
+            req = urllib.request.Request(NTFY_URL, data=message.encode(), headers={
+                "Title": title, "Priority": priority, "Tags": tags,
+            })
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+
+    def api_call(method, path, body=None):
+        url = f"{API_URL}{path}"
+        data = json.dumps(body).encode() if body else None
+        req = urllib.request.Request(url, data=data, method=method,
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
+
+    def test_create():
+        ts = int(time.time())
+        mem_id = str(uuid.uuid4())
+        text = f"[e2e-test] healthcheck canary {ts}"
+        api_call("POST", "/v1/long-term-memory/", {"memories": [{
+            "id": mem_id, "text": text, "memory_type": "semantic",
+            "namespace": CANARY_NS, "topics": ["e2e", "healthcheck"],
+            "entities": [f"canary-{ts}"],
+        }]})
+        return mem_id, text, ts
+
+    def test_search(text):
+        result = api_call("POST", "/v1/long-term-memory/search", {
+            "text": text, "namespace": {"eq": CANARY_NS}, "limit": 5,
+        })
+        for m in result.get("memories", []):
+            if m.get("text") == text:
+                return m["id"]
+        raise RuntimeError(f"Created memory not found in search. Got {len(result.get('memories', []))} results.")
+
+    def test_edit(memory_id, ts):
+        new_text = f"[e2e-test] healthcheck canary {ts} VERIFIED"
+        api_call("PATCH", f"/v1/long-term-memory/{memory_id}", {"text": new_text})
+        return new_text
+
+    def test_delete(memory_id):
+        api_call("DELETE", "/v1/long-term-memory", {"memory_ids": [memory_id]})
+
+    def test_verify_deleted(memory_id):
+        try:
+            api_call("GET", f"/v1/long-term-memory/{memory_id}")
+            raise RuntimeError(f"Memory {memory_id} still exists after delete")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return
+            raise
+
+    def main():
+        failures = []
+        memory_id = None
+        ts = None
+
+        print("1/5 CREATE...", end=" ", flush=True)
+        try:
+            memory_id, text, ts = test_create()
+            print("OK")
+        except Exception as e:
+            print(f"FAIL: {e}")
+            failures.append(f"CREATE: {e}")
+
+        if not failures:
+            print("2/5 SEARCH...", end=" ", flush=True)
+            time.sleep(1)
+            try:
+                found_id = test_search(text)
+                print(f"OK (id={found_id[-6:]})")
+            except Exception as e:
+                print(f"FAIL: {e}")
+                failures.append(f"SEARCH: {e}")
+
+        if memory_id:
+            print("3/5 EDIT...", end=" ", flush=True)
+            try:
+                test_edit(memory_id, ts)
+                print("OK")
+            except Exception as e:
+                print(f"FAIL: {e}")
+                failures.append(f"EDIT: {e}")
+
+        if memory_id:
+            print("4/5 DELETE...", end=" ", flush=True)
+            try:
+                test_delete(memory_id)
+                print("OK")
+            except Exception as e:
+                print(f"FAIL: {e}")
+                failures.append(f"DELETE: {e}")
+
+        if memory_id and "DELETE" not in str(failures):
+            print("5/5 VERIFY_DELETED...", end=" ", flush=True)
+            try:
+                test_verify_deleted(memory_id)
+                print("OK")
+            except Exception as e:
+                print(f"FAIL: {e}")
+                failures.append(f"VERIFY_DELETED: {e}")
+
+        if failures:
+            msg = f"agent-memory e2e healthcheck failed:\n" + "\n".join(failures)
+            print(f"\nFAILED: {len(failures)} step(s)")
+            send_ntfy("Agent Memory E2E Failed", msg, priority="5", tags="rotating_light,agent-memory")
+            sys.exit(1)
+        else:
+            print("\nAll 5 steps passed.")
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: agent-memory-e2e-healthcheck
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: agent-memory
+    app.kubernetes.io/component: e2e-healthcheck
+spec:
+  schedule: "30 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: healthcheck
+              image: python:3.12-slim
+              command: ["python3", "/scripts/healthcheck.py"]
+              env:
+                - name: API_URL
+                  value: "http://agent-memory-api.ai-tools.svc:8000"
+                - name: NTFY_URL
+                  value: "https://ntfy.sh/homelab-piotr1215-warning"
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+          volumes:
+            - name: script
+              configMap:
+                name: agent-memory-e2e-script

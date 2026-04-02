@@ -210,6 +210,13 @@ data:
           showStats: true
           namespace: ai-tools
           podSelector: app.kubernetes.io/name=agent-memory-api
+      - Memory Explorer:
+          description: Browse & Search Memories
+          href: https://memory-workbench.homelab.local
+          icon: mdi-database-search
+          showStats: true
+          namespace: ai-tools
+          podSelector: app.kubernetes.io/name=agent-memory-workbench
       - SRE Haiku:
           description: SRE Horror Haiku Generator
           href: https://sre-demo.homelab.local

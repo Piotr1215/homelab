@@ -46,7 +46,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: mcp
-          image: piotrzan/agent-memory-server:0.15.1-patched-v2
+          image: piotrzan/agent-memory-server:0.15.1-patched-v4
           command: ["agent-memory", "mcp", "--mode", "streamable-http"]
           ports:
             - containerPort: 9000

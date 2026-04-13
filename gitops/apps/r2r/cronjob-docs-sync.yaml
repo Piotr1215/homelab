@@ -11,15 +11,15 @@ metadata:
 data:
   sync.py: |
     #!/usr/bin/env python3
-    """Sync vcluster-docs MDX content to R2R vector database.
+    """Sync vcluster-docs to R2R vector database.
 
-    Walks versioned docs directories, extracts prose from MDX files,
-    and indexes into R2R for semantic search / RAG context injection.
+    Fetches llms-full.txt, splits into pages, feeds each page as a document
+    to R2R with metadata. R2R handles chunking and embedding internally.
 
-    Runs as a CronJob in the cluster. Expects the docs repo to be
-    cloned to /repo by an init container.
+    No git clone, no custom chunking — just HTTP fetch + R2R ingestion API.
     """
 
+    import argparse
     import json
     import os
     import re
@@ -27,121 +27,196 @@ data:
     import sys
     import time
     import uuid
-    from pathlib import Path
     from urllib.error import HTTPError, URLError
     from urllib.request import Request, urlopen
 
-    UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    # --- Config ---
+
     R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
-    NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
+    NTFY_URL = os.environ.get("NTFY_URL", "")
     VCLUSTER_VERSION = os.environ.get("VCLUSTER_VERSION", "0.33.0")
     PLATFORM_VERSION = os.environ.get("PLATFORM_VERSION", "4.8.0")
-    DOCS_ROOT = os.environ.get("DOCS_ROOT", "/repo")
+    DOCS_URL = os.environ.get(
+        "DOCS_URL", "https://www.vcluster.com/docs/llms-full.txt"
+    )
 
-    MIN_CONTENT_LENGTH = 50
+    UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    MIN_CONTENT_LENGTH = 100
     MAX_RETRIES = 3
-
-    RE_FRONTMATTER = re.compile(r"^---\s*\n.*?\n---\s*\n", re.DOTALL)
-    RE_IMPORT = re.compile(r"^import\s+.+$", re.MULTILINE)
-    RE_JSX_SELF_CLOSING = re.compile(r"<[A-Z]\w+[^>]*/>", re.DOTALL)
-    RE_JSX_OPEN_TAG = re.compile(r"<([A-Z]\w+)[^>]*>")
-    RE_JSX_CLOSE_TAG = re.compile(r"</[A-Z]\w+>")
-    RE_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-    RE_EXCESS_NEWLINES = re.compile(r"\n{3,}")
 
     _ssl_ctx = ssl.create_default_context()
     _ssl_ctx.check_hostname = False
     _ssl_ctx.verify_mode = ssl.CERT_NONE
 
+    # --- Content type classification ---
 
-    def send_ntfy(title, message, priority="4", tags="warning,r2r,docs"):
-        try:
-            req = Request(NTFY_URL, data=message.encode(), headers={
-                "Title": title, "Priority": priority, "Tags": tags,
-            })
-            urlopen(req, timeout=5, context=_ssl_ctx)
-        except Exception:
-            pass
-
-
-    def extract_frontmatter(content):
-        match = RE_FRONTMATTER.match(content)
-        if not match:
-            return {}, content
-        metadata = {}
-        for line in match.group(0).splitlines():
-            if ":" in line and not line.strip().startswith("---"):
-                key, _, value = line.partition(":")
-                key = key.strip()
-                value = value.strip().strip("\"'")
-                if key and value:
-                    metadata[key] = value
-        return metadata, content[match.end():]
+    CONTENT_TYPE_MAP = {
+        "introduction": "conceptual",
+        "understand": "conceptual",
+        "cli": "reference",
+        "configure": "reference",
+        "vcluster-yaml": "reference",
+        "api": "reference",
+        "how-to": "procedural",
+        "learn-how-to": "procedural",
+        "manage": "procedural",
+        "administer": "procedural",
+        "troubleshoot": "procedural",
+        "troubleshooting": "procedural",
+        "deploy": "procedural",
+        "get-started": "procedural",
+        "resources": "reference",
+        "third-party-integrations": "procedural",
+    }
 
 
-    def strip_mdx(content):
-        content = RE_IMPORT.sub("", content)
-        content = RE_HTML_COMMENT.sub("", content)
-        content = RE_JSX_SELF_CLOSING.sub("", content)
-        content = RE_JSX_OPEN_TAG.sub("", content)
-        content = RE_JSX_CLOSE_TAG.sub("", content)
-        content = RE_EXCESS_NEWLINES.sub("\n\n", content)
-        return content.strip()
+    def classify_content_type(page_path):
+        for part in page_path.strip("/").split("/"):
+            if part in CONTENT_TYPE_MAP:
+                return CONTENT_TYPE_MAP[part]
+        return "conceptual"
 
 
-    def doc_uuid(path_key):
-        return str(uuid.uuid5(UUID_NAMESPACE, f"vcluster-docs:{path_key}"))
+    def detect_product(page_path):
+        p = page_path.strip("/")
+        if p.startswith("platform"):
+            return "platform"
+        if p.startswith("vcluster"):
+            return "vcluster"
+        if "platform" in p.lower():
+            return "platform"
+        return "vcluster"
 
 
-    def detect_section(rel_path):
-        parts = rel_path.split("/")
-        if "versioned_docs" in parts[0] and len(parts) > 2:
-            return parts[2]
-        return "root"
+    def version_for_product(product):
+        return PLATFORM_VERSION if product == "platform" else VCLUSTER_VERSION
 
 
-    def construct_url(rel_path, product, version):
-        path = rel_path
-        for prefix in (
-            f"vcluster_versioned_docs/version-{version}/",
-            f"platform_versioned_docs/version-{version}/",
-            "docs/",
-        ):
-            if path.startswith(prefix):
-                path = path[len(prefix):]
-                break
-        path = re.sub(r"\.mdx?$", "", path)
-        if path.endswith("/index"):
-            path = path[:-6]
-        return f"https://www.vcluster.com/docs/{product}/{version}/{path}"
+    # --- TOC parsing ---
+
+    # TOC entries have shape `- [title](URL.md)` where URL is either
+    # site-relative (`/docs/foo.md`) or absolute
+    # (`https://vcluster.com/docs/foo.md`). The plugin switched to absolute
+    # URLs for downstream RAG consumers (ENGAI-58), so accept both shapes.
+    RE_TOC_ENTRY = re.compile(r"^- \[(.+?)\]\(([^)]+\.md)\)")
+    RE_DOCS_URL_PREFIX = re.compile(r"^https?://[^/]+/docs")
 
 
-    def _build_multipart(fields):
-        boundary = f"----Boundary{uuid.uuid4().hex[:16]}"
-        parts = []
+    def parse_toc(toc_text):
+        entries = []
+        for line in toc_text.split("\n"):
+            m = RE_TOC_ENTRY.match(line.strip())
+            if not m:
+                continue
+            url = m.group(2)
+            # Strip absolute host+baseUrl so downstream path handling is
+            # uniform regardless of llms-full.txt link format.
+            path = RE_DOCS_URL_PREFIX.sub("", url)
+            if not path.startswith("/"):
+                # Foreign URL (e.g. github.com link) — not a doc page.
+                continue
+            path = re.sub(r"\.mdx?$", "", path).strip("/")
+            entries.append((m.group(1), path))
+        return entries
+
+
+    # --- Page splitting ---
+
+    RE_ANCHOR_LINK = re.compile(r'\[[\u200b\u200c]*\]\(#[^)]*\s*"[^"]*"\)')
+    RE_NAV_CHROME = re.compile(r"\[Skip to main content\].*?Search\n", re.DOTALL)
+    RE_FOOTER = re.compile(r"\n\* \[Create New Doc\].*$", re.DOTALL)
+
+
+    def split_pages(text):
+        return re.split(r"\n---\n(?=\n?# )", text)
+
+
+    def clean_page(text):
+        text = RE_NAV_CHROME.sub("", text)
+        text = RE_FOOTER.sub("", text)
+        text = RE_ANCHOR_LINK.sub("", text)
+        lines = []
+        for line in text.split("\n"):
+            if line.startswith("[****]") or line.startswith("[!["):
+                continue
+            if "vcluster: main" in line and "current" in line:
+                continue
+            if line.strip().startswith("Copyright ©"):
+                continue
+            lines.append(line)
+        return "\n".join(lines).strip()
+
+
+    def extract_first_heading(text):
+        for line in text.split("\n")[:10]:
+            stripped = line.strip()
+            if not stripped.startswith("# "):
+                continue
+            title = stripped.lstrip("# ").strip()
+            if title.startswith("---"):
+                continue
+            return title
+        return None
+
+
+    # --- Document ID (deterministic UUID from page path) ---
+
+    def doc_id(page_path):
+        return str(uuid.uuid5(UUID_NAMESPACE, f"vcluster-docs:{page_path}"))
+
+
+    # --- R2R API (multipart form) ---
+
+    def build_multipart(fields):
+        boundary = f"----R2RBoundary{uuid.uuid4().hex[:12]}"
+        body = b""
         for key, value in fields.items():
-            parts.append(
-                f"--{boundary}\r\n"
-                f'Content-Disposition: form-data; name="{key}"\r\n\r\n'
-                f"{value}\r\n"
-            )
-        parts.append(f"--{boundary}--\r\n")
-        return "".join(parts).encode("utf-8"), boundary
+            body += f"--{boundary}\r\n".encode()
+            body += f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode()
+            body += f"{value}\r\n".encode()
+        body += f"--{boundary}--\r\n".encode()
+        return body, boundary
 
 
-    def r2r_request(url, method="GET", fields=None, timeout=20):
+    def r2r_post_document(raw_text, metadata, document_id=None):
+        fields = {
+            "raw_text": raw_text,
+            "metadata": json.dumps(metadata),
+        }
+        if document_id:
+            fields["id"] = document_id
+
+        body, boundary = build_multipart(fields)
+        req = Request(f"{R2R_URL}/documents", data=body, method="POST")
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+
         for attempt in range(MAX_RETRIES):
             try:
-                if fields:
-                    body, boundary = _build_multipart(fields)
-                    req = Request(url, data=body, method=method)
-                    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-                else:
-                    req = Request(url, method=method)
-                with urlopen(req, timeout=timeout, context=_ssl_ctx) as resp:
+                with urlopen(req, timeout=120, context=_ssl_ctx) as resp:
                     return json.loads(resp.read())
             except HTTPError as e:
-                if e.code == 404 and method == "DELETE":
+                err = e.read().decode()[:200]
+                if e.code == 409 or "already exists" in err:
+                    return {"results": {"document_id": document_id, "status": "exists"}}
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise
+            except (URLError, TimeoutError):
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise
+
+
+    def r2r_delete_document(document_id):
+        req = Request(f"{R2R_URL}/documents/{document_id}", method="DELETE")
+        for attempt in range(MAX_RETRIES):
+            try:
+                with urlopen(req, timeout=20, context=_ssl_ctx) as resp:
+                    return json.loads(resp.read())
+            except HTTPError as e:
+                if e.code == 404:
                     return {"status": "not_found"}
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(2 ** attempt)
@@ -154,134 +229,231 @@ data:
                 raise
 
 
-    def fetch_r2r_docs_inventory():
-        """Get all vcluster-docs documents currently in R2R. Returns set of doc_ids."""
-        doc_ids = set()
-        try:
+    def r2r_list_documents(limit=1000):
+        doc_ids = {}
+        offset = 0
+        while True:
             req = Request(
-                f"{R2R_URL}/documents?limit=1000",
+                f"{R2R_URL}/documents?limit={limit}&offset={offset}",
                 headers={"Content-Type": "application/json"},
             )
-            with urlopen(req, timeout=30, context=_ssl_ctx) as resp:
-                data = json.loads(resp.read())
-            for doc in data.get("results", []):
+            try:
+                with urlopen(req, timeout=30, context=_ssl_ctx) as resp:
+                    data = json.loads(resp.read())
+            except Exception as e:
+                print(f"WARNING: could not list R2R docs: {e}")
+                break
+
+            results = data.get("results", [])
+            for doc in results:
                 meta = doc.get("metadata", {})
                 if meta.get("source") == "vcluster-docs":
-                    doc_ids.add(doc.get("id", ""))
-        except Exception as e:
-            print(f"WARNING: could not list R2R docs: {e}")
+                    doc_ids[doc["id"]] = meta.get("page_path", "")
+
+            if len(results) < limit:
+                break
+            offset += limit
+
         return doc_ids
 
 
-    def find_content_files(base_dir):
-        return sorted(
-            p for p in Path(base_dir).rglob("*.mdx")
-            if "_partials" not in p.parts and "_fragments" not in p.parts
-        )
+    # --- Notification ---
+
+    def send_ntfy(title, message, priority="4", tags="warning,r2r,docs"):
+        if not NTFY_URL:
+            return
+        try:
+            req = Request(
+                NTFY_URL,
+                data=message.encode(),
+                headers={"Title": title, "Priority": priority, "Tags": tags},
+            )
+            urlopen(req, timeout=5, context=_ssl_ctx)
+        except Exception:
+            pass
 
 
-    def main():
-        root = Path(DOCS_ROOT).resolve()
+    # --- Pipeline ---
 
-        targets = []
-        vdir = root / "vcluster_versioned_docs" / f"version-{VCLUSTER_VERSION}"
-        if vdir.exists():
-            targets.append(("vcluster", VCLUSTER_VERSION, vdir))
+    def parse_pages(content):
+        pages = split_pages(content)
+        if len(pages) < 3:
+            print(f"ERROR: expected multiple pages, got {len(pages)}")
+            return []
 
-        pdir = root / "platform_versioned_docs" / f"version-{PLATFORM_VERSION}"
-        if pdir.exists():
-            targets.append(("platform", PLATFORM_VERSION, pdir))
+        toc_entries = parse_toc(pages[0])
+        print(f"TOC entries: {len(toc_entries)}")
 
-        if not targets:
-            msg = f"No version dirs found in {root}"
-            print(f"ERROR: {msg}")
-            send_ntfy("R2R Docs Sync Failed", msg, priority="5",
-                       tags="rotating_light,r2r,docs")
-            sys.exit(1)
+        title_to_path = {}
+        for title, path in toc_entries:
+            if title not in title_to_path:
+                title_to_path[title] = path
 
-        # Full reconciliation: build expected set, diff with R2R inventory
-        expected_docs = {}  # doc_id -> (product, version, mdx_file, rel_path)
+        documents = []
+        matched = 0
+        skipped = 0
 
-        for product, version, base_dir in targets:
-            files = find_content_files(base_dir)
-            print(f"{product} v{version}: {len(files)} content files")
-            for mdx_file in files:
-                rel_path = str(mdx_file.relative_to(root))
-                did = doc_uuid(rel_path)
-                expected_docs[did] = (product, version, mdx_file, rel_path)
-
-        existing = fetch_r2r_docs_inventory()
-        print(f"R2R has {len(existing)} vcluster-docs currently")
-
-        to_create = {did: v for did, v in expected_docs.items() if did not in existing}
-        to_delete = existing - set(expected_docs.keys())
-        unchanged = len(expected_docs) - len(to_create)
-
-        print(f"Actions: {len(to_create)} create, {len(to_delete)} delete, {unchanged} unchanged")
-
-        # Delete stale docs
-        deleted = 0
-        for doc_id in to_delete:
-            try:
-                r2r_request(f"{R2R_URL}/documents/{doc_id}", method="DELETE")
-                deleted += 1
-            except Exception:
-                pass
-
-        # Create missing docs
-        created = 0
-        failed = 0
-        for did, (product, version, mdx_file, rel_path) in to_create.items():
-            raw = mdx_file.read_text(errors="replace")
-            fm, prose = extract_frontmatter(raw)
-            title = fm.get("title", mdx_file.stem.replace("-", " ").title())
-            clean = strip_mdx(prose)
-
-            if len(clean) < MIN_CONTENT_LENGTH:
+        for raw_page in pages[2:]:
+            page = clean_page(raw_page)
+            if len(page) < MIN_CONTENT_LENGTH:
+                skipped += 1
                 continue
 
-            section = detect_section(rel_path)
-            url = construct_url(rel_path, product, version)
+            heading = extract_first_heading(page)
+            if not heading:
+                skipped += 1
+                continue
 
-            metadata = json.dumps({
-                "title": title,
-                "source": "vcluster-docs",
-                "product": product,
-                "version": version,
-                "section": section,
-                "url": url,
-                "path": rel_path,
+            page_path = title_to_path.get(heading, "")
+            if not page_path:
+                clean_heading = heading.rstrip("?!.").strip()
+                for toc_title, toc_path in toc_entries:
+                    if toc_title.rstrip("?!.").strip() == clean_heading:
+                        page_path = toc_path
+                        break
+
+            if not page_path:
+                page_path = re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")
+                skipped += 1
+            else:
+                matched += 1
+
+            product = detect_product(page_path)
+            version = version_for_product(product)
+            content_type = classify_content_type(page_path)
+
+            documents.append({
+                "id": doc_id(page_path),
+                "text": page,
+                "metadata": {
+                    "source": "vcluster-docs",
+                    "product": product,
+                    "page_path": page_path,
+                    "title": heading,
+                    "version": version,
+                    "content_type": content_type,
+                },
             })
 
-            # Delete first in case of orphaned doc
+        print(f"Pages matched: {matched}, skipped: {skipped}")
+        return documents
+
+
+    def dry_run(documents):
+        sizes = [len(d["text"]) for d in documents]
+        products = {}
+        ctypes = {}
+        for d in documents:
+            m = d["metadata"]
+            products[m["product"]] = products.get(m["product"], 0) + 1
+            ctypes[m["content_type"]] = ctypes.get(m["content_type"], 0) + 1
+
+        print(f"\nDocuments: {len(documents)}")
+        print(f"Total chars: {sum(sizes):,}")
+        print(f"Avg size: {sum(sizes)//len(sizes):,} chars")
+        print(f"Min/Max: {min(sizes):,} / {max(sizes):,} chars")
+
+        print(f"\nBy product:")
+        for p, c in sorted(products.items()):
+            print(f"  {p}: {c}")
+
+        print(f"\nBy content type:")
+        for ct, c in sorted(ctypes.items()):
+            print(f"  {ct}: {c}")
+
+        print(f"\nSample documents:")
+        for d in documents[:3]:
+            m = d["metadata"]
+            preview = d["text"][:150].replace("\n", " ")
+            print(f"  [{m['product']}] {m['page_path']}")
+            print(f"    type={m['content_type']} version={m['version']}")
+            print(f"    {preview}...")
+
+
+    def reconcile(documents):
+        expected = {d["id"]: d for d in documents}
+
+        existing = r2r_list_documents()
+        print(f"R2R has {len(existing)} vcluster-docs")
+
+        to_create = {did: d for did, d in expected.items() if did not in existing}
+        to_delete = set(existing.keys()) - set(expected.keys())
+        unchanged = len(expected) - len(to_create)
+
+        print(f"Plan: {len(to_create)} create, {len(to_delete)} delete, {unchanged} unchanged")
+
+        # Delete stale
+        deleted = 0
+        for did in to_delete:
             try:
-                r2r_request(f"{R2R_URL}/documents/{did}", method="DELETE")
+                r2r_delete_document(did)
+                deleted += 1
+            except Exception as e:
+                print(f"  DELETE FAIL {did}: {e}")
+
+        # Create new (delete-then-create for idempotency)
+        created = 0
+        failed = 0
+        for i, (did, doc) in enumerate(to_create.items()):
+            try:
+                r2r_delete_document(did)
             except Exception:
                 pass
 
             try:
-                result = r2r_request(
-                    f"{R2R_URL}/documents",
-                    method="POST",
-                    fields={"id": did, "raw_text": clean, "metadata": metadata},
+                result = r2r_post_document(
+                    raw_text=doc["text"],
+                    metadata=doc["metadata"],
+                    document_id=did,
                 )
-                if result.get("results", {}).get("document_id"):
+                rid = result.get("results", {}).get("document_id", "")
+                if rid or result.get("results", {}).get("status") == "exists":
                     created += 1
                 else:
                     failed += 1
-                    print(f"  FAIL {title}: {result}")
+                    print(f"  FAIL {doc['metadata']['title']}: {result}")
             except Exception as e:
                 failed += 1
-                print(f"  FAIL {title}: {e}")
+                print(f"  FAIL {doc['metadata']['title']}: {e}")
+
+            if (i + 1) % 50 == 0:
+                print(f"  progress: {i+1}/{len(to_create)}")
 
         print(f"Done: {created} created, {deleted} deleted, {failed} failed, {unchanged} unchanged")
 
         if failed > 0:
-            send_ntfy("R2R Docs Sync Partial Failure",
-                       f"{failed} docs failed to ingest into R2R")
-
+            send_ntfy("R2R Docs Sync Partial Failure", f"{failed} docs failed")
         if failed > len(to_create) / 2:
             sys.exit(1)
+
+
+    def main():
+        parser = argparse.ArgumentParser(description="Sync vcluster-docs to R2R")
+        parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument("--file", help="Local file instead of URL")
+        parser.add_argument("--url", default=DOCS_URL)
+        args = parser.parse_args()
+
+        if args.file:
+            print(f"Reading {args.file}")
+            with open(args.file) as f:
+                content = f.read()
+        else:
+            print(f"Fetching {args.url}")
+            req = Request(args.url)
+            with urlopen(req, timeout=60, context=_ssl_ctx) as resp:
+                content = resp.read().decode("utf-8")
+
+        print(f"Content: {len(content):,} chars, {len(content.splitlines()):,} lines")
+
+        documents = parse_pages(content)
+        print(f"Parsed {len(documents)} documents")
+
+        if args.dry_run:
+            dry_run(documents)
+            return
+
+        reconcile(documents)
 
 
     if __name__ == "__main__":
@@ -308,42 +480,24 @@ spec:
       template:
         spec:
           restartPolicy: Never
-          initContainers:
-            - name: git-clone
-              image: alpine/git:2.43.0
-              command:
-                - sh
-                - -c
-                - git clone --depth 1 --single-branch --branch main https://github.com/loft-sh/vcluster-docs.git /repo
-              volumeMounts:
-                - name: repo
-                  mountPath: /repo
-              resources:
-                requests:
-                  cpu: 50m
-                  memory: 128Mi
-                limits:
-                  cpu: 500m
-                  memory: 256Mi
           containers:
             - name: sync
               image: python:3.12-slim
-              command: ["python3", "/scripts/sync.py"]
+              command: ["python3", "-u", "/scripts/sync.py"]
               env:
+                - name: PYTHONUNBUFFERED
+                  value: "1"
                 - name: R2R_URL
                   value: "http://r2r-api.ai-tools.svc:7272/v3"
                 - name: VCLUSTER_VERSION
                   value: "0.33.0"
                 - name: PLATFORM_VERSION
                   value: "4.8.0"
-                - name: DOCS_ROOT
-                  value: "/repo"
+                - name: DOCS_URL
+                  value: "https://www.vcluster.com/docs/llms-full.txt"
               volumeMounts:
                 - name: script
                   mountPath: /scripts
-                  readOnly: true
-                - name: repo
-                  mountPath: /repo
                   readOnly: true
               resources:
                 requests:
@@ -356,5 +510,3 @@ spec:
             - name: script
               configMap:
                 name: r2r-docs-sync-script
-            - name: repo
-              emptyDir: {}

@@ -795,7 +795,7 @@ spec:
       automountServiceAccountToken: true
       containers:
       - name: frontend
-        image: "quay.io/cilium/hubble-ui:v0.13.3"
+        image: "quay.io/cilium/hubble-ui:v0.13.5"
         imagePullPolicy: Always
         ports:
         - name: http

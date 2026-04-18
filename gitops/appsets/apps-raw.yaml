@@ -107,6 +107,15 @@ spec:
             - .metadata
             - .status
             - .spec.conversion
+        # nas-monitor writes runtime state here; committed manifest seeds "unknown".
+        # Ignore .data.state so ArgoCD doesn't revert the hook's patches (which would
+        # suppress "recovered" alerts and cause duplicate "unreachable" alerts on flap).
+        - group: ""
+          kind: ConfigMap
+          name: nas-monitor-state
+          namespace: monitoring
+          jqPathExpressions:
+            - .data.state
       syncPolicy:
         automated:
           prune: true

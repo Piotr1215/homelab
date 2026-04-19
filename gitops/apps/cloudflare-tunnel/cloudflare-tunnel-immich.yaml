@@ -44,6 +44,7 @@ spec:
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:2026.3.0
+        imagePullPolicy: IfNotPresent
         args:
         - tunnel
         - --config

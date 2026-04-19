@@ -45,6 +45,20 @@ spire-server:
   # cloudnative-pg postgres backend (already in cluster) before loft.rocks.
   nameOverride: spire-server
 
+  # Disable the pre-upgrade helm hook. Rationale: the hook patches the
+  # controller-manager ValidatingWebhookConfiguration to failurePolicy=Ignore
+  # during helm upgrades to avoid a webhook-down-blocks-upgrade deadlock.
+  # ArgoCD maps helm.sh/hook: pre-upgrade → argocd.argoproj.io/hook: PreSync
+  # and runs it on EVERY sync (including first install), where the webhook
+  # doesn't exist yet — the job does `kubectl patch ... --type=strategic`
+  # without --ignore-not-found and fails. Upstream chart bug for the
+  # argocd-first-install case (ref argoproj/argo-cd#7536).
+  # Future upgrade strategy: re-enable and pre-stage the webhook, or rely on
+  # failurePolicy=Ignore on the webhook itself.
+  controllerManager:
+    installAndUpgradeHook:
+      enabled: false
+
 spire-agent:
   # Node attestor: k8s_psat (projected service account token) — canonical for
   # in-cluster workloads. See #126 phase-1 decisions.

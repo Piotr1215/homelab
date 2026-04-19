@@ -1,0 +1,38 @@
+---
+# Tornjak admin UI for SPIRE. Exposes privileged CA-issuance surface —
+# anyone who reaches this URL can issue arbitrary SPIFFE IDs in the
+# trust domain. Today: tailnet-reachable via homelab-gateway, same as
+# other *.homelab.local services. Phase-3 follow-up: put Hydra OIDC
+# auth in front before loft.rocks rollout.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tornjak
+  namespace: envoy-gateway-system
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "tornjak.homelab.local"
+  rules:
+    - backendRefs:
+        - name: spire-tornjak-frontend
+          namespace: spire-server
+          port: 3000
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: tornjak-backend
+  namespace: spire-server
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: envoy-gateway-system
+  to:
+    - group: ""
+      kind: Service
+      name: spire-tornjak-frontend

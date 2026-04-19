@@ -165,6 +165,13 @@ data:
           showStats: true
           namespace: policy-reporter
           podSelector: app.kubernetes.io/name=policy-reporter
+      - Tornjak:
+          description: SPIFFE/SPIRE Identity Admin
+          href: https://tornjak.homelab.local
+          icon: spiffe.svg
+          showStats: true
+          namespace: spire-server
+          podSelector: app.kubernetes.io/name=tornjak-frontend
     - Media:
       - Immich:
           description: Photo & Video Backup

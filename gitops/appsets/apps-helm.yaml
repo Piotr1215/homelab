@@ -227,7 +227,7 @@ spec:
             namespace: spire-server
             chartRepo: https://spiffe.github.io/helm-charts-hardened/
             chartName: spire-crds
-            chartVersion: "0.7.0"
+            chartVersion: "0.5.0"
             createNamespace: "true"
             serverSideApply: "true"
             project: security

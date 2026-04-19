@@ -20,6 +20,12 @@ kind: ClusterSPIFFEID
 metadata:
   name: nats-server
 spec:
+  # IngressClass-style controller scoping. The spire-controller-manager in
+  # this cluster handles only className=spire-server-spire — without it our
+  # CR is silently skipped (validate succeeds, reconcile never runs). The
+  # default ClusterSPIFFEID ships with this className pre-set, so any custom
+  # CRs we add must match.
+  className: spire-server-spire
   spiffeIDTemplate: "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/workload/nats-server"
   podSelector:
     matchLabels:

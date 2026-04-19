@@ -86,6 +86,10 @@ spiffe-oidc-discovery-provider:
   # Enabled for future Hydra integration (ws1 — bobo's lane).
   enabled: true
 
-# Non-production components — keep disabled.
+# Tornjak admin UI. Chart marks it non-production because it exposes
+# privileged admin surface — anyone with reach to the Service can issue
+# arbitrary SPIFFE IDs. For now: no HTTPRoute on our Envoy Gateway, reach
+# via `kubectl -n spire-server port-forward svc/spire-tornjak-frontend`.
+# Phase-3 follow-up: expose behind Hydra OIDC before adding a public route.
 tornjak-frontend:
-  enabled: false
+  enabled: true

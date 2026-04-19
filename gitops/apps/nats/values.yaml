@@ -1,4 +1,32 @@
 # PROJECT: claude-automation
+#
+# Phase-2 stage 2a (non-breaking): mount the SPIFFE Workload API socket so
+# the NATS pod can fetch its SVID (spiffe://agents.loft.internal/ns/nats/
+# workload/nats-server — see gitops/apps/spire/clusterspiffeid-nats.yaml).
+# NATS server does NOT yet consume the SVID for TLS — that's stage 2c and
+# explicitly human-gated because verify_and_map=true breaks every existing
+# non-SVID client. Stage 2b publishes the trust bundle; stage 2d wires
+# agents-mcp-server to the socket.
+#
+# Refs: Piotr1215/claude#126 phase 2.
+podTemplate:
+  merge:
+    spec:
+      volumes:
+        - name: spiffe-workload-api
+          csi:
+            driver: csi.spiffe.io
+            readOnly: true
+
+container:
+  merge:
+    volumeMounts:
+      - name: spiffe-workload-api
+        mountPath: /spiffe-workload-api
+        readOnly: true
+  env:
+    SPIFFE_ENDPOINT_SOCKET: unix:///spiffe-workload-api/spire-agent.sock
+
 config:
   jetstream:
     enabled: true

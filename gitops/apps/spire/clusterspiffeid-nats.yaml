@@ -1,0 +1,36 @@
+---
+# Phase-2 stage 2a — dedicated SPIFFE identity for the NATS server pod.
+# Reconciled by spire-controller-manager into a registration entry visible
+# under `spire-server entry show | grep nats-server`.
+#
+# The default ClusterSPIFFEID in the chart already gives every pod an SA-
+# based ID (spiffe://agents.loft.internal/ns/nats/sa/default). This CR adds
+# a workload-specific ID so NATS authorization.users[] can key on a stable
+# URI that doesn't collide with any future pod using the same SA.
+#
+# Once this lands + the spiffe-csi volume is mounted (see gitops/apps/nats/
+# values.yaml), the NATS pod can fetch the SVID at
+# /spiffe-workload-api/spire-agent.sock. Stage 2a is non-breaking: NATS
+# does not yet present the SVID as its server cert. Stage 2b publishes the
+# trust bundle, stage 2c flips verify_and_map (breaking — human-gated).
+#
+# Refs: Piotr1215/claude#126 phase 2, epic #124
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: nats-server
+spec:
+  spiffeIDTemplate: "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/workload/nats-server"
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: nats
+      app.kubernetes.io/component: nats
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: nats
+  # DNS names the server cert will advertise. NATS clients connect via
+  # several surfaces (in-cluster service + MetalLB + tailscale), so enumerate.
+  dnsNameTemplates:
+    - "nats.nats.svc.cluster.local"
+    - "nats-headless.nats.svc.cluster.local"
+    - "nats-nats-tailscale.tail165ec.ts.net"

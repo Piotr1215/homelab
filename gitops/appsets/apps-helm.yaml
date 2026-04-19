@@ -303,6 +303,16 @@ spec:
             - .metadata.uid
             - .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]
             - .status
+        # StatefulSet volumeClaimTemplates: k8s admission strips apiVersion/
+        # kind and injects creationTimestamp:null. Helm manifest carries the
+        # originals → permanent cosmetic OutOfSync for every chart that ships
+        # a StatefulSet with PVCs (spire-server, nats).
+        - group: apps
+          kind: StatefulSet
+          jqPathExpressions:
+            - .spec.volumeClaimTemplates[].apiVersion
+            - .spec.volumeClaimTemplates[].kind
+            - .spec.volumeClaimTemplates[].metadata.creationTimestamp
       syncPolicy:
         automated:
           prune: true

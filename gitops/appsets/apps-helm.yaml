@@ -220,6 +220,25 @@ spec:
             chartVersion: "2.2.7"
             createNamespace: "true"
             project: cluster-management
+          # SPIRE identity substrate for agents-mcp-server (Piotr1215/claude#126 / epic #124).
+          # Two charts required: spire-crds MUST land before spire. ArgoCD retry policy
+          # (5 attempts, backoff to 3m) absorbs the CRD-not-yet-present race on first sync.
+          - app: spire-crds
+            namespace: spire-server
+            chartRepo: https://spiffe.github.io/helm-charts-hardened/
+            chartName: spire-crds
+            chartVersion: "0.7.0"
+            createNamespace: "true"
+            serverSideApply: "true"
+            project: security
+          - app: spire
+            namespace: spire-server
+            chartRepo: https://spiffe.github.io/helm-charts-hardened/
+            chartName: spire
+            chartVersion: "0.28.4"
+            createNamespace: "false"
+            serverSideApply: "true"
+            project: security
   template:
     metadata:
       name: "{{ .app }}"

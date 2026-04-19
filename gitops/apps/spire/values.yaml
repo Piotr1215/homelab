@@ -1,0 +1,67 @@
+# SPIRE identity substrate for agents-mcp-server.
+# Tracking: Piotr1215/claude#126 (phase 1 infra slice of epic #124).
+#
+# Chart: spiffe/helm-charts-hardened spire 0.28.4
+# Docs:  https://spiffe.io/docs/latest/spire-helm-charts-hardened-about/
+
+global:
+  spire:
+    # Trust domain is the cryptographic identity namespace. Renaming it
+    # post-deploy is painful (full bundle re-federation, SVID invalidation,
+    # every workload re-issues, every NATS user ACL rewritten) so it's picked
+    # once here and reused verbatim when this substrate lands on loft.rocks.
+    # Neutral name valid in both homelab and loft.rocks environments.
+    # TODO(piotr): confirm on PR review before first argocd sync.
+    trustDomain: agents.loft.internal
+
+    clusterName: homelab
+
+    # Chart creates spire-server + spire-system namespaces itself.
+    # ApplicationSet createNamespace=false so argocd doesn't race the chart.
+    namespaces:
+      create: true
+
+    # Self-signed CA for the initial substrate. Phase-3 follow-up: federate
+    # to cert-manager homelab-ca-issuer via trust-manager for unified PKI.
+    caSubject:
+      country: DE
+      organization: homelab
+      commonName: agents.loft.internal
+
+    # Recommended production settings bundle — enables short-lived SVIDs,
+    # production-grade telemetry, strict namespace labelling, etc.
+    recommendations:
+      enabled: true
+
+# --- subchart toggles ------------------------------------------------------
+# Keep the default stack: server, agent, controller-manager, CSI driver.
+# OIDC discovery provider kept enabled — will be needed for Hydra federation
+# downstream (bobo's ws1 lane). CSI driver is the recommended way to expose
+# SVIDs to in-cluster workloads (nats pod, phase 2).
+
+spire-server:
+  # Single-replica server is fine for homelab. Phase-3 concern: HA + datastore.
+  # Default datastore: sqlite on emptyDir — acceptable for homelab, upgrade to
+  # cloudnative-pg postgres backend (already in cluster) before loft.rocks.
+  nameOverride: spire-server
+
+spire-agent:
+  # Node attestor: k8s_psat (projected service account token) — canonical for
+  # in-cluster workloads. See #126 phase-1 decisions.
+  nameOverride: spire-agent
+
+spire-controller-manager:
+  # Reconciles ClusterSPIFFEID CRs into registration entries on spire-server.
+  # Workload registration for nats is added in phase 2 via a separate manifest.
+  nameOverride: spire-controller-manager
+
+spiffe-csi-driver:
+  nameOverride: spiffe-csi-driver
+
+spiffe-oidc-discovery-provider:
+  # Enabled for future Hydra integration (ws1 — bobo's lane).
+  enabled: true
+
+# Non-production components — keep disabled.
+tornjak-frontend:
+  enabled: false

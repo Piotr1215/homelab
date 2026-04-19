@@ -1,0 +1,5 @@
+# spire-crds — installs the SPIRE / SPIFFE CRDs (ClusterSPIFFEID,
+# ClusterFederatedTrustDomain, ClusterStaticEntry) consumed by the spire
+# controller-manager. Must land BEFORE the main spire chart.
+#
+# Defaults are fine for a single-cluster homelab install; no overrides needed.

@@ -9,19 +9,26 @@
 # agents-mcp-server to the socket.
 #
 # Refs: Piotr1215/claude#126 phase 2.
+# JSON-patch append instead of merge — chart's strategic-merge on
+# container.volumeMounts replaces the list and drops the default
+# config + pid mounts required by the nats and reloader containers.
+# patch: [] gives explicit "/-" append semantics that preserve defaults.
 podTemplate:
-  merge:
-    spec:
-      volumes:
-        - name: spiffe-workload-api
-          csi:
-            driver: csi.spiffe.io
-            readOnly: true
+  patch:
+    - op: add
+      path: /spec/volumes/-
+      value:
+        name: spiffe-workload-api
+        csi:
+          driver: csi.spiffe.io
+          readOnly: true
 
 container:
-  merge:
-    volumeMounts:
-      - name: spiffe-workload-api
+  patch:
+    - op: add
+      path: /volumeMounts/-
+      value:
+        name: spiffe-workload-api
         mountPath: /spiffe-workload-api
         readOnly: true
   env:

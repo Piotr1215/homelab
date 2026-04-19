@@ -5,6 +5,17 @@
 # Docs:  https://spiffe.io/docs/latest/spire-helm-charts-hardened-about/
 
 global:
+  # Disable all install-and-upgrade helm hooks across subcharts. The
+  # spire-server pre-upgrade-hook template gate is:
+  #   dig "installAndUpgradeHooks" "enabled" .Values.controllerManager.installAndUpgradeHook.enabled .Values.global
+  # i.e. global wins over the subchart override. ArgoCD maps
+  # helm.sh/hook: pre-upgrade → PreSync and runs it on every sync
+  # including first install, where the target ValidatingWebhookConfiguration
+  # doesn't exist yet; the hook's kubectl patch (no --ignore-not-found)
+  # fails NotFound and blocks the sync. Ref argoproj/argo-cd#7536.
+  installAndUpgradeHooks:
+    enabled: false
+
   spire:
     # Trust domain is the cryptographic identity namespace. Renaming it
     # post-deploy is painful (full bundle re-federation, SVID invalidation,

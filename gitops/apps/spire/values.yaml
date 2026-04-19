@@ -68,6 +68,14 @@ spire-server:
     installAndUpgradeHook:
       enabled: false
 
+  # Tornjak backend API sidecar in the spire-server pod. Service:
+  # spire-tornjak-backend.spire-server.svc:10000. The frontend UI needs
+  # this backend to fetch entries/agents data — without it the UI shows
+  # empty. Same CA-compromise concern as the frontend: expose via Hydra
+  # OIDC in phase-3, tailnet-only until then.
+  tornjak:
+    enabled: true
+
 spire-agent:
   # Kubespray binds kubelet to the node's external IP (192.168.178.X),
   # not 127.0.0.1. SPIRE's k8s workload attestor defaults to
@@ -86,10 +94,12 @@ spiffe-oidc-discovery-provider:
   # Enabled for future Hydra integration (ws1 — bobo's lane).
   enabled: true
 
-# Tornjak admin UI. Chart marks it non-production because it exposes
-# privileged admin surface — anyone with reach to the Service can issue
-# arbitrary SPIFFE IDs. For now: no HTTPRoute on our Envoy Gateway, reach
-# via `kubectl -n spire-server port-forward svc/spire-tornjak-frontend`.
-# Phase-3 follow-up: expose behind Hydra OIDC before adding a public route.
+# Tornjak admin UI (frontend). Requires spire-server.tornjak.enabled=true
+# for the backend API — without that, the UI renders but every data panel
+# is empty. apiServerURL must be browser-reachable because the React app
+# makes the XHR calls from the user's browser, not server-side. We mount
+# both frontend and backend under the same hostname via path-based routing
+# in gitops/apps/envoy-gateway-resources/httproute-tornjak.yaml.
 tornjak-frontend:
   enabled: true
+  apiServerURL: "https://tornjak.homelab.local/api"

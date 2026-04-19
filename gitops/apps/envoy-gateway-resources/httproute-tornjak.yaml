@@ -17,6 +17,24 @@ spec:
   hostnames:
     - "tornjak.homelab.local"
   rules:
+    # /api/* → Tornjak backend (sidecar on spire-server pod). UI calls this
+    # from the browser to fetch entries/agents — apiServerURL in
+    # tornjak-frontend values must match.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: spire-tornjak-backend
+          namespace: spire-server
+          port: 10000
+    # catch-all → Tornjak frontend (React UI).
     - backendRefs:
         - name: spire-tornjak-frontend
           namespace: spire-server
@@ -36,3 +54,6 @@ spec:
     - group: ""
       kind: Service
       name: spire-tornjak-frontend
+    - group: ""
+      kind: Service
+      name: spire-tornjak-backend

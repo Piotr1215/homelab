@@ -68,6 +68,20 @@ spire-server:
     installAndUpgradeHook:
       enabled: false
 
+spire-agent:
+  # Kubespray binds kubelet to the node's external IP (192.168.178.X),
+  # not 127.0.0.1. SPIRE's k8s workload attestor defaults to
+  # https://127.0.0.1:10250/pods and gets "connection refused" → fails
+  # workload attestation → no SVIDs issued to in-cluster pods (observed
+  # on spire-spiffe-oidc-discovery-provider init container hanging at
+  # "Daemon mode disabled" indefinitely).
+  # Setting mode=hostip makes the chart inject MY_NODE_IP via the
+  # downward API and point the attestor at that address. Fixes OIDC
+  # init and unblocks SVID delivery to every pod selected by a
+  # ClusterSPIFFEID.
+  kubeletAddress:
+    mode: hostip
+
 spiffe-oidc-discovery-provider:
   # Enabled for future Hydra integration (ws1 — bobo's lane).
   enabled: true

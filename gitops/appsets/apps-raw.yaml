@@ -71,8 +71,6 @@ spec:
             namespace: freshrss
           - app: agent-memory-server
             namespace: ai-tools
-          - app: agents-mcp-server
-            namespace: ai-tools
           - app: r2r
             namespace: ai-tools
   template:

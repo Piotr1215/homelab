@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
         - name: mcp
-          image: piotrzan/agents-mcp-server:5.1.1
+          image: piotrzan/agents-mcp-server:5.2.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

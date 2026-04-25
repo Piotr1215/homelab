@@ -15,3 +15,7 @@ spec:
       port: 4222
       targetPort: nats
       protocol: TCP
+    - name: monitor
+      port: 8222
+      targetPort: monitor
+      protocol: TCP

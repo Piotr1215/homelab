@@ -80,6 +80,25 @@ spec:
               value: "true"
             - name: COMPACTION_EVERY_MINUTES
               value: "180"
+          # Liveness via redis ping -- catches the redis-service-unreachable case
+          # observed during the 2026-05-01 pve1 crash, where the worker's existing
+          # connection pool went stale and stayed in TimeoutError loops without
+          # exiting. Restart on 2 consecutive failures (~60s detection).
+          # Note: a new connection in the probe may succeed when the worker's own
+          # pool is hung -- this probe primarily catches redis-side outages, not
+          # in-process pool staleness. Tradeoff accepted: simple, no app changes.
+          livenessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - |
+                  import os, sys, redis
+                  sys.exit(0 if redis.from_url(os.environ["REDIS_URL"], socket_timeout=5).ping() else 1)
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 2
           resources:
             requests:
               memory: 128Mi

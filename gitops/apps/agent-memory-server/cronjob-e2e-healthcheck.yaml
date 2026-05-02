@@ -53,19 +53,36 @@ data:
         }]})
         return mem_id, text, ts
 
-    def test_search(text):
-        result = api_call("POST", "/v1/long-term-memory/search", {
-            "text": text, "namespace": {"eq": CANARY_NS}, "limit": 5,
-        })
-        for m in result.get("memories", []):
-            if m.get("text") == text:
-                return m["id"]
-        raise RuntimeError(f"Created memory not found in search. Got {len(result.get('memories', []))} results.")
+    def test_search(text, mem_id):
+        # Retry to absorb async index propagation lag (worker indexes after HSET).
+        # Match by id first (deterministic); fall back to text for completeness.
+        last_count = 0
+        for attempt in range(5):
+            result = api_call("POST", "/v1/long-term-memory/search", {
+                "text": text, "namespace": {"eq": CANARY_NS}, "limit": 50,
+            })
+            mems = result.get("memories", [])
+            last_count = len(mems)
+            for m in mems:
+                if m.get("id") == mem_id or m.get("text") == text:
+                    return m["id"]
+            time.sleep(2 ** attempt)  # 1s, 2s, 4s, 8s, 16s
+        raise RuntimeError(f"Created memory not found in search after retries. Got {last_count} results.")
 
     def test_edit(memory_id, ts):
+        # Retry on 404 — EDIT can race with index propagation post-CREATE.
         new_text = f"[e2e-test] healthcheck canary {ts} VERIFIED"
-        api_call("PATCH", f"/v1/long-term-memory/{memory_id}", {"text": new_text})
-        return new_text
+        last_err = None
+        for attempt in range(4):
+            try:
+                api_call("PATCH", f"/v1/long-term-memory/{memory_id}", {"text": new_text})
+                return new_text
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+                last_err = e
+                time.sleep(2 ** attempt)  # 1s, 2s, 4s, 8s
+        raise last_err
 
     def test_delete(memory_id):
         url = f"{API_URL}/v1/long-term-memory?memory_ids={memory_id}"
@@ -97,9 +114,8 @@ data:
 
         if not failures:
             print("2/5 SEARCH...", end=" ", flush=True)
-            time.sleep(1)
             try:
-                found_id = test_search(text)
+                found_id = test_search(text, memory_id)
                 print(f"OK (id={found_id[-6:]})")
             except Exception as e:
                 print(f"FAIL: {e}")

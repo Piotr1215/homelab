@@ -73,6 +73,9 @@ spec:
             namespace: ai-tools
           - app: r2r
             namespace: ai-tools
+          - app: copy-fail-mitigation
+            namespace: kube-system
+            project: security
   template:
     metadata:
       name: "{{ .app }}"

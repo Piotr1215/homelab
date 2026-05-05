@@ -1,0 +1,100 @@
+---
+# CVE-2026-31431 ("Copy Fail") workaround
+# Blacklists algif_aead kernel module across all nodes until patched kernels are deployed.
+# Idempotent: re-applies on Kubespray reprovision (file lives at /etc/modprobe.d/ on host).
+# References:
+#   https://copy.fail
+#   https://cert.europa.eu/publications/security-advisories/2026-005/
+#   https://ubuntu.com/blog/copy-fail-vulnerability-fixes-available
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: copy-fail-mitigation
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: copy-fail-mitigation
+    app.kubernetes.io/component: kernel-mitigation
+  annotations:
+    cve: CVE-2026-31431
+    purpose: "Disable algif_aead module to prevent Copy Fail LPE"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: copy-fail-mitigation
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: copy-fail-mitigation
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: mitigate
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              CONF=/host/etc/modprobe.d/disable-algif-aead.conf
+              EXPECTED='install algif_aead /bin/false'
+              # 1. Idempotent blacklist file
+              if ! grep -qF "$EXPECTED" "$CONF" 2>/dev/null; then
+                printf '%s\n' "$EXPECTED" > "$CONF"
+                echo "[$(hostname)] wrote $CONF"
+              else
+                echo "[$(hostname)] $CONF already correct"
+              fi
+              # 2. Unload module if currently loaded (kernel-global state)
+              if grep -qE '^algif_aead ' /proc/modules; then
+                if rmmod algif_aead 2>/dev/null; then
+                  echo "[$(hostname)] rmmod algif_aead OK"
+                else
+                  echo "[$(hostname)] rmmod failed (in use); will require reboot"
+                fi
+              else
+                echo "[$(hostname)] algif_aead not loaded"
+              fi
+              # 3. Final verification
+              if [ -f "$CONF" ] && ! grep -qE '^algif_aead ' /proc/modules; then
+                echo "[$(hostname)] MITIGATED"
+              else
+                echo "[$(hostname)] VERIFICATION FAILED" >&2
+                exit 1
+              fi
+              # 4. Stay alive so DaemonSet stays Ready; re-runs on pod restart / node rebuild
+              exec sleep infinity
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          volumeMounts:
+            - name: host-modprobe-d
+              mountPath: /host/etc/modprobe.d
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -f /host/etc/modprobe.d/disable-algif-aead.conf && ! grep -qE '^algif_aead ' /proc/modules
+            initialDelaySeconds: 10
+            periodSeconds: 600
+            timeoutSeconds: 5
+            failureThreshold: 2
+      volumes:
+        - name: host-modprobe-d
+          hostPath:
+            path: /etc/modprobe.d
+            type: Directory

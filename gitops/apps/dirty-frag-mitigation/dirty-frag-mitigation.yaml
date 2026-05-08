@@ -1,0 +1,127 @@
+---
+# "Dirty Frag" universal Linux LPE workaround
+# Chains two unpatched kernel vulnerabilities (xfrm-ESP + RxRPC zero-copy
+# splice into skb frag slot) to grant any local user root. Bypasses the
+# copy.fail mitigation; different subsystems entirely.
+#
+# Embargo broke 2026-05-07 before patches landed: ESP fix merged to netdev,
+# RxRPC fix unmerged upstream, no CVE assigned, no distro packages.
+# Only available defense is blocking module load.
+#
+# Idempotent: re-applies on Kubespray reprovision (file lives at
+# /etc/modprobe.d/ on host). Modules are auto-loaded on demand by the kernel
+# when an attacker opens an IPsec or RxRPC socket, so the persistent
+# blacklist is the actual defense even when modules show as not loaded.
+#
+# Impact analysis:
+#   esp4/esp6 - IPsec ESP. Cluster CNI is Cilium with vxlan tunneling
+#               (enable-ipsec unset). Disabling has no effect on workloads.
+#   rxrpc     - Andrew File System RPC. Not used anywhere in the homelab.
+#
+# References:
+#   https://www.openwall.com/lists/oss-security/2026/05/07/8
+#   https://www.cyberkendra.com/2026/05/dirty-frag-no-patch-no-warning-root.html
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dirty-frag-mitigation
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: dirty-frag-mitigation
+    app.kubernetes.io/component: kernel-mitigation
+  annotations:
+    cve: "pending (Dirty Frag, xfrm-ESP + RxRPC chain)"
+    purpose: "Disable esp4/esp6/rxrpc modules to prevent Dirty Frag LPE"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dirty-frag-mitigation
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dirty-frag-mitigation
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: mitigate
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              CONF=/host/etc/modprobe.d/disable-dirty-frag.conf
+              MODULES="esp4 esp6 rxrpc"
+              EXPECTED=""
+              for m in $MODULES; do
+                EXPECTED="${EXPECTED}install ${m} /bin/false
+              "
+              done
+              # 1. Idempotent blacklist file (one install line per module)
+              if [ "$(cat "$CONF" 2>/dev/null || true)" != "$EXPECTED" ]; then
+                printf '%s' "$EXPECTED" > "$CONF"
+                echo "[$(hostname)] wrote $CONF"
+              else
+                echo "[$(hostname)] $CONF already correct"
+              fi
+              # 2. Unload any of the modules currently loaded (kernel-global state)
+              for m in $MODULES; do
+                if grep -qE "^${m} " /proc/modules; then
+                  if rmmod "$m" 2>/dev/null; then
+                    echo "[$(hostname)] rmmod $m OK"
+                  else
+                    echo "[$(hostname)] rmmod $m failed (in use); will require reboot"
+                  fi
+                else
+                  echo "[$(hostname)] $m not loaded"
+                fi
+              done
+              # 3. Final verification: file present, none of the modules loaded
+              if [ ! -f "$CONF" ]; then
+                echo "[$(hostname)] VERIFICATION FAILED: $CONF missing" >&2
+                exit 1
+              fi
+              for m in $MODULES; do
+                if grep -qE "^${m} " /proc/modules; then
+                  echo "[$(hostname)] VERIFICATION FAILED: $m still loaded" >&2
+                  exit 1
+                fi
+              done
+              echo "[$(hostname)] MITIGATED"
+              # 4. Stay alive so DaemonSet stays Ready; re-runs on pod restart / node rebuild
+              exec sleep infinity
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          volumeMounts:
+            - name: host-modprobe-d
+              mountPath: /host/etc/modprobe.d
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -f /host/etc/modprobe.d/disable-dirty-frag.conf && ! grep -qE '^(esp4|esp6|rxrpc) ' /proc/modules
+            initialDelaySeconds: 10
+            periodSeconds: 600
+            timeoutSeconds: 5
+            failureThreshold: 2
+      volumes:
+        - name: host-modprobe-d
+          hostPath:
+            path: /etc/modprobe.d
+            type: Directory

@@ -76,6 +76,9 @@ spec:
           - app: copy-fail-mitigation
             namespace: kube-system
             project: security
+          - app: dirty-frag-mitigation
+            namespace: kube-system
+            project: security
   template:
     metadata:
       name: "{{ .app }}"

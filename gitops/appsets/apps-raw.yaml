@@ -69,7 +69,6 @@ spec:
             namespace: talks-tracker
           - app: freshrss
             namespace: freshrss
-            selfHeal: "false"
           - app: agent-memory-server
             namespace: ai-tools
           - app: r2r

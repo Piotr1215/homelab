@@ -34,9 +34,12 @@ data:
     UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
     NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
-    VCLUSTER_VERSION = os.environ.get("VCLUSTER_VERSION", "0.33.0")
-    PLATFORM_VERSION = os.environ.get("PLATFORM_VERSION", "4.8.0")
     DOCS_ROOT = os.environ.get("DOCS_ROOT", "/repo")
+    # Index the live (current) docs from /vcluster and /platform; pinned snapshots
+    # in vcluster_versioned_docs/ and platform_versioned_docs/ go stale as releases
+    # cycle and eventually disappear from versions.json. "current" matches the
+    # next-to-be-released version on docs.vcluster.com.
+    DOCS_VERSION = "current"
 
     MIN_CONTENT_LENGTH = 50
     MAX_RETRIES = 3
@@ -101,19 +104,17 @@ data:
 
 
     def construct_url(rel_path, product, version):
+        # Live-docs URLs on docs.vcluster.com omit the version segment, e.g.
+        # /docs/vcluster/configure/... not /docs/vcluster/0.33.0/configure/...
         path = rel_path
-        for prefix in (
-            f"vcluster_versioned_docs/version-{version}/",
-            f"platform_versioned_docs/version-{version}/",
-            "docs/",
-        ):
+        for prefix in (f"{product}/", "docs/"):
             if path.startswith(prefix):
                 path = path[len(prefix):]
                 break
         path = re.sub(r"\.mdx?$", "", path)
         if path.endswith("/index"):
             path = path[:-6]
-        return f"https://www.vcluster.com/docs/{product}/{version}/{path}"
+        return f"https://www.vcluster.com/docs/{product}/{path}"
 
 
     def _build_multipart(fields):
@@ -184,16 +185,13 @@ data:
         root = Path(DOCS_ROOT).resolve()
 
         targets = []
-        vdir = root / "vcluster_versioned_docs" / f"version-{VCLUSTER_VERSION}"
-        if vdir.exists():
-            targets.append(("vcluster", VCLUSTER_VERSION, vdir))
-
-        pdir = root / "platform_versioned_docs" / f"version-{PLATFORM_VERSION}"
-        if pdir.exists():
-            targets.append(("platform", PLATFORM_VERSION, pdir))
+        for product in ("vcluster", "platform"):
+            base = root / product
+            if base.exists():
+                targets.append((product, DOCS_VERSION, base))
 
         if not targets:
-            msg = f"No version dirs found in {root}"
+            msg = f"No live docs dirs (vcluster/, platform/) found in {root}"
             print(f"ERROR: {msg}")
             send_ntfy("R2R Docs Sync Failed", msg, priority="5",
                        tags="rotating_light,r2r,docs")
@@ -342,10 +340,6 @@ spec:
               env:
                 - name: R2R_URL
                   value: "http://r2r-api.ai-tools.svc:7272/v3"
-                - name: VCLUSTER_VERSION
-                  value: "0.33.0"
-                - name: PLATFORM_VERSION
-                  value: "4.8.0"
                 - name: DOCS_ROOT
                   value: "/repo"
               volumeMounts:

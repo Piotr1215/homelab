@@ -30,6 +30,10 @@ spec:
       app.kubernetes.io/component: worker
   template:
     metadata:
+      # `kubectl rollout restart` adds kubectl.kubernetes.io/restartedAt here.
+      # The AppSet ignoreDifferences strips that key, leaving annotations: {}.
+      # Mirror the empty map in git so live and target match instead of looping selfHeal.
+      annotations: {}
       labels:
         app.kubernetes.io/name: agent-memory-worker
         app.kubernetes.io/instance: agent-memory-server

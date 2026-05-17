@@ -51,7 +51,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: mitigate
-          image: busybox:1.36
+          image: busybox:1.37
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true

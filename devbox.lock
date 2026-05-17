@@ -197,51 +197,51 @@
         }
       }
     },
-    "istioctl@1.29.1": {
-      "last_modified": "2026-03-21T07:29:51Z",
-      "resolved": "github:NixOS/nixpkgs/09061f748ee21f68a089cd5d91ec1859cd93d0be#istioctl",
+    "istioctl@1.29.2": {
+      "last_modified": "2026-04-23T13:07:47Z",
+      "resolved": "github:NixOS/nixpkgs/01fbdeef22b76df85ea168fbfe1bfd9e63681b30#istioctl",
       "source": "devbox-search",
-      "version": "1.29.1",
+      "version": "1.29.2",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/d8jgfrlcqki9gy73nl482hyglxqrnw3m-istioctl-1.29.1",
+              "path": "/nix/store/49lv9j55c3d63kn788y9s2cxfz1bbhi2-istioctl-1.29.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/d8jgfrlcqki9gy73nl482hyglxqrnw3m-istioctl-1.29.1"
+          "store_path": "/nix/store/49lv9j55c3d63kn788y9s2cxfz1bbhi2-istioctl-1.29.2"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/36wag9vj5miy45d6nslqw0ndwl302kbh-istioctl-1.29.1",
+              "path": "/nix/store/nnjrc6jxpnfqvw23w71kckpic85riqps-istioctl-1.29.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/36wag9vj5miy45d6nslqw0ndwl302kbh-istioctl-1.29.1"
+          "store_path": "/nix/store/nnjrc6jxpnfqvw23w71kckpic85riqps-istioctl-1.29.2"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/af75gyi98r80xar6cp0w4v8aqx9i0wil-istioctl-1.29.1",
+              "path": "/nix/store/ra5glc0b6vdhsd5pjfwz7smmbm07h3zd-istioctl-1.29.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/af75gyi98r80xar6cp0w4v8aqx9i0wil-istioctl-1.29.1"
+          "store_path": "/nix/store/ra5glc0b6vdhsd5pjfwz7smmbm07h3zd-istioctl-1.29.2"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/w3qqf4wbmji687m5qn4j590wa1icvc1i-istioctl-1.29.1",
+              "path": "/nix/store/yy8kzlx591w3ivwd1j6p5jvaazbacapr-istioctl-1.29.2",
               "default": true
             }
           ],
-          "store_path": "/nix/store/w3qqf4wbmji687m5qn4j590wa1icvc1i-istioctl-1.29.1"
+          "store_path": "/nix/store/yy8kzlx591w3ivwd1j6p5jvaazbacapr-istioctl-1.29.2"
         }
       }
     },

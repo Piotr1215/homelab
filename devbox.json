@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json",
   "packages": [
     "istioctl@1.29.1",
-    "kn@1.20.0",
+    "kn@1.22.0",
     "fluxcd@2.8.6",
     "ollama@0.23.1",
     "vault@1.21.4",

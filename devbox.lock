@@ -293,51 +293,51 @@
         }
       }
     },
-    "ollama@0.23.1": {
-      "last_modified": "2026-05-06T12:40:13Z",
-      "resolved": "github:NixOS/nixpkgs/07800bee2b362f6c73fe17cb1593a260c5e183c6#ollama",
+    "ollama@0.23.4": {
+      "last_modified": "2026-05-20T06:38:13Z",
+      "resolved": "github:NixOS/nixpkgs/d99b013d5d1931ad77fe3912ed218170dec5d9a4#ollama",
       "source": "devbox-search",
-      "version": "0.23.1",
+      "version": "0.23.4",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/a5hbkfsbww00skb9y23wwxml4r56hqjm-ollama-0.23.1",
+              "path": "/nix/store/hazyx6gkb7c1nvfk9pfd1rh5pn4qamcy-ollama-0.23.4",
               "default": true
             }
           ],
-          "store_path": "/nix/store/a5hbkfsbww00skb9y23wwxml4r56hqjm-ollama-0.23.1"
+          "store_path": "/nix/store/hazyx6gkb7c1nvfk9pfd1rh5pn4qamcy-ollama-0.23.4"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/2g3k1ck3gw9j87p7kpbgf6az6ihybwv1-ollama-0.23.1",
+              "path": "/nix/store/1qciyxcmh6h7q63h1f1l3c1c9lfp2sf8-ollama-0.23.4",
               "default": true
             }
           ],
-          "store_path": "/nix/store/2g3k1ck3gw9j87p7kpbgf6az6ihybwv1-ollama-0.23.1"
+          "store_path": "/nix/store/1qciyxcmh6h7q63h1f1l3c1c9lfp2sf8-ollama-0.23.4"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/g9a4a0pn8kl836i3qfm1r2sc698275wf-ollama-0.23.1",
+              "path": "/nix/store/vsyxs5l6yg479id0whnadyacp1c3v6dj-ollama-0.23.4",
               "default": true
             }
           ],
-          "store_path": "/nix/store/g9a4a0pn8kl836i3qfm1r2sc698275wf-ollama-0.23.1"
+          "store_path": "/nix/store/vsyxs5l6yg479id0whnadyacp1c3v6dj-ollama-0.23.4"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/aqnvf5c02rkyi49kdfg3mp0463jn6zrj-ollama-0.23.1",
+              "path": "/nix/store/6f44r6jp14fphf9rlwfxhi0kafa2aq8d-ollama-0.23.4",
               "default": true
             }
           ],
-          "store_path": "/nix/store/aqnvf5c02rkyi49kdfg3mp0463jn6zrj-ollama-0.23.1"
+          "store_path": "/nix/store/6f44r6jp14fphf9rlwfxhi0kafa2aq8d-ollama-0.23.4"
         }
       }
     },

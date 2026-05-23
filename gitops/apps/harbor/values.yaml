@@ -138,7 +138,7 @@ jobservice:
       cpu: 500m
   initContainers:
     - name: wait-for-core
-      image: busybox:1.37
+      image: busybox:1.38
       command:
         - sh
         - -c

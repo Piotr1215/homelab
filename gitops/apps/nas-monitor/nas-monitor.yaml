@@ -63,7 +63,7 @@ spec:
       serviceAccountName: nas-monitor
       containers:
       - name: shell-operator
-        image: piotrzan/shell-operator-nas-monitor:v1
+        image: piotrzan/shell-operator-nas-monitor:v2
         imagePullPolicy: Always
         resources:
           requests:

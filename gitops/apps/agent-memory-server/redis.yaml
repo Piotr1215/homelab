@@ -41,8 +41,11 @@ spec:
         - name: redis
           image: redis/redis-stack-server:7.4.0-v8
           env:
+            # noeviction: Redis is the source of truth for long-term memories, so
+            # writes must fail loudly at the ceiling rather than silently evict
+            # records (allkeys-lru would drop memories under pressure). DEVOPS-959.
             - name: REDIS_ARGS
-              value: "--appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru"
+              value: "--appendonly yes --maxmemory 1gb --maxmemory-policy noeviction"
           ports:
             - containerPort: 6379
               name: redis
@@ -50,11 +53,14 @@ spec:
             - name: data
               mountPath: /data
           resources:
+            # limit kept above --maxmemory 1gb so the BGSAVE/AOF-rewrite fork has
+            # copy-on-write headroom; otherwise the OOM killer preempts Redis's own
+            # noeviction handling. DEVOPS-959.
             limits:
-              memory: 768Mi
+              memory: 1536Mi
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 512Mi
           livenessProbe:
             exec:
               command: ["redis-cli", "ping"]

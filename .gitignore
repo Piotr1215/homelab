@@ -72,3 +72,4 @@ result-*
 
 # Backups (contain sensitive data)
 backups/
+gke_gcloud_auth_plugin_cache

@@ -154,3 +154,8 @@ textboxes:
     position: [[0, 26], [80, 14]]
     rate-ms: 5000
     sample: $kubectl get events -A --sort-by='.lastTimestamp' --field-selector type!=Normal | tail -14
+
+  - title: "Keys:  prefix n / p  =  switch dashboard   |   prefix w  =  list windows   (do NOT use prefix d here)"
+    position: [[0, 40], [80, 3]]
+    rate-ms: 3600000
+    sample: echo "k8s and memory dashboards are separate tmux windows in the 'homelab' session"

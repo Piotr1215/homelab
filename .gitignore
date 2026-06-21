@@ -65,6 +65,13 @@ bitwarden-credentials.json
 .devbox/
 devbox.lock
 
+# Python venv (kubespray ansible toolchain, see justfile ansible-* recipes)
+.venv/
+
+# Kubespray inventory: holds credentials/ (kubeadm cert key) + node topology.
+# This repo is PUBLIC, so keep the whole inventory local-only.
+/inventory/
+
 # Nix
 result
 result-*

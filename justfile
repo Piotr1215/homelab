@@ -148,37 +148,37 @@ k8s-argocd-app name namespace project="apps" type="raw":
 # Kubespray Ansible Playbooks
 # Edit Kubespray inventory file
 ansible-edit-inventory:
-  ${EDITOR:-vim} kubespray/inventory/homelab/inventory.ini
+  ${EDITOR:-vim} inventory/homelab/inventory.ini
 
 # Add new worker node to cluster (Kubespray auto-detects new nodes from inventory)
 ansible-scale-worker:
   #!/usr/bin/env bash
   cd kubespray
-  ansible-playbook -i inventory/homelab/inventory.ini scale.yml -b
+  ../.venv/bin/ansible-playbook -i ../inventory/homelab/inventory.ini scale.yml -b
 
 # Deploy/update cluster (also used for adding control planes)
 ansible-cluster:
   #!/usr/bin/env bash
   cd kubespray
-  ansible-playbook -i inventory/homelab/inventory.ini cluster.yml -b
+  ../.venv/bin/ansible-playbook -i ../inventory/homelab/inventory.ini cluster.yml -b
 
 # Remove node from cluster
 ansible-remove-node node:
   #!/usr/bin/env bash
   cd kubespray
-  ansible-playbook -i inventory/homelab/inventory.ini remove-node.yml -b -e node={{node}}
+  ../.venv/bin/ansible-playbook -i ../inventory/homelab/inventory.ini remove-node.yml -b -e node={{node}}
 
 # Upgrade Kubernetes cluster
 ansible-upgrade-cluster:
   #!/usr/bin/env bash
   cd kubespray
-  ansible-playbook -i inventory/homelab/inventory.ini upgrade-cluster.yml -b
+  ../.venv/bin/ansible-playbook -i ../inventory/homelab/inventory.ini upgrade-cluster.yml -b
 
 # Reset cluster (WARNING: destructive)
 ansible-reset-cluster:
   #!/usr/bin/env bash
   read -p "This will DESTROY the cluster. Type 'yes' to continue: " confirm
-  [[ "$confirm" == "yes" ]] && cd kubespray && ansible-playbook -i inventory/homelab/inventory.ini reset.yml -b || echo "Aborted"
+  [[ "$confirm" == "yes" ]] && cd kubespray && ../.venv/bin/ansible-playbook -i ../inventory/homelab/inventory.ini reset.yml -b || echo "Aborted"
 
 # VM Provisioning
 # Create new worker VM with cloud-init

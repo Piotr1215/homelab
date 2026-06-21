@@ -63,8 +63,6 @@ spec:
             project: networking
           - app: sre-demo
             namespace: sre-demo
-          - app: taskchampion-sync-server
-            namespace: taskchampion
           - app: talks-tracker
             namespace: talks-tracker
           - app: freshrss

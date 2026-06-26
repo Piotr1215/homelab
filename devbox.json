@@ -9,7 +9,7 @@
     "cilium-cli@0.19.4",
     "hubble@1.19.4",
     "velero@1.18.0",
-    "argocd@3.3.6",
+    "argocd@3.4.4",
     "sshpass@latest",
   ],
   "shell": {

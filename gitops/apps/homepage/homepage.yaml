@@ -67,13 +67,6 @@ data:
           showStats: true
           namespace: kubernetes-dashboard
           podSelector: app.kubernetes.io/name=kong
-      - Talks Tracker:
-          description: Conference Talks History
-          href: https://talks.homelab.local
-          icon: mdi-presentation
-          showStats: true
-          namespace: talks-tracker
-          podSelector: app.kubernetes.io/name=talks-tracker
       - FreshRSS:
           description: Self-hosted RSS Reader
           href: https://freshrss.homelab.local

@@ -6,7 +6,7 @@
     "fluxcd@2.8.8",
     "ollama@0.30.7",
     "vault@1.21.4",
-    "cilium-cli@0.19.4",
+    "cilium-cli@0.19.5",
     "hubble@1.19.4",
     "velero@1.18.0",
     "argocd@3.4.4",

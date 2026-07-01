@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: open-webui
-        image: ghcr.io/open-webui/open-webui:v0.10.1
+        image: ghcr.io/open-webui/open-webui:v0.10.2
         ports:
         - containerPort: 8080
           name: http

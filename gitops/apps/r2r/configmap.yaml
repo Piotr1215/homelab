@@ -15,8 +15,8 @@ data:
     concurrent_request_limit = 16
 
     [app]
-    quality_llm = "anthropic/claude-3-5-haiku-latest"
-    fast_llm = "anthropic/claude-3-5-haiku-latest"
+    quality_llm = "anthropic/claude-sonnet-5"
+    fast_llm = "anthropic/claude-haiku-4-5"
 
     [embedding]
     provider = "ollama"

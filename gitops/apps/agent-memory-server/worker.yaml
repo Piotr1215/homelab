@@ -62,16 +62,16 @@ spec:
             - name: ENABLE_NER
               value: "true"
             - name: GENERATION_MODEL
-              value: anthropic/claude-sonnet-4-6
+              value: anthropic/claude-sonnet-5
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: anthropic-api-key
                   key: api-key
             - name: FAST_MODEL
-              value: anthropic/claude-sonnet-4-6
+              value: anthropic/claude-sonnet-5
             - name: SLOW_MODEL
-              value: anthropic/claude-sonnet-4-6
+              value: anthropic/claude-sonnet-5
             - name: EMBEDDING_MODEL
               value: ollama/nomic-embed-text
             - name: OLLAMA_API_BASE

@@ -258,7 +258,11 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 2
-      activeDeadlineSeconds: 300
+      # The sync does ~1000+ R2R delete+reingest ops (each with server-side
+      # embedding); 300s was too tight and jobs died with DeadlineExceeded even
+      # though the work completed. 1200s gives headroom, still well under the
+      # hourly schedule (concurrencyPolicy: Forbid prevents overlap).
+      activeDeadlineSeconds: 1200
       template:
         spec:
           restartPolicy: Never

@@ -275,7 +275,10 @@ spec:
       interval: 30s
       rules:
         - alert: ServiceDown
-          expr: up{job=~".*"} == 0
+          # kube-proxy exposes metrics on 127.0.0.1 so it is never scrapable
+          # here; excluding it avoids a permanent false positive (TargetDown
+          # already covers genuinely unreachable targets).
+          expr: up{job!="kube-proxy"} == 0
           for: 5m
           labels:
             severity: critical
@@ -297,7 +300,9 @@ spec:
       interval: 30s
       rules:
         - alert: TooManyPods
-          expr: sum(kubelet_running_pods) > 100
+          # 7-node cluster steady-state runs ~150 pods; 100 fired constantly.
+          # 300 flags a genuine runaway (default kubelet cap is 110 pods/node).
+          expr: sum(kubelet_running_pods) > 300
           for: 5m
           labels:
             severity: warning
@@ -306,7 +311,10 @@ spec:
             description: "Cluster has {{ $value }} pods running, which may indicate resource issues."
 
         - alert: KubernetesJobFailed
-          expr: kube_job_status_failed > 0
+          # Only alert on jobs that failed in the last 24h. Without the recency
+          # guard, kube-state-metrics keeps re-exposing long-dead failed jobs
+          # (e.g. a 90-day-old spire pre-upgrade hook) so the alert never clears.
+          expr: kube_job_status_failed > 0 and (time() - kube_job_created) < 86400
           for: 5m
           labels:
             severity: warning

@@ -12,12 +12,13 @@ data:
   sync.py: |
     #!/usr/bin/env python3
     """Sync agent-memory into R2R. Full reconciliation each run:
-    fetch all memories, diff against R2R inventory, create/delete as needed.
+    enumerate all memories, diff against R2R inventory, create/delete as needed.
     """
     import json
     import os
+    import socket
     import ssl
-    import time
+    import urllib.parse
     import urllib.request
     import uuid
 
@@ -27,7 +28,7 @@ data:
     _ssl_ctx.verify_mode = ssl.CERT_NONE
 
     R2R_URL = os.environ.get("R2R_URL", "http://r2r-api.ai-tools.svc:7272/v3")
-    MEMORY_URL = os.environ.get("MEMORY_URL", "http://agent-memory-mcp.ai-tools.svc:9000/mcp")
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://agent-memory-redis.ai-tools.svc:6379")
     NTFY_URL = os.environ.get("NTFY_URL", "https://ntfy.sh/homelab-piotr1215-warning")
     NAMESPACE = uuid.UUID("b2c3d4e5-f6a7-8901-bcde-f12345678901")
 
@@ -43,68 +44,91 @@ data:
         except Exception:
             pass
 
-    MAX_RETRIES = 3
-    RETRY_DELAYS = [5, 10, 20]
-
-    def mcp_call(method, params):
-        """Call agent-memory MCP via streamable-http with retry."""
-        payload = json.dumps({
-            "jsonrpc": "2.0", "id": "sync",
-            "method": method, "params": params,
-        }).encode()
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream",
-        }
-        last_err = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                req = urllib.request.Request(MEMORY_URL, data=payload, headers=headers)
-                with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
-                    raw = resp.read().decode()
-                for line in raw.splitlines():
-                    if line.startswith("data: "):
-                        return json.loads(line[6:])
-                return {}
-            except (urllib.error.URLError, ConnectionRefusedError, OSError) as e:
-                last_err = e
-                if attempt < MAX_RETRIES - 1:
-                    delay = RETRY_DELAYS[attempt]
-                    print(f"MCP call failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-                    print(f"Retrying in {delay}s...")
-                    time.sleep(delay)
-        raise last_err
-
     def mem_doc_id(mem_id):
         """Deterministic R2R document UUID from memory ID."""
         return str(uuid.uuid5(NAMESPACE, f"memory:{mem_id}"))
 
+    # --- minimal pure-stdlib RESP client (python:3.14-slim has no redis-py,
+    #     and a runtime `pip install` would make every run depend on PyPI) ---
+
+    def _redis_conn():
+        u = urllib.parse.urlparse(REDIS_URL)
+        s = socket.create_connection((u.hostname, u.port or 6379), timeout=15)
+        return s, s.makefile("rb")
+
+    def _resp_read(f):
+        line = f.readline()
+        if not line:
+            raise EOFError("redis: empty reply")
+        t, rest = line[:1], line[1:].strip()
+        if t == b"+":
+            return rest.decode()
+        if t == b"-":
+            raise Exception("redis error: " + rest.decode())
+        if t == b":":
+            return int(rest)
+        if t == b"$":
+            n = int(rest)
+            if n == -1:
+                return None
+            data = f.read(n)
+            f.read(2)  # trailing CRLF
+            return data
+        if t == b"*":
+            n = int(rest)
+            if n == -1:
+                return None
+            return [_resp_read(f) for _ in range(n)]
+        raise Exception("redis: bad RESP " + repr(line))
+
+    def _resp_cmd(s, f, *args):
+        buf = b"*%d\r\n" % len(args)
+        for a in args:
+            a = a if isinstance(a, bytes) else str(a).encode()
+            buf += b"$%d\r\n%s\r\n" % (len(a), a)
+        s.sendall(buf)
+        return _resp_read(f)
+
     def fetch_all_memories():
-        """Fetch ALL memories from agent-memory (paginated)."""
-        all_memories = []
-        offset = 0
-        page_size = 50
-        while True:
-            result = mcp_call("tools/call", {
-                "name": "search_long_term_memory",
-                "arguments": {"text": "", "limit": page_size, "offset": offset},
-            })
-            content = result.get("result", {}).get("content", [])
-            memories = []
-            for c in content:
-                if c.get("type") == "text":
-                    try:
-                        memories = json.loads(c["text"]).get("memories", [])
-                    except (json.JSONDecodeError, TypeError):
-                        pass
+        """Enumerate ALL memories straight from the memory server's redis.
+
+        The MCP/REST search endpoint is semantic KNN: with an empty query it
+        returns the same top-ranked ~1200 rows on every page and never reaches
+        the tail, so offset paging yields ~800 duplicates and silently drops
+        ~800 real memories. That made the sync flag those memories' R2R docs as
+        orphans and churn ~876 deletes + ~150 creates every run until it hit
+        DeadlineExceeded. Redis SCAN is the only complete, stable enumeration
+        (one memory_idx:* hash per memory). Couples to the memory server's redis
+        schema by necessity: no list/enumerate endpoint exists on the API.
+        """
+        s, f = _redis_conn()
+        try:
+            cursor = "0"
+            keys = []
+            while True:
+                cur, batch = _resp_cmd(s, f, "SCAN", cursor, "MATCH", "memory_idx:*", "COUNT", 500)
+                cursor = cur.decode() if isinstance(cur, bytes) else str(cur)
+                keys.extend(k.decode() for k in batch)
+                if cursor == "0":
                     break
-            if not memories:
-                break
-            all_memories.extend(memories)
-            if len(memories) < page_size:
-                break
-            offset += page_size
-        return all_memories
+            out = []
+            for k in keys:
+                vals = _resp_cmd(s, f, "HMGET", k, "id_", "text", "topics", "namespace", "created_at")
+                v = [x.decode() if isinstance(x, bytes) else x for x in vals]
+                mid = v[0] or ""
+                if not mid:
+                    continue
+                raw_topics = v[2] or ""
+                out.append({
+                    "id": mid,
+                    "text": v[1] or "",
+                    "topics": [t for t in raw_topics.split(",") if t],
+                    "namespace": v[3] or "default",
+                    "created_at": v[4] or "",
+                })
+            return out
+        finally:
+            s.close()
 
     def fetch_r2r_memory_docs():
         """Get all agent-memory documents currently in R2R. Returns {doc_id: memory_id}.
@@ -185,7 +209,9 @@ data:
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx) as resp:
+            # 30s: idle ingest is ~3s, but server-side embedding can slow under
+            # the one-time backfill load; a false timeout just retries next run.
+            with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
                 result = json.loads(resp.read())
                 return bool(result.get("results", {}).get("document_id"))
         except Exception as e:
@@ -193,11 +219,11 @@ data:
             return False
 
     def main():
-        print("Full reconciliation: fetching all memories...")
+        print("Full reconciliation: enumerating all memories from redis...")
         try:
             memories = fetch_all_memories()
         except Exception as e:
-            send_ntfy("R2R Memory Sync Failed", f"Could not reach agent-memory MCP: {e}",
+            send_ntfy("R2R Memory Sync Failed", f"Could not enumerate memories from redis: {e}",
                        priority="5", tags="rotating_light,r2r,memory")
             raise
 
@@ -207,7 +233,7 @@ data:
 
         if len(real) == 0:
             send_ntfy("R2R Memory Sync Warning",
-                       "0 memories returned from agent-memory — possible server-side error",
+                       "0 memories returned from redis — possible server-side error",
                        priority="4", tags="warning,r2r,memory")
             return
 
@@ -273,11 +299,13 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 2
-      # The sync does ~1000+ R2R delete+reingest ops (each with server-side
-      # embedding); 300s was too tight and jobs died with DeadlineExceeded even
-      # though the work completed. 1200s gives headroom, still well under the
-      # hourly schedule (concurrencyPolicy: Forbid prevents overlap).
-      activeDeadlineSeconds: 1200
+      # Steady-state runs finish in seconds (to_create/to_delete ~0). The one-
+      # time backfill after the redis-enumeration fix creates ~800 docs at ~3s
+      # each (server-side embedding), so ~2600s. 3000s covers that in a single
+      # pass while staying under the hourly schedule (3600s); concurrencyPolicy
+      # Forbid prevents overlap, and a partial run is self-healing (created docs
+      # persist, next run finishes the rest) now that deletes no longer churn.
+      activeDeadlineSeconds: 3000
       template:
         spec:
           restartPolicy: Never
@@ -288,8 +316,8 @@ spec:
               env:
                 - name: R2R_URL
                   value: "http://r2r-api.ai-tools.svc:7272/v3"
-                - name: MEMORY_URL
-                  value: "http://agent-memory-mcp.ai-tools.svc:9000/mcp"
+                - name: REDIS_URL
+                  value: "redis://agent-memory-redis.ai-tools.svc:6379"
               volumeMounts:
                 - name: script
                   mountPath: /scripts

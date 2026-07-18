@@ -89,3 +89,20 @@ spec:
     - port: 8080
       targetPort: http
       name: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: r2r-stats
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-stats
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: r2r-stats
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

@@ -219,7 +219,7 @@ data:
           podSelector: app.kubernetes.io/name=agent-memory-workbench
       - R2R Vector Store:
           description: Repo Vector Map Stats
-          href: https://r2r.homelab.local
+          href: https://grafana.homelab.local/d/r2r-vector-store/r2r-vector-store
           icon: mdi-vector-triangle
           widget:
             type: customapi

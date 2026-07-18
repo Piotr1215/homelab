@@ -87,19 +87,55 @@ data:
             "per_repo": per_repo,
         }
 
+    def render_metrics(snap):
+        """Render the cached counts in Prometheus text exposition format."""
+        out = []
+
+        def esc(value):
+            return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+
+        out.append("# HELP r2r_repos_total Repos in the R2R vector store.")
+        out.append("# TYPE r2r_repos_total gauge")
+        out.append("r2r_repos_total %d" % snap.get("repos", 0))
+        out.append("# HELP r2r_documents_total Total repo documents (commit+file).")
+        out.append("# TYPE r2r_documents_total gauge")
+        out.append("r2r_documents_total %d" % snap.get("total_docs", 0))
+        out.append("# HELP r2r_repo_documents Repo documents by repo and source.")
+        out.append("# TYPE r2r_repo_documents gauge")
+        for repo, counts in (snap.get("per_repo") or {}).items():
+            name = esc(repo)
+            out.append('r2r_repo_documents{repo="%s",source="commit"} %d' % (name, counts.get("commit", 0)))
+            out.append('r2r_repo_documents{repo="%s",source="file"} %d' % (name, counts.get("file", 0)))
+        out.append("# HELP r2r_stats_up 1 if the last R2R scan succeeded, else 0.")
+        out.append("# TYPE r2r_stats_up gauge")
+        out.append("r2r_stats_up %d" % (1 if snap.get("ok") else 0))
+        out.append("# HELP r2r_stats_last_success_timestamp_seconds Unix time of last successful scan.")
+        out.append("# TYPE r2r_stats_last_success_timestamp_seconds gauge")
+        out.append("r2r_stats_last_success_timestamp_seconds %d" % snap.get("updated", 0))
+        return "\n".join(out) + "\n"
+
     def refresh_loop():
         while True:
+            started = time.time()
             try:
                 data = compute()
+                took = time.time() - started
                 with _lock:
                     _cache.update(data)
                     _cache["ok"] = True
                     _cache["error"] = None
                     _cache["updated"] = int(time.time())
+                print(
+                    "scan ok repos=%d total=%d commit=%d file=%d took=%.2fs"
+                    % (data["repos"], data["total_docs"], data["commit_docs"],
+                       data["file_docs"], took),
+                    flush=True,
+                )
             except Exception as exc:  # noqa: BLE001 - report, never crash the loop
                 with _lock:
                     _cache["ok"] = False
                     _cache["error"] = str(exc)
+                print("scan error: %s" % exc, flush=True)
             time.sleep(CACHE_TTL)
 
     class Handler(BaseHTTPRequestHandler):
@@ -119,6 +155,16 @@ data:
                 with _lock:
                     snapshot = dict(_cache)
                 self._send(200, snapshot)
+                return
+            if self.path.startswith("/metrics"):
+                with _lock:
+                    snapshot = dict(_cache)
+                body = render_metrics(snapshot).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
                 return
             self._send(404, {"error": "not found"})
 

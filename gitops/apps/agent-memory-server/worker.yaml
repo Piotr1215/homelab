@@ -50,7 +50,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: worker
-          image: piotrzan/agent-memory-server:0.15.1-patched-v12
+          image: piotrzan/agent-memory-server:0.15.2-patched-v14@sha256:b964f51b6122d38aa3e2da1077a8531049028f5821411635b2f199963c66bf65
           command: ["agent-memory", "task-worker"]
           env:
             - name: REDIS_URL

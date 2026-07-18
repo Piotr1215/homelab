@@ -76,16 +76,6 @@ patch-bitwarden:
   kubectl patch clustersecretstore bitwarden-secretsmanager --type=json \
     -p '[{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/organizationID","value":"'$BITWARDEN_ORG_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/projectID","value":"'$BITWARDEN_PROJECT_ID'"},{"op":"replace","path":"/spec/provider/bitwardensecretsmanager/caBundle","value":"'$CA_BUNDLE'"}]'
 
-# Manual Velero backup with optional description
-backup-velero description="manual-backup":
-  @echo "Creating Velero backup: {{description}}-$(date +%Y%m%d-%H%M%S)"
-  @NAME=$(echo "{{description}}" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')-$(date +%Y%m%d-%H%M%S); \
-  velero backup create "$NAME" \
-    --exclude-namespaces kube-system,kube-public,kube-node-lease \
-    --wait
-  @echo "Backup complete. Listing recent backups:"
-  velero backup get | head -10
-
 # Kubernetes Resource Template System
 # List available K8s resource templates
 k8s-templates:

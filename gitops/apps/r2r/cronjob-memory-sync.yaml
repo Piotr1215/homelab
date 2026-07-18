@@ -107,21 +107,36 @@ data:
         return all_memories
 
     def fetch_r2r_memory_docs():
-        """Get all memory-* documents currently in R2R. Returns {doc_id: memory_id}."""
+        """Get all agent-memory documents currently in R2R. Returns {doc_id: memory_id}.
+
+        Pages through the FULL document set and filters by metadata.source.
+        The store also holds thousands of non-memory docs (repo-vector maps,
+        claude sessions, obsidian, vcluster-docs). An unpaginated limit=500
+        only revealed a fraction of the memory docs, so the sync thought the
+        rest were missing and re-ingested ~1600 memories every run until it
+        hit DeadlineExceeded. Full pagination makes to_create ~0 at steady
+        state so a run finishes in seconds.
+        """
         docs = {}
+        offset = 0
+        page = 500
         try:
-            req = urllib.request.Request(
-                f"{R2R_URL}/documents?limit=500",
-                headers={"Content-Type": "application/json"},
-            )
-            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx) as resp:
-                data = json.loads(resp.read())
-            for doc in data.get("results", []):
-                title = doc.get("title", "")
-                if title.startswith("memory-"):
-                    doc_id = doc.get("id", "")
-                    mem_id = doc.get("metadata", {}).get("memory_id", "")
-                    docs[doc_id] = mem_id
+            while True:
+                req = urllib.request.Request(
+                    f"{R2R_URL}/documents?limit={page}&offset={offset}",
+                    headers={"Content-Type": "application/json"},
+                )
+                with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
+                    data = json.loads(resp.read())
+                results = data.get("results", []) or []
+                for doc in results:
+                    meta = doc.get("metadata", {}) or {}
+                    if meta.get("source") == "agent-memory":
+                        docs[doc.get("id", "")] = meta.get("memory_id", "")
+                offset += len(results)
+                total = data.get("total_entries", 0) or 0
+                if not results or offset >= total:
+                    break
         except Exception as e:
             print(f"WARNING: could not list R2R docs: {e}")
         return docs

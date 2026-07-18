@@ -6,6 +6,9 @@ metadata:
   labels:
     prometheus: kube-prometheus
     role: alert-rules
+    # Prometheus operator ruleSelector matches release=kube-prometheus-stack;
+    # without this label none of these homelab rules are loaded.
+    release: kube-prometheus-stack
 spec:
   groups:
     # Pod and Container Alerts

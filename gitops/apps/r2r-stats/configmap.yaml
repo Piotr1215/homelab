@@ -44,6 +44,8 @@ data:
         "updated": 0,
         "ok": False,
         "error": None,
+        "duration": 0.0,
+        "errors_total": 0,
     }
 
     def r2r_get(path):
@@ -112,6 +114,12 @@ data:
         out.append("# HELP r2r_stats_last_success_timestamp_seconds Unix time of last successful scan.")
         out.append("# TYPE r2r_stats_last_success_timestamp_seconds gauge")
         out.append("r2r_stats_last_success_timestamp_seconds %d" % snap.get("updated", 0))
+        out.append("# HELP r2r_scan_duration_seconds Wall time of the last R2R scan.")
+        out.append("# TYPE r2r_scan_duration_seconds gauge")
+        out.append("r2r_scan_duration_seconds %f" % snap.get("duration", 0.0))
+        out.append("# HELP r2r_scan_errors_total Total failed R2R scans since start.")
+        out.append("# TYPE r2r_scan_errors_total counter")
+        out.append("r2r_scan_errors_total %d" % snap.get("errors_total", 0))
         return "\n".join(out) + "\n"
 
     def refresh_loop():
@@ -125,6 +133,7 @@ data:
                     _cache["ok"] = True
                     _cache["error"] = None
                     _cache["updated"] = int(time.time())
+                    _cache["duration"] = took
                 print(
                     "scan ok repos=%d total=%d commit=%d file=%d took=%.2fs"
                     % (data["repos"], data["total_docs"], data["commit_docs"],
@@ -135,6 +144,8 @@ data:
                 with _lock:
                     _cache["ok"] = False
                     _cache["error"] = str(exc)
+                    _cache["duration"] = time.time() - started
+                    _cache["errors_total"] += 1
                 print("scan error: %s" % exc, flush=True)
             time.sleep(CACHE_TTL)
 

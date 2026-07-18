@@ -310,3 +310,43 @@ spec:
           annotations:
             summary: "Kubernetes job {{ $labels.namespace }}/{{ $labels.job_name }} failed"
             description: "Kubernetes job {{ $labels.namespace }}/{{ $labels.job_name }} has failed."
+
+    # R2R Vector Store stats exporter (r2r-stats)
+    - name: r2r-stats.rules
+      interval: 1m
+      rules:
+        - alert: R2RStatsDown
+          expr: up{service="r2r-stats", namespace="ai-tools"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "r2r-stats exporter is down"
+            description: "Prometheus cannot scrape r2r-stats in ai-tools; the vector-store dashboard has no data."
+
+        - alert: R2RScanFailing
+          expr: r2r_stats_up == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "r2r-stats cannot reach the R2R API"
+            description: "r2r-stats has failed to scan R2R for 15m ({{ $value }}). Check the R2R API in ai-tools."
+
+        - alert: R2RScanStale
+          expr: time() - r2r_stats_last_success_timestamp_seconds > 1800
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "r2r-stats has no fresh scan"
+            description: "Last successful R2R scan was {{ $value | humanizeDuration }} ago (threshold 30m)."
+
+        - alert: R2RStoreShrank
+          expr: delta(r2r_documents_total[1h]) < -100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "R2R store lost documents"
+            description: "r2r_documents_total dropped by {{ $value }} in the last hour, which may signal an accidental purge."

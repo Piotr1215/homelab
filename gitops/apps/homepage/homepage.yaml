@@ -217,6 +217,27 @@ data:
           showStats: true
           namespace: ai-tools
           podSelector: app.kubernetes.io/name=agent-memory-workbench
+      - R2R Vector Store:
+          description: Repo Vector Map Stats
+          href: https://r2r.homelab.local
+          icon: mdi-vector-triangle
+          widget:
+            type: customapi
+            url: http://r2r-stats.ai-tools.svc.cluster.local:8080/stats.json
+            refreshInterval: 60000
+            mappings:
+              - field: repos
+                label: Repos
+                format: number
+              - field: total_docs
+                label: Total Docs
+                format: number
+              - field: commit_docs
+                label: Commit Docs
+                format: number
+              - field: file_docs
+                label: File Docs
+                format: number
       - SRE Haiku:
           description: SRE Horror Haiku Generator
           href: https://sre-demo.homelab.local

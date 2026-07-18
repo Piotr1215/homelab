@@ -1,0 +1,255 @@
+---
+# Self-healing R2R database invariants.
+#
+# WHY: two durable guarantees the R2R store needs but neither R2R nor git
+# asserted, so both were silently absent until the 2026-07-18 retrieval outage:
+#   1. An HNSW cosine ANN index on every populated pgvector column. Without it,
+#      retrieval is a brute-force Parallel Seq Scan over every chunk (124k rows
+#      = ~10s warm), and a large-repo ingest permanently slows search for ALL
+#      repos. A hand-built index also does not survive a DB restore / R2R
+#      upgrade / a feature repopulating a column.
+#   2. A bounded statement_timeout on the R2R role, so an unbounded query (the
+#      infinite retrieval hang that night) becomes a fast bounded error.
+#
+# Both are idempotent and re-asserted here, two ways (defence in depth, cheap
+# no-ops once satisfied):
+#   - a PostSync ArgoCD hook, to close the window right after an upgrade/sync, and
+#   - a daily CronJob, to heal drift between syncs (a manual restore, or a
+#     feature populating a new vector column mid-week).
+#
+# The index step discovers vector columns from the catalog (auto-covers the
+# currently-empty summary/graph columns when a feature populates them; no edits
+# on a schema rename), skips empty columns, skips a column whose index is
+# mid-build or left invalid (a 2nd CONCURRENTLY on a building index errors), and
+# treats a per-column build failure as a warning so a hiccup can never fail an
+# ArgoCD sync.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-ensure-db-invariants-script
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: db-maintenance
+data:
+  ensure-db-invariants.sh: |
+    #!/usr/bin/env bash
+    # Ensure durable R2R DB invariants: role statement_timeout + an HNSW cosine
+    # index on every populated pgvector column. Idempotent, re-asserted each run.
+    set -eo pipefail
+
+    # Conservative build-graph memory (safe even on a 512Mi pod; raise once the
+    # r2r-db memory limit is up). Role timeout bounds normal app queries.
+    : "${BUILD_MAINT_MEM:=128MB}"
+    : "${ROLE_STATEMENT_TIMEOUT:=120s}"
+    : "${PGCONNECT_TIMEOUT:=15}"
+    export PGCONNECT_TIMEOUT
+
+    # Strict reads (fail loud if the DB is unreachable).
+    q() { psql -X -v ON_ERROR_STOP=1 -tA "$@"; }
+
+    # --- Invariant 1: bound the R2R role's statement_timeout ----------------
+    # Turns an unbounded query (the infinite retrieval hang) into a bounded
+    # error. ALTER ROLE ... SET applies to NEW sessions only, so it converges as
+    # R2R recycles pooled connections; it is not retroactive on live sessions.
+    # The index build below pins statement_timeout=0 at CONNECT time (PGOPTIONS)
+    # so this role default can never abort a long CONCURRENTLY build, which
+    # cannot use SET LOCAL (it runs outside a transaction). ALTER ROLE is an
+    # instant catalog write, itself unaffected by any timeout.
+    echo "ensure role \"$PGUSER\" statement_timeout=$ROLE_STATEMENT_TIMEOUT"
+    q -c "ALTER ROLE \"$PGUSER\" SET statement_timeout = '$ROLE_STATEMENT_TIMEOUT';"
+
+    # --- Invariant 2: an HNSW index on every populated vector column --------
+    echo "Discovering pgvector columns..."
+    mapfile -t COLS < <(q -c \
+      "SELECT table_schema||'|'||table_name||'|'||column_name
+         FROM information_schema.columns
+        WHERE udt_name = 'vector'
+        ORDER BY 1;")
+
+    if [ "${#COLS[@]}" -eq 0 ]; then
+      echo "No vector columns found (R2R schema not created yet?) - indexes: nothing to do."
+      exit 0
+    fi
+
+    built=0; present=0; empty=0; busy=0; failed=0
+    for row in "${COLS[@]}"; do
+      IFS='|' read -r schema table col <<< "$row"
+
+      populated=$(q -c \
+        "SELECT EXISTS(SELECT 1 FROM \"$schema\".\"$table\" WHERE \"$col\" IS NOT NULL);")
+      if [ "$populated" != "t" ]; then
+        echo "skip  $schema.$table.$col (empty)"
+        empty=$((empty+1)); continue
+      fi
+
+      idx="${table}_${col}_hnsw_cos"; idx="${idx:0:63}"
+
+      # Classify: missing / valid / invalid(building or failed leftover).
+      state=$(q -c "
+        SELECT CASE
+                 WHEN NOT EXISTS (SELECT 1 FROM pg_class WHERE relkind='i' AND relname='$idx')
+                   THEN 'missing'
+                 WHEN (SELECT i.indisvalid FROM pg_index i
+                         JOIN pg_class c ON c.oid=i.indexrelid
+                        WHERE c.relname='$idx')
+                   THEN 'valid'
+                 ELSE 'invalid'
+               END;")
+      case "$state" in
+        valid)
+          echo "ok    $schema.$table.$col -> $idx (present)"
+          present=$((present+1)); continue;;
+        invalid)
+          # Building (concurrent/manual build) or a failed leftover; a 2nd
+          # CONCURRENTLY here would ERROR, so skip and surface it.
+          echo "warn  $schema.$table.$col -> $idx exists but NOT valid (mid-build or failed) - skipping"
+          busy=$((busy+1)); continue;;
+      esac
+
+      echo "build $schema.$table.$col -> $idx (CONCURRENTLY, maintenance_work_mem=$BUILD_MAINT_MEM)"
+      # CONCURRENTLY cannot run in a txn; maintenance_work_mem AND
+      # statement_timeout=0 are set for the connection via PGOPTIONS (the role's
+      # 120s default would otherwise abort a long build, and SET LOCAL cannot
+      # help outside a txn). Best-effort: a failure warns, leaves an invalid
+      # index for the next run, and never aborts the whole job / an ArgoCD sync.
+      if PGOPTIONS="-c maintenance_work_mem=$BUILD_MAINT_MEM -c statement_timeout=0" \
+           psql -X -tA -c \
+           "CREATE INDEX CONCURRENTLY IF NOT EXISTS \"$idx\"
+              ON \"$schema\".\"$table\" USING hnsw (\"$col\" vector_cosine_ops);"; then
+        built=$((built+1))
+      else
+        echo "ERROR building $idx (left for next run)"
+        failed=$((failed+1))
+      fi
+    done
+
+    echo "Done: role timeout ensured; indexes $built built, $present present, $empty empty, $busy mid-build/invalid, $failed failed."
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: r2r-ensure-db-invariants
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: db-maintenance
+spec:
+  # Off-peak daily; a cheap no-op once invariants hold. Heals drift between syncs.
+  schedule: "30 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: ensure-db-invariants
+              image: pgvector/pgvector:pg17
+              command: ["bash", "/scripts/ensure-db-invariants.sh"]
+              envFrom:
+                - configMapRef:
+                    name: r2r-ensure-db-invariants-env
+              env:
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2r-db-credentials
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2r-db-credentials
+                      key: password
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          volumes:
+            - name: script
+              configMap:
+                name: r2r-ensure-db-invariants-script
+---
+# Non-secret connection + tuning env, shared by the CronJob and the PostSync hook.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-ensure-db-invariants-env
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: db-maintenance
+data:
+  PGHOST: "r2r-db-rw.ai-tools.svc"
+  PGDATABASE: "r2r"
+  BUILD_MAINT_MEM: "128MB"
+  ROLE_STATEMENT_TIMEOUT: "120s"
+---
+# PostSync hook: runs on every r2r app sync to close the "upgrade/sync dropped
+# the invariant" window immediately. Deleted before the next hook run so it
+# never accumulates. Best-effort script, so a hiccup does not fail the sync.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: r2r-ensure-db-invariants-postsync
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r
+    app.kubernetes.io/instance: r2r
+    app.kubernetes.io/component: db-maintenance
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ensure-db-invariants
+          image: pgvector/pgvector:pg17
+          command: ["bash", "/scripts/ensure-db-invariants.sh"]
+          envFrom:
+            - configMapRef:
+                name: r2r-ensure-db-invariants-env
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: r2r-db-credentials
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: r2r-db-credentials
+                  key: password
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: script
+          configMap:
+            name: r2r-ensure-db-invariants-script

@@ -127,6 +127,12 @@ alertmanager:
           group_by: ['tool_name']
           group_wait: 5s
           repeat_interval: 5m
+        # Info alerts - record in Prometheus/Alertmanager, never page.
+        # Without this, info falls through to the root 'default' receiver, which
+        # posts to the ntfy bridge and would ping the phone like a warning.
+        - matchers:
+            - severity = info
+          receiver: "null"
         # Noise alerts - silence
         - matchers:
             - alertname =~ "Watchdog|InfoInhibitor"

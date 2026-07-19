@@ -409,16 +409,32 @@ spec:
             description: "Repo {{ $labels.repo }} has 0 file documents in R2R but the ingester expects a file corpus. File ingest failed (the cloudrumble failure signature)."
             runbook: "On serval: __r2r_repo_manage.py resync {{ $labels.repo }} --force"
 
+        # Real failure: the run reported failed items. Actionable, pages at warning.
         - alert: R2RRepoIngestFailed
-          expr: r2r_repo_last_run_ok == 0 or r2r_repo_last_run_failed > 0
+          expr: r2r_repo_last_run_failed > 0
           for: 5m
           labels:
             severity: warning
             remediation: reingest
           annotations:
-            summary: "R2R repo {{ $labels.repo }} last sync did not complete cleanly"
-            description: "The last sync run for repo {{ $labels.repo }} did not finish cleanly (result != ok or failed items reported, from -progress.json). cloudrumble's crashed run is the reference case."
+            summary: "R2R repo {{ $labels.repo }} sync reported failed items"
+            description: "The last sync run for repo {{ $labels.repo }} finished with {{ $value }} failed item(s) (from -progress.json). cloudrumble's crashed run is the reference case."
             runbook: "On serval: check ~/.local/state/r2r-repo-sync.log, then __r2r_repo_manage.py resync {{ $labels.repo }} --force"
+
+        # Benign: the run did not finish cleanly (deferred/skipped/store-busy or a
+        # crashed progress file) but reported ZERO failed items. Actual data loss is
+        # caught separately by R2RRepoUnderIngested / R2RRepoZeroFiles at warning.
+        # Info only: recorded, not paged; a resync no-ops or backfills and clears it.
+        - alert: R2RRepoSyncIncomplete
+          expr: r2r_repo_last_run_ok == 0 and r2r_repo_last_run_failed == 0
+          for: 15m
+          labels:
+            severity: info
+            remediation: reingest
+          annotations:
+            summary: "R2R repo {{ $labels.repo }} last sync did not complete cleanly (no failures)"
+            description: "Repo {{ $labels.repo }} last run ended non-ok with 0 failed items (deferred/skipped/store-busy or a crashed progress file). Benign unless the repo is also under-ingested; a resync no-ops or backfills and clears it."
+            runbook: "On serval (low priority): __r2r_repo_manage.py resync {{ $labels.repo }} --force"
 
         - alert: R2RRepoHealthStale
           expr: time() - r2r_repo_health_received_timestamp_seconds > 3600

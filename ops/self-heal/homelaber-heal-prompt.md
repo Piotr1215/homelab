@@ -28,13 +28,16 @@ echo "repo=$HEAL_REPO reason=$HEAL_REASON flags=$HEAL_FLAGS"
 ```
 
 ## 2. Investigate (diagnose root cause; do not guess)
-- Current health for the repo:
+- Current health for the repo (`health` prints JSON by default; a positional
+  repo name limits the `repos` array; `r2r_up` and `scan_complete` are
+  top-level). There is NO `--json` flag:
   ```
-  python3 ~/.claude/scripts/__r2r_repo_manage.py health --json \
-    | jq '.repos[] | select(.repo=="'"$HEAL_REPO"'")' ; \
-  python3 ~/.claude/scripts/__r2r_repo_manage.py health --json | jq '{r2r_up, scan_complete}'
+  python3 ~/.claude/scripts/__r2r_repo_manage.py health "$HEAL_REPO" \
+    | jq '{r2r_up, scan_complete, repo: (.repos[0]
+        | {repo, live, cache, expected, drift, last_run, flags})}'
   ```
-  Note live vs cache vs expected vs drift, `last_run.result`, flags.
+  Fields are nested: `.live.commits` / `.live.files`, `.cache`, `.expected`,
+  `.drift.commits` / `.drift.files`, `.last_run.result`, `.flags`.
 - **Safety gate:** if `scan_complete` is false OR `r2r_up` is 0, STOP remediation.
   A partial store scan or an unreachable R2R makes a resync unsafe. Instead
   investigate the cluster (`kubectl -n ai-tools get pods`; inspect `r2r-api` and
@@ -54,8 +57,9 @@ python3 ~/.claude/scripts/__r2r_repo_manage.py resync "$HEAL_REPO" --force
 ```
 This routes through the flock-guarded, write-paced, prune-bounded path (safe on
 the shared `r2r-db-0`). Let it finish, then re-check health for `$HEAL_REPO`.
-Confirm drift returns to 0 and flags clear. If it is NOT resolved after ONE
-resync, do not loop: record it and email with status `needs-human`.
+Confirm `.drift.commits` and `.drift.files` return to 0 and `.flags` clears. If
+it is NOT resolved after ONE resync, do not loop: record it and email with
+status `needs-human`.
 
 ## 4. Author a commit with the solution
 - If you found a CODE/CONFIG root cause (non-idempotent retry, missing timeout,

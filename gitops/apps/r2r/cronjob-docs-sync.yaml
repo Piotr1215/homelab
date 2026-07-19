@@ -156,19 +156,35 @@ data:
 
 
     def fetch_r2r_docs_inventory():
-        """Get all vcluster-docs documents currently in R2R. Returns set of doc_ids."""
+        """Get all vcluster-docs documents currently in R2R. Returns set of doc_ids.
+
+        Paginates through the whole document set. The store holds many more
+        docs than one page (repo/memory/session sources), so a single
+        unpaginated fetch never reaches the vcluster-docs entries: the script
+        then treats all of them as missing and re-ingests every doc each run,
+        which exceeds the job deadline.
+        """
         doc_ids = set()
+        limit = 500
+        offset = 0
         try:
-            req = Request(
-                f"{R2R_URL}/documents?limit=1000",
-                headers={"Content-Type": "application/json"},
-            )
-            with urlopen(req, timeout=30, context=_ssl_ctx) as resp:
-                data = json.loads(resp.read())
-            for doc in data.get("results", []):
-                meta = doc.get("metadata", {})
-                if meta.get("source") == "vcluster-docs":
-                    doc_ids.add(doc.get("id", ""))
+            while True:
+                req = Request(
+                    f"{R2R_URL}/documents?limit={limit}&offset={offset}",
+                    headers={"Content-Type": "application/json"},
+                )
+                with urlopen(req, timeout=30, context=_ssl_ctx) as resp:
+                    data = json.loads(resp.read())
+                results = data.get("results", [])
+                if not results:
+                    break
+                for doc in results:
+                    meta = doc.get("metadata", {})
+                    if meta.get("source") == "vcluster-docs":
+                        doc_ids.add(doc.get("id", ""))
+                if len(results) < limit:
+                    break
+                offset += limit
         except Exception as e:
             print(f"WARNING: could not list R2R docs: {e}")
         return doc_ids

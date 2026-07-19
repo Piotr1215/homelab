@@ -22,6 +22,24 @@ description="self-heal: repo-vector drift for $HEAL_REPO", group="gozo")`, then
 `agent_broadcast` a one-line "starting remediation for $HEAL_REPO". If the bus is
 unavailable, continue anyway; do not block remediation on it.
 
+## 0.5 Verify cluster connection (FIRST operational gate)
+This host carries many kube contexts; a diagnosis or heal action against the
+wrong cluster is unacceptable. Before ANY `kubectl` or remediation, confirm the
+current context targets the homelab cluster by fingerprinting resources only it
+has:
+```
+ctx=$(kubectl config current-context 2>/dev/null); echo "context=$ctx"
+if kubectl get node kube-main >/dev/null 2>&1 && kubectl get ns ai-tools >/dev/null 2>&1; then
+  echo "cluster OK: homelab (kube-main node + ai-tools namespace present)"
+else
+  echo "WRONG CLUSTER on context '$ctx' (kube-main node or ai-tools namespace missing)"
+fi
+```
+If the fingerprint fails, STOP: run no kubectl diagnosis and no remediation.
+Email the human with status `needs-human` ("spawned against wrong kube context
+$ctx") and exit at step 6. The `resync` path reaches R2R directly, but a
+wrong-context diagnosis is misleading and this guard is cheap.
+
 ## 1. Read the trigger context
 ```
 echo "repo=$HEAL_REPO reason=$HEAL_REASON flags=$HEAL_FLAGS"

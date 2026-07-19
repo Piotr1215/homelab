@@ -28,6 +28,11 @@ and decide the fix yourself. Do ONE remediation attempt; never loop or re-spawn.
   (`last_run.result=failed`), do BOTH: `reconcile --fix` to clear the drift, then
   `resync --force` to reconcile content and clear the failed record. Keyset/count
   drift 0 can mask content-stale docs, so drift 0 alone is not proof of a healthy sync.
+- Prior incidents: `ops/self-heal/incidents/` holds notes from past heals (named
+  `<date>-<alertname>-<subject>.md`). BEFORE you diagnose, grep that dir for this
+  alert name and its repo/target and read any hits: they carry the verified root
+  cause, the fix that worked, or why it was deferred. Stand on that instead of
+  re-deriving what a past healer already found, and say so if the issue is recurring.
 
 ## Hard rules (essential only)
 - Right cluster first: `kubectl get node kube-main` AND `kubectl get ns ai-tools`

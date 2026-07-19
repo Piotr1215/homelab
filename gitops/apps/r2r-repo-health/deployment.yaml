@@ -38,8 +38,12 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            # LAN + pod CIDR: with externalTrafficPolicy Cluster, kube-proxy
+            # SNATs serval's push to a pod-network IP (10.233.x), so both the
+            # LAN and the pod CIDR must be allowed. Real per-sender auth (shared
+            # token) is deferred.
             - name: ALLOWED_PUSH_CIDRS
-              value: "192.168.178.0/24"
+              value: "192.168.178.0/24,10.233.64.0/18"
             - name: PYTHONUNBUFFERED
               value: "1"
             - name: PYTHONDONTWRITEBYTECODE
@@ -94,10 +98,11 @@ spec:
   type: LoadBalancer
   # Cluster, not Local: MetalLB L2 did not announce this static IP under Local
   # (ARP silent from serval, ping + curl to .95 timed out), while every other
-  # homelab LB service uses Cluster and is reachable. With L2 + Cluster the push
-  # is SNAT'd to a node IP, which still sits in 192.168.178.0/24, so the /push
-  # CIDR allowlist keeps passing LAN pushes; per-host precision is deferred to
-  # a shared-token check on /push.
+  # homelab LB service uses Cluster and is reachable. Trade-off: with L2 +
+  # Cluster, kube-proxy SNATs the push to a pod-network IP (verified 10.233.66.x,
+  # inside 10.233.64.0/18), so the receiver never sees serval's real LAN IP. The
+  # /push allowlist therefore admits both the LAN and the pod CIDR (see env);
+  # real per-sender auth is deferred to a shared-token check on /push.
   externalTrafficPolicy: Cluster
   selector:
     app.kubernetes.io/name: r2r-repo-health

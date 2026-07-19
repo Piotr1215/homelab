@@ -71,6 +71,8 @@ spec:
             namespace: ai-tools
           - app: r2r-stats
             namespace: ai-tools
+          - app: r2r-repo-health
+            namespace: ai-tools
           - app: copy-fail-mitigation
             namespace: kube-system
             project: security

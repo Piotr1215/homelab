@@ -1,0 +1,255 @@
+---
+# r2r-repo-health: push-receiver + Prometheus exporter for the repo-vector
+# SYNC pipeline (the local ingester on serval). serval POSTs the health JSON
+# from `__r2r_repo_manage.py health --json` to /push; this renders it at
+# /metrics (scraped by ServiceMonitor) and logs each payload to stdout
+# (promtail -> Loki). Distinct from r2r-stats, which scans LIVE R2R in-cluster;
+# this exporter carries the local cache/expected/last-run truth that only
+# serval can see, so the cache-vs-live drift and under-ingest (cloudrumble)
+# failure class becomes observable and alertable. Inline stdlib python on
+# python-slim, same no-custom-image pattern as r2r-stats.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: r2r-repo-health-script
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-repo-health
+data:
+  server.py: |
+    import ipaddress
+    import json
+    import os
+    import threading
+    import time
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    PORT = int(os.environ.get("PORT", "8080"))
+    SCHEMA_VERSION = int(os.environ.get("SCHEMA_VERSION", "1"))
+    # CIDRs allowed to POST /push. serval is on the home LAN over a roaming DHCP
+    # lease, so the /24 is the pragmatic allowlist; the LoadBalancer runs with
+    # externalTrafficPolicy=Local so the pod sees serval's real source IP.
+    # /metrics + /healthz stay open (read-only, scraped in-cluster).
+    ALLOWED = [c.strip() for c in os.environ.get(
+        "ALLOWED_PUSH_CIDRS", "192.168.178.0/24").split(",") if c.strip()]
+    _allowed_nets = [ipaddress.ip_network(c, strict=False) for c in ALLOWED]
+
+    _start = time.time()
+    _lock = threading.Lock()
+    _snap = {
+        "present": False,
+        "received": _start,
+        "push_total": 0,
+        "last_push_valid": 0,
+        "payload": None,
+    }
+
+    def _ip_allowed(addr):
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            return False
+        return any(ip in n for n in _allowed_nets)
+
+    def esc(value):
+        return str(value).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+
+    class Metrics:
+        """Minimal Prometheus text-exposition accumulator (HELP/TYPE once)."""
+        def __init__(self):
+            self.order = []
+            self.meta = {}
+            self.series = {}
+
+        def add(self, name, value, labels=None, help_="", typ="gauge"):
+            if name not in self.meta:
+                self.meta[name] = (help_ or name, typ)
+                self.order.append(name)
+            lbl = ""
+            if labels:
+                lbl = "{" + ",".join('%s="%s"' % (k, esc(v)) for k, v in labels.items()) + "}"
+            self.series.setdefault(name, []).append("%s%s %s" % (name, lbl, value))
+
+        def render(self):
+            out = []
+            for name in self.order:
+                help_, typ = self.meta[name]
+                out.append("# HELP %s %s" % (name, help_))
+                out.append("# TYPE %s %s" % (name, typ))
+                out.extend(self.series[name])
+            return "\n".join(out) + "\n"
+
+    def render_metrics():
+        with _lock:
+            snap = dict(_snap)
+        payload = snap["payload"]
+        m = Metrics()
+        # exporter self-metrics (always emitted, even before the first push, so
+        # freshness alerting has a series to evaluate after a receiver restart).
+        m.add("r2r_repo_health_received_timestamp_seconds", int(snap["received"]),
+              help_="Unix time the receiver last accepted a valid health push.")
+        m.add("r2r_repo_health_push_total", snap["push_total"], typ="counter",
+              help_="Valid health pushes accepted since exporter start.")
+        m.add("r2r_repo_health_snapshot_present", 1 if snap["present"] else 0,
+              help_="1 once a health payload has been received since start.")
+        m.add("r2r_repo_health_last_push_valid", snap["last_push_valid"],
+              help_="1 if the most recent push validated against the contract.")
+        if not payload:
+            return m.render()
+        # global signals from the payload
+        m.add("r2r_repo_health_up", 1 if payload.get("r2r_up") else 0,
+              help_="1 if serval could reach the R2R API on the last scan.")
+        m.add("r2r_repo_health_scan_complete", 1 if payload.get("scan_complete") else 0,
+              help_="1 if the R2R store scan completed (gate for drift rules).")
+        m.add("r2r_repo_health_scrape_timestamp_seconds", int(payload.get("scanned_at_epoch") or 0),
+              help_="Unix time of the health scan on serval (scanned_at).")
+        totals = payload.get("totals") or {}
+        for key, metric in (("repos", "r2r_repo_health_repos_total"),
+                            ("drift_repos", "r2r_repo_health_drift_repos"),
+                            ("failed_repos", "r2r_repo_health_failed_repos"),
+                            ("zero_file_repos", "r2r_repo_health_zero_file_repos")):
+            m.add(metric, int(totals.get(key) or 0), help_="Totals: %s." % key)
+        r2r = payload.get("r2r") or {}
+        for key, metric in (("uptime_seconds", "r2r_system_uptime_seconds"),
+                            ("cpu_usage", "r2r_system_cpu_usage"),
+                            ("memory_usage", "r2r_system_memory_usage")):
+            if r2r.get(key) is not None:
+                try:
+                    m.add(metric, float(r2r.get(key)), help_="R2R system %s." % key)
+                except (TypeError, ValueError):
+                    pass
+        # per-repo, per-source counts
+        for repo in (payload.get("repos") or []):
+            name = repo.get("repo") or "unknown"
+            for src_key, src_label in (("commits", "commit"), ("files", "file")):
+                for field, metric in (("live", "r2r_repo_live_documents"),
+                                     ("cache", "r2r_repo_cache_documents"),
+                                     ("expected", "r2r_repo_expected_documents"),
+                                     ("drift", "r2r_repo_drift_documents")):
+                    d = repo.get(field) or {}
+                    if d.get(src_key) is not None:
+                        m.add(metric, int(d.get(src_key)),
+                              {"repo": name, "source": src_label},
+                              help_="R2R %s docs by repo and source." % field)
+            lr = repo.get("last_run") or {}
+            for field, metric in (("failed", "r2r_repo_last_run_failed"),
+                                 ("synced", "r2r_repo_last_run_synced"),
+                                 ("pruned", "r2r_repo_last_run_pruned"),
+                                 ("skipped", "r2r_repo_last_run_skipped")):
+                m.add(metric, int(lr.get(field) or 0), {"repo": name},
+                      help_="Last sync run %s count." % field)
+            m.add("r2r_repo_last_run_ok", 1 if lr.get("result") == "ok" else 0,
+                  {"repo": name},
+                  help_="1 if last sync run result==ok (0 for failed/crashed).")
+            meta = repo.get("meta") or {}
+            m.add("r2r_repo_last_sync_timestamp_seconds",
+                  int(meta.get("last_sync_epoch") or 0), {"repo": name},
+                  help_="Unix time of last successful sync for the repo.")
+        return m.render()
+
+    def log_payload(payload):
+        repos = payload.get("repos") or []
+        totals = payload.get("totals") or {}
+        print(json.dumps({
+            "level": "info", "event": "push_received",
+            "repos": len(repos),
+            "drift_repos": totals.get("drift_repos"),
+            "failed_repos": totals.get("failed_repos"),
+            "zero_file_repos": totals.get("zero_file_repos"),
+            "scan_complete": bool(payload.get("scan_complete")),
+            "r2r_up": bool(payload.get("r2r_up")),
+            "scanned_at": payload.get("scanned_at_iso"),
+        }), flush=True)
+        for repo in repos:
+            flags = repo.get("flags") or []
+            lr = repo.get("last_run") or {}
+            live = repo.get("live") or {}
+            exp = repo.get("expected") or {}
+            drift = repo.get("drift") or {}
+            print(json.dumps({
+                "level": "warning" if flags else "info",
+                "event": "repo_health", "repo": repo.get("repo"),
+                "live_commits": live.get("commits"), "live_files": live.get("files"),
+                "expected_commits": exp.get("commits"), "expected_files": exp.get("files"),
+                "drift_commits": drift.get("commits"), "drift_files": drift.get("files"),
+                "last_run_result": lr.get("result"), "last_run_failed": lr.get("failed"),
+                "flags": flags,
+            }), flush=True)
+
+    class Handler(BaseHTTPRequestHandler):
+        def _send(self, code, payload):
+            body = json.dumps(payload).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self):
+            if not self.path.startswith("/push"):
+                self._send(404, {"error": "not found"})
+                return
+            client = self.client_address[0]
+            if not _ip_allowed(client):
+                print(json.dumps({"level": "warning", "event": "push_denied",
+                                  "client": client}), flush=True)
+                self._send(403, {"error": "forbidden"})
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                raw = self.rfile.read(length) if length else b""
+                payload = json.loads(raw.decode())
+            except Exception as exc:  # noqa: BLE001 - report, never crash
+                print(json.dumps({"level": "error", "event": "push_parse_error",
+                                  "err": str(exc)}), flush=True)
+                with _lock:
+                    _snap["last_push_valid"] = 0
+                self._send(400, {"error": "bad json"})
+                return
+            sv = payload.get("schema_version")
+            if sv != SCHEMA_VERSION:
+                print(json.dumps({"level": "warning", "event": "push_schema_mismatch",
+                                  "got": sv, "want": SCHEMA_VERSION}), flush=True)
+                with _lock:
+                    _snap["last_push_valid"] = 0
+                self._send(400, {"error": "schema_version mismatch", "want": SCHEMA_VERSION})
+                return
+            now = time.time()
+            with _lock:
+                _snap["payload"] = payload
+                _snap["present"] = True
+                _snap["received"] = now
+                _snap["push_total"] += 1
+                _snap["last_push_valid"] = 1
+            log_payload(payload)
+            self._send(200, {"status": "stored",
+                             "repos": len(payload.get("repos") or [])})
+
+        def do_GET(self):
+            if self.path.startswith("/healthz"):
+                self._send(200, {"status": "ok"})
+                return
+            if self.path.startswith("/stats.json"):
+                with _lock:
+                    snap = dict(_snap)
+                self._send(200, {"present": snap["present"], "received": snap["received"],
+                                 "push_total": snap["push_total"],
+                                 "payload": snap["payload"]})
+                return
+            if self.path.startswith("/metrics"):
+                body = render_metrics().encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            self._send(404, {"error": "not found"})
+
+        def log_message(self, *args):
+            pass  # quiet access logs; we emit our own structured lines
+
+    if __name__ == "__main__":
+        print(json.dumps({"level": "info", "event": "start", "port": PORT,
+                          "allowed_push_cidrs": ALLOWED}), flush=True)
+        ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

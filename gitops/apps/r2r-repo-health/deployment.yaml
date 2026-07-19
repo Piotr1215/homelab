@@ -1,0 +1,120 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: r2r-repo-health
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-repo-health
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  # Single replica + a stable LB IP: the exporter holds the last pushed health
+  # snapshot in memory, so a second replica would answer /metrics with a stale
+  # or empty snapshot depending on which pod is scraped.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: r2r-repo-health
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: r2r-repo-health
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: r2r-repo-health
+          image: python:3.14-slim
+          command: ["python", "/app/server.py"]
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: ALLOWED_PUSH_CIDRS
+              value: "192.168.178.0/24"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 60
+          volumeMounts:
+            - name: script
+              mountPath: /app
+      volumes:
+        - name: script
+          configMap:
+            name: r2r-repo-health-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: r2r-repo-health
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-repo-health
+  annotations:
+    # Pin a static MetalLB IP so serval has a stable /push endpoint on the LAN.
+    metallb.universe.tf/loadBalancerIPs: "192.168.178.95"
+spec:
+  type: LoadBalancer
+  # Local preserves serval's real source IP so the /push allowlist works;
+  # safe with a single replica (MetalLB announces from the node with the pod).
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: r2r-repo-health
+  ports:
+    - port: 8080
+      targetPort: http
+      name: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: r2r-repo-health
+  namespace: ai-tools
+  labels:
+    app.kubernetes.io/name: r2r-repo-health
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: r2r-repo-health
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

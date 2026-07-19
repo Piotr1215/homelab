@@ -361,3 +361,88 @@ spec:
           annotations:
             summary: "R2R store lost documents"
             description: "r2r_documents_total dropped by {{ $value }} in the last hour, which may signal an accidental purge."
+
+    # R2R repo-vector sync health (serval-side exporter r2r-repo-health).
+    # Metrics are pushed from serval (local ingester) into the in-cluster
+    # r2r-repo-health receiver and scraped from there. These catch the
+    # cloudrumble failure class: cache-vs-live drift, under-ingest, zero-file,
+    # and failed sync runs. Alerts labelled remediation=reingest are
+    # auto-healable by re-running the forced ingest for that repo.
+    - name: r2r-repo-vector.rules
+      interval: 5m
+      rules:
+        # SLI: ingest completeness = docs live in R2R / docs the ingester
+        # expects to write, per repo+source, only where expected > 0.
+        - record: r2r_repo_ingest_completeness_ratio
+          expr: r2r_repo_live_documents / (r2r_repo_expected_documents > 0)
+
+        - alert: R2RRepoCacheDrift
+          expr: abs(r2r_repo_drift_documents) > 0 and on() (r2r_repo_health_scan_complete == 1)
+          for: 30m
+          labels:
+            severity: warning
+            remediation: reingest
+          annotations:
+            summary: "R2R repo {{ $labels.repo }} cache/live drift ({{ $labels.source }})"
+            description: "Repo {{ $labels.repo }} {{ $labels.source }} cache-vs-live drift is {{ $value }} (nonzero = the local hash cache disagrees with what R2R actually stores; retrieval may be stale or incomplete)."
+            runbook: "On serval: __r2r_repo_manage.py resync {{ $labels.repo }} --force"
+
+        - alert: R2RRepoUnderIngested
+          expr: (r2r_repo_ingest_completeness_ratio < 0.99) and on() (r2r_repo_health_scan_complete == 1)
+          for: 30m
+          labels:
+            severity: warning
+            remediation: reingest
+          annotations:
+            summary: "R2R repo {{ $labels.repo }} under-ingested ({{ $labels.source }})"
+            description: "Repo {{ $labels.repo }} {{ $labels.source }} ingest completeness is {{ $value | humanizePercentage }} (live docs in R2R are fewer than the ingester expects). Partial or failed ingest; retrieval will miss content."
+            runbook: "On serval: __r2r_repo_manage.py resync {{ $labels.repo }} --force"
+
+        - alert: R2RRepoZeroFiles
+          expr: (r2r_repo_live_documents{source="file"} == 0 and r2r_repo_expected_documents{source="file"} > 0) and on() (r2r_repo_health_scan_complete == 1)
+          for: 30m
+          labels:
+            severity: warning
+            remediation: reingest
+          annotations:
+            summary: "R2R repo {{ $labels.repo }} has zero file docs"
+            description: "Repo {{ $labels.repo }} has 0 file documents in R2R but the ingester expects a file corpus. File ingest failed (the cloudrumble failure signature)."
+            runbook: "On serval: __r2r_repo_manage.py resync {{ $labels.repo }} --force"
+
+        - alert: R2RRepoIngestFailed
+          expr: r2r_repo_last_run_ok == 0 or r2r_repo_last_run_failed > 0
+          for: 5m
+          labels:
+            severity: warning
+            remediation: reingest
+          annotations:
+            summary: "R2R repo {{ $labels.repo }} last sync did not complete cleanly"
+            description: "The last sync run for repo {{ $labels.repo }} did not finish cleanly (result != ok or failed items reported, from -progress.json). cloudrumble's crashed run is the reference case."
+            runbook: "On serval: check ~/.local/state/r2r-repo-sync.log, then __r2r_repo_manage.py resync {{ $labels.repo }} --force"
+
+        - alert: R2RRepoHealthStale
+          expr: time() - r2r_repo_health_received_timestamp_seconds > 3600
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "R2R repo-health metrics are stale"
+            description: "The receiver has accepted no fresh health push for {{ $value | humanizeDuration }} (threshold 1h). The serval health push (SessionStart + 15m timer) may be down; drift detection is blind until it resumes. Uses the receiver clock, so it is skew-free and fires after a receiver restart with no push."
+
+        - alert: R2RRepoHealthExporterDown
+          expr: up{service="r2r-repo-health", namespace="ai-tools"} == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "r2r-repo-health exporter is down"
+            description: "Prometheus cannot scrape r2r-repo-health in ai-tools; all repo-vector drift and failure alerts are blind."
+
+        - alert: R2RApiUnreachableFromSync
+          expr: r2r_repo_health_up == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "R2R API unreachable from serval sync"
+            description: "serval's health command could not reach the R2R API over the tailnet; new ingests and resyncs will fail until it recovers."

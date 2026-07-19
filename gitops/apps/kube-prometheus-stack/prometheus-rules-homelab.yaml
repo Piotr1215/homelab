@@ -209,13 +209,18 @@ spec:
             description: "Longhorn backup {{ $labels.backup }} for volume {{ $labels.volume }} is in error state."
 
         - alert: LonghornVolumeDegraded
-          expr: longhorn_volume_robustness == 0
+          # robustness codes: 0=unknown(detached) 1=healthy 2=degraded 3=faulted.
+          # Fire only on genuine degradation (2). Matching 0 caught every detached
+          # or orphaned volume (idle PVCs, leftover per-replica claims) and woke the
+          # self-heal loop for volumes with nothing wrong. See ops/self-heal/incidents/
+          # 2026-07-19-longhornvolumedegraded-spire.md.
+          expr: longhorn_volume_robustness == 2
           for: 10m
           labels:
             severity: warning
           annotations:
             summary: "Longhorn volume {{ $labels.pvc }} is degraded"
-            description: "Longhorn volume {{ $labels.volume }} in namespace {{ $labels.pvc_namespace }} has degraded robustness."
+            description: "Longhorn volume {{ $labels.volume }} in namespace {{ $labels.pvc_namespace }} has degraded robustness (replica loss while attached)."
 
     # ArgoCD Alerts
     - name: argocd.rules

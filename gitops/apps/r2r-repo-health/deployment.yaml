@@ -92,9 +92,13 @@ metadata:
     metallb.universe.tf/loadBalancerIPs: "192.168.178.95"
 spec:
   type: LoadBalancer
-  # Local preserves serval's real source IP so the /push allowlist works;
-  # safe with a single replica (MetalLB announces from the node with the pod).
-  externalTrafficPolicy: Local
+  # Cluster, not Local: MetalLB L2 did not announce this static IP under Local
+  # (ARP silent from serval, ping + curl to .95 timed out), while every other
+  # homelab LB service uses Cluster and is reachable. With L2 + Cluster the push
+  # is SNAT'd to a node IP, which still sits in 192.168.178.0/24, so the /push
+  # CIDR allowlist keeps passing LAN pushes; per-host precision is deferred to
+  # a shared-token check on /push.
+  externalTrafficPolicy: Cluster
   selector:
     app.kubernetes.io/name: r2r-repo-health
   ports:

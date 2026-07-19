@@ -19,10 +19,15 @@ and decide the fix yourself. Do ONE remediation attempt; never loop or re-spawn.
 - Bus: `agent_register` as `homelaber-heal-<slug>` in group `gozo` (agents MCP),
   broadcast a one-line start, `agent_deregister` at the end.
 - Email: `msmtp piotrzan@gmail.com`, ANSI-stripped plain text.
-- For R2R repo-vector alerts (`R2RRepo*`), the guarded fix is
-  `python3 ~/.claude/scripts/__r2r_repo_manage.py resync <repo> --force` (the repo
-  is in the alert labels). It is flock-guarded, write-paced, and auto-pushes health
-  on success; a `--force` re-ingest runs several minutes, so background it and poll.
+- For R2R repo-vector alerts (`R2RRepo*`), the repo is in the alert labels. Two tools:
+  `__r2r_repo_manage.py reconcile <repo> --fix` corrects the local cache only (never
+  the store), the right first move for a store-ahead cache desync; and
+  `__r2r_repo_manage.py resync <repo> --force` runs the ingester to reconcile content
+  and refresh `last_run` (flock-guarded, write-paced, auto-pushes health; runs several
+  minutes, so background it and poll). If the desync followed a FAILED sync
+  (`last_run.result=failed`), do BOTH: `reconcile --fix` to clear the drift, then
+  `resync --force` to reconcile content and clear the failed record. Keyset/count
+  drift 0 can mask content-stale docs, so drift 0 alone is not proof of a healthy sync.
 
 ## Hard rules (essential only)
 - Right cluster first: `kubectl get node kube-main` AND `kubectl get ns ai-tools`

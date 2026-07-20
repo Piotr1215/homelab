@@ -73,9 +73,14 @@ spec:
         # Delete orphaned pods after 1 hour
         - name: DELETE_ORPHANED_PODS_AFTER
           value: "3600"
-        # Don't delete jobs created by CronJob by default (we'll use TTL on specific jobs)
+        # Leave CronJob-owned jobs alone; Kubernetes CronJob history limits
+        # (successfulJobsHistoryLimit/failedJobsHistoryLimit) handle their cleanup.
+        # With "false" the operator deletes child jobs seconds after they complete,
+        # racing the CronJob controller before it can persist status.lastSuccessfulTime.
+        # That stalled kube_cronjob_status_last_successful_time and false-fired
+        # R2RMemorySyncStale even though r2r-memory-sync was succeeding hourly.
         - name: IGNORE_OWNED_BY_CRONJOB
-          value: "false"
+          value: "true"
         # Namespace to operate in (empty = all namespaces)
         - name: NAMESPACE
           value: ""

@@ -57,36 +57,26 @@ spec:
       containers:
       - name: kube-cleanup-operator
         image: quay.io/lwolf/kube-cleanup-operator:0.8.4
-        env:
-        # Delete successful jobs after 1 hour
-        - name: DELETE_SUCCESSFUL_AFTER
-          value: "3600"
-        # Delete failed jobs after 1 day
-        - name: DELETE_FAILED_AFTER
-          value: "86400"
-        # Delete pending (stuck) jobs after 1 day
-        - name: DELETE_PENDING_PODS_AFTER
-          value: "86400"
-        # Delete evicted pods immediately
-        - name: DELETE_EVICTED_PODS_AFTER
-          value: "0"
-        # Delete orphaned pods after 1 hour
-        - name: DELETE_ORPHANED_PODS_AFTER
-          value: "3600"
-        # Leave CronJob-owned jobs alone; Kubernetes CronJob history limits
-        # (successfulJobsHistoryLimit/failedJobsHistoryLimit) handle their cleanup.
-        # With "false" the operator deletes child jobs seconds after they complete,
-        # racing the CronJob controller before it can persist status.lastSuccessfulTime.
-        # That stalled kube_cronjob_status_last_successful_time and false-fired
-        # R2RMemorySyncStale even though r2r-memory-sync was succeeding hourly.
-        - name: IGNORE_OWNED_BY_CRONJOB
-          value: "true"
-        # Namespace to operate in (empty = all namespaces)
-        - name: NAMESPACE
-          value: ""
-        # Dry run mode for testing
-        - name: DRY_RUN
-          value: "false"
+        # IMPORTANT: kube-cleanup-operator is configured by command-line FLAGS, not
+        # env vars. It reads flags only, so an env-var block is inert. Previously this
+        # deployment set env (DELETE_SUCCESSFUL_AFTER, IGNORE_OWNED_BY_CRONJOB, ...),
+        # which the binary ignored, so it ran on defaults: -legacy-mode=true with
+        # -keep-successful=0 deletes successful jobs immediately. For CronJob children
+        # that raced the CronJob controller's status.lastSuccessfulTime update, which
+        # stalled kube_cronjob_status_last_successful_time and false-fired
+        # R2RMemorySyncStale even though r2r-memory-sync succeeds hourly.
+        args:
+        # Use modern delete-*-after semantics; legacy keep-* mode deletes immediately.
+        - -legacy-mode=false
+        # Do not touch Jobs/Pods owned by CronJobs. Their own history limits
+        # (successfulJobsHistoryLimit/failedJobsHistoryLimit) reap them, so children
+        # live long enough for the controller to record lastSuccessfulTime.
+        - -ignore-owned-by-cronjobs
+        # Cleanup delays for standalone (non-CronJob) jobs/pods.
+        - -delete-successful-after=1h
+        - -delete-failed-after=24h
+        - -delete-pending-pods-after=24h
+        - -delete-orphaned-pods-after=1h
         resources:
           limits:
             cpu: 50m

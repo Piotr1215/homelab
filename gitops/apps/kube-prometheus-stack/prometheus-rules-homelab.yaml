@@ -441,14 +441,21 @@ spec:
             description: "Repo {{ $labels.repo }} last run ended non-ok with 0 failed items (deferred/skipped/store-busy or a crashed progress file). Benign unless the repo is also under-ingested; a resync no-ops or backfills and clears it."
             runbook: "On serval (low priority): __r2r_repo_manage.py resync {{ $labels.repo }} --force"
 
+        # Threshold is 14h, not 1h: serval is a workstation, not a 24/7 host. It
+        # is powered off every night (measured off-windows 8h36m to 11h over two
+        # weeks), so a 1h threshold fired every single morning on a healthy push.
+        # While serval is off no ingest runs and nothing can drift, so a blind
+        # window there is harmless; the failure worth paging on is a dead push
+        # while serval is actually up, and 14h clears the longest normal
+        # off-window with headroom while still catching a stuck push same-day.
         - alert: R2RRepoHealthStale
-          expr: time() - r2r_repo_health_received_timestamp_seconds > 3600
+          expr: time() - r2r_repo_health_received_timestamp_seconds > 50400
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "R2R repo-health metrics are stale"
-            description: "The receiver has accepted no fresh health push for {{ $value | humanizeDuration }} (threshold 1h). The serval health push (SessionStart + 15m timer) may be down; drift detection is blind until it resumes. Uses the receiver clock, so it is skew-free and fires after a receiver restart with no push."
+            description: "The receiver has accepted no fresh health push for {{ $value | humanizeDuration }} (threshold 14h, sized above serval's nightly power-off). The serval health push (5-min user timer + OnBootSec + post-resync) is down for longer than an overnight gap; drift detection is blind until it resumes. Uses the receiver clock, so it is skew-free and fires after a receiver restart with no push."
 
         - alert: R2RRepoHealthExporterDown
           expr: up{service="r2r-repo-health", namespace="ai-tools"} == 0

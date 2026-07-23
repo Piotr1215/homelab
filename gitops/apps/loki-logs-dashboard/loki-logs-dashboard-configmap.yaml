@@ -179,7 +179,7 @@ data:
           "title": "Top Pods by Log Volume",
           "type": "table",
           "gridPos": {
-            "h": 12,
+            "h": 26,
             "w": 8,
             "x": 0,
             "y": 8
@@ -257,7 +257,7 @@ data:
           "title": "Logs",
           "type": "logs",
           "gridPos": {
-            "h": 12,
+            "h": 26,
             "w": 16,
             "x": 8,
             "y": 8
@@ -282,7 +282,7 @@ data:
               "refId": "A",
               "queryType": "range",
               "editorMode": "code",
-              "maxLines": 200
+              "maxLines": 500
             }
           ]
         }

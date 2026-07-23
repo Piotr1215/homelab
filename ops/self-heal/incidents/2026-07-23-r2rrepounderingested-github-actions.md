@@ -77,6 +77,26 @@ the 2026-07-20 dotfiles incident.
 Root cause was an earlier partial/interrupted ingest leaving 5 files unwritten
 while cache and store stayed mutually consistent (so drift stayed 0 and the
 incremental resync never retried them). If github-actions under-ingestion
-recurs, check ~/.local/state/r2r-repo-sync.log for the interrupted run. A
-periodic `resync --force` (full re-walk, ignores the SHA gate) is the general
-cure for drift-0 content-stale gaps. This run fixed the symptom fully.
+recurs, check ~/.local/state/r2r-repo-sync.log for the interrupted run.
+
+## Prevention (implemented, commit 2078d0f in ~/.claude)
+
+The reingest above fixed the instance; these two guards stop the class from
+recurring silently. The only recurring resync (__r2r_repo_resync.sh on
+SessionStart) is SHA-gated, so once a partial run stamps the meta SHA at HEAD,
+nothing re-walks the repo and the gap sits until the 30m completeness alert.
+
+1. Ingester guard (__r2r_repo_sync.py, file_corpus_shortfall): a files/all run
+   that ends short of the files present at ref no longer advances the SHA gate,
+   so the next event-driven resync re-walks and self-heals rather than stamping
+   completeness over a partial. Uses the exact file_doc filter (empty +
+   is_binary), so zero classifier false positives; free on the healthy path.
+2. Weekly backstop (__r2r_repo_periodic_resync.sh + cron
+   `30 3 * * SUN R2R_PR_SYNC=0 ...`): a time-based resync --force across every
+   vectorized repo re-walks the full commit/file list regardless of the SHA
+   gate, healing any drift-0 content-stale gap within the week even if the
+   alert/heal path is down. PR pass disabled to keep it to the under-ingestion
+   class and off Ornith.
+
+Note: the cron entry is machine-local (serval user crontab), not tracked in a
+repo; re-add it on a host rebuild. The scripts are in the ~/.claude git repo.

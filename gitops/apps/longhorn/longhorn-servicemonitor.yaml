@@ -14,3 +14,12 @@ spec:
   - port: manager  # Port name from longhorn-backend service
     path: /metrics
     interval: 30s
+    metricRelabelings:
+      # Longhorn was the single biggest series producer in the cluster (~38k of
+      # 230k total), and ~33k of that is instrumentation of Longhorn's own
+      # Kubernetes API client and internal workqueues, not storage health.
+      # Verified unreferenced by every alert rule and Grafana dashboard.
+      # The volume/node/disk metrics that actually describe storage are kept.
+      - sourceLabels: [__name__]
+        regex: "longhorn_rest_client_.*|longhorn_workqueue_.*"
+        action: drop

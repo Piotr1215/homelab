@@ -1,13 +1,97 @@
 namespaceOverride: prometheus
 
+# Cardinality trim (see prometheusSpec.retention below).
+#
+# Long retention is only affordable if we stop paying for series nobody reads.
+# Every metric dropped here was verified unreferenced against BOTH the live
+# alerting/recording rules (/api/v1/rules) and all 34 Grafana dashboards before
+# removal, so nothing on screen or paging goes blank.
+#
+# Only _bucket series are dropped from histograms; the _sum and _count series
+# stay, so averages still work, we only lose per-quantile breakdowns.
+#
+# Deliberately KEPT despite being large:
+#   apiserver_request_sli_duration_seconds_bucket - 23 SLO burn-rate rules
+#   kubelet_runtime_operations_duration_seconds_bucket - kubelet dashboard
+#   storage_operation_duration_seconds_bucket - kubelet dashboard
+#   workqueue_queue_duration_seconds_bucket - 3 dashboards (its _work_ sibling is unused)
+# To restore any dropped metric, delete it from the regex; it repopulates on the
+# next scrape (historical gap remains).
+
 kubeEtcd:
   enabled: false
 
+kubeApiServer:
+  serviceMonitor:
+    metricRelabelings:
+      # apiserver_request_duration_seconds is the classic latency histogram, but
+      # the availability SLO rules moved to the _sli_ variant (kept above), so
+      # this one is now pure cost. etcd_* rides the apiserver job since
+      # kubeEtcd is disabled and we have no etcd dashboard.
+      - sourceLabels: [__name__]
+        regex: "apiserver_request_duration_seconds_bucket|apiserver_watch_list_duration_seconds_bucket|apiserver_request_body_size_bytes_bucket|apiserver_watch_cache_read_wait_seconds_bucket|apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket|etcd_request_duration_seconds_bucket|workqueue_work_duration_seconds_bucket|kubernetes_feature_enabled"
+        action: drop
+
+kubelet:
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "prober_probe_duration_seconds_bucket|workqueue_work_duration_seconds_bucket|kubernetes_feature_enabled"
+        action: drop
+    # cAdvisor is a separate endpoint on the same job and needs its own list.
+    cAdvisorMetricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "container_memory_failures_total|container_blkio_device_usage_total"
+        action: drop
+    # The kubelet exposes /metrics and /metrics/probes behind one port name, so
+    # the endpoint label cannot tell us which one serves prober_probe_duration.
+    # Repeating the drop here is a no-op if it is not on this endpoint, and
+    # guarantees the ~4.4k series go either way.
+    probesMetricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "prober_probe_duration_seconds_bucket"
+        action: drop
+
+kubeControllerManager:
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "workqueue_work_duration_seconds_bucket|kubernetes_feature_enabled"
+        action: drop
+
+kubeScheduler:
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "scheduler_plugin_execution_duration_seconds_bucket|workqueue_work_duration_seconds_bucket|kubernetes_feature_enabled"
+        action: drop
+
+kubeProxy:
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels: [__name__]
+        regex: "kubernetes_feature_enabled"
+        action: drop
+
 kube-state-metrics:
   namespaceOverride: prometheus
+  prometheus:
+    monitor:
+      metricRelabelings:
+        # Pure pod metadata, one series per toleration. Never queried.
+        - sourceLabels: [__name__]
+          regex: "kube_pod_tolerations"
+          action: drop
 
 prometheus-node-exporter:
   namespaceOverride: prometheus
+  prometheus:
+    monitor:
+      metricRelabelings:
+        # Per-IPVS-backend gauges, ~6.6k series. Cilium handles our dataplane.
+        - sourceLabels: [__name__]
+          regex: "node_ipvs_backend_.*"
+          action: drop
 
 prometheus:
   service:
@@ -16,6 +100,19 @@ prometheus:
       metallb.universe.tf/loadBalancerIPs: "192.168.178.90"
   prometheusSpec:
     enableRemoteWriteReceiver: true
+    # 10d was losing history right when it got interesting (a 30d dashboard
+    # showed a cliff at day 10). The cardinality trim above removes a measured
+    # 97k of 228k active series (42.6%), dropping growth from 1.02 to
+    # ~0.59 GB/day, so 9x the window costs only ~53GB.
+    #
+    # retentionSize is a guard rail, not the target: whichever limit hits first
+    # wins, so if the trim underperforms Prometheus expires old blocks instead
+    # of filling the node disk. It is set above the 53GB projection on purpose,
+    # so 90d stays the binding limit; at 50GB the cap would have silently
+    # capped us at ~85d instead. kube-worker3 has ~105GB free and the PVC is
+    # local-path (hostPath, no quota enforced), so nothing else bounds growth.
+    retention: 90d
+    retentionSize: 60GB
     storageSpec:
       volumeClaimTemplate:
         spec:

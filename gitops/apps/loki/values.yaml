@@ -23,7 +23,12 @@ loki:
       rules_directory: /var/loki/rules
   # Enable log volume API and set limits
   limits_config:
-    retention_period: 168h # 7 days retention
+    # 7d was too short to correlate a log line with a metric spike from last
+    # month. Logs compress ~28x here (4.5GiB/day raw lands as ~0.16GB on disk),
+    # so 90d costs only ~15GB. Enforced by the compactor below.
+    # Matches Prometheus retention so both halves of an investigation cover the
+    # same window. loki-0 sits on kube-worker5 with ~79GB free.
+    retention_period: 2160h # 90 days retention
     volume_enabled: true
     max_cache_freshness_per_query: 10m
     split_queries_by_interval: 15m

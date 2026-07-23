@@ -837,7 +837,9 @@ data:
                 "type": "loki",
                 "uid": "loki"
               },
-              "expr": "{namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `MCP POST (?P<mcp_method>\\S+).*from (?P<client_ip>[\\d.]+)`",
+              "editorMode": "code",
+              "expr": "sum by (client_ip) (count_over_time({namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `from (?P<client_ip>\\S+)` [$__range]))",
+              "queryType": "instant",
               "refId": "A"
             }
           ],
@@ -845,58 +847,31 @@ data:
           "type": "table",
           "transformations": [
             {
-              "id": "extractFields",
-              "options": {
-                "format": "auto",
-                "source": "labels",
-                "replace": false
-              }
-            },
-            {
               "id": "organize",
               "options": {
                 "excludeByName": {
-                  "labels": true,
-                  "tsNs": true,
-                  "id": true,
-                  "Line": true
+                  "Time": true
                 },
                 "indexByName": {
-                  "Time": 0,
-                  "client_ip": 1
+                  "client_ip": 0,
+                  "Value": 1
                 },
                 "renameByName": {
                   "client_ip": "Client IP",
-                  "Time": "Last Seen"
+                  "Value": "Requests"
                 }
               }
             },
             {
-              "id": "groupBy",
+              "id": "sortBy",
               "options": {
-                "fields": {
-                  "Client IP": {
-                    "aggregations": ["lastNotNull"],
-                    "operation": "groupby"
-                  },
-                  "Last Seen": {
-                    "aggregations": ["max"],
-                    "operation": "aggregate"
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Requests",
+                    "desc": true
                   }
-                }
-              }
-            },
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {},
-                "indexByName": {
-                  "Client IP": 0,
-                  "Last Seen (max)": 1
-                },
-                "renameByName": {
-                  "Last Seen (max)": "Last Seen"
-                }
+                ]
               }
             }
           ]

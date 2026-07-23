@@ -34,7 +34,11 @@ spec:
             description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in {{ $labels.phase }} state for more than 10 minutes."
 
         - alert: ContainerMemoryUsageHigh
-          expr: (container_memory_working_set_bytes / container_spec_memory_limit_bytes) > 0.9
+          # container!="" drops the pause/sandbox and pod-level rollup series;
+          # the "> 0" guard on the denominator drops containers that declare no
+          # memory limit. Without both, limit=0 makes the division return +Inf,
+          # which always satisfies "> 0.9" and fires for every pod in the cluster.
+          expr: (container_memory_working_set_bytes{container!=""} / (container_spec_memory_limit_bytes{container!=""} > 0)) > 0.9
           for: 5m
           labels:
             severity: warning

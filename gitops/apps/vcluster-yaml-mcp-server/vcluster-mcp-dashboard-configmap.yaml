@@ -143,7 +143,8 @@ data:
                   }
                 ]
               },
-              "unit": "percentunit"
+              "unit": "percentunit",
+              "noValue": "0"
             },
             "overrides": []
           },
@@ -173,7 +174,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "rate(mcp_requests_total{namespace=\"default\",status=\"error\"}[5m]) / rate(mcp_requests_total{namespace=\"default\"}[5m])",
+              "expr": "(sum(rate(mcp_requests_total{namespace=\"default\",status=\"error\"}[5m])) / sum(rate(mcp_requests_total{namespace=\"default\"}[5m]))) or vector(0)",
               "legendFormat": "Error Rate",
               "refId": "A"
             }
@@ -373,8 +374,8 @@ data:
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 12,
-            "y": 8
+            "x": 0,
+            "y": 16
           },
           "id": 10,
           "options": {
@@ -467,8 +468,8 @@ data:
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 0,
-            "y": 24
+            "x": 12,
+            "y": 16
           },
           "id": 5,
           "options": {
@@ -554,8 +555,8 @@ data:
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 12,
-            "y": 16
+            "x": 0,
+            "y": 24
           },
           "id": 6,
           "options": {
@@ -641,7 +642,7 @@ data:
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 0,
+            "x": 12,
             "y": 24
           },
           "id": 7,
@@ -727,9 +728,9 @@ data:
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 24
+            "w": 24,
+            "x": 0,
+            "y": 32
           },
           "id": 8,
           "options": {
@@ -811,16 +812,18 @@ data:
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 32
+            "y": 40
           },
           "id": 9,
           "options": {
             "showHeader": true,
             "footer": {
               "show": false,
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "fields": ""
             },
             "sortBy": [
@@ -838,12 +841,12 @@ data:
                 "uid": "loki"
               },
               "editorMode": "code",
-              "expr": "sum by (client_ip) (count_over_time({namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `from (?P<client_ip>\\S+)` [$__range]))",
+              "expr": "sum by (client_ip) (count_over_time({namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `from (?P<client_ip>\\S+)` | client_ip =~ `[0-9.]+` [$__range]))",
               "queryType": "instant",
               "refId": "A"
             }
           ],
-          "title": "Client IPs (Recent Requests)",
+          "title": "Client IPs (IPv4)",
           "type": "table",
           "transformations": [
             {
@@ -854,10 +857,132 @@ data:
                 },
                 "indexByName": {
                   "client_ip": 0,
-                  "Value": 1
+                  "Value #A": 1
                 },
                 "renameByName": {
                   "client_ip": "Client IP",
+                  "Value #A": "Requests",
+                  "Value": "Requests"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Requests",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "displayMode": "auto",
+                "inspect": false,
+                "filterable": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 40
+          },
+          "id": 11,
+          "options": {
+            "showHeader": true,
+            "footer": {
+              "show": false,
+              "reducer": [
+                "sum"
+              ],
+              "fields": ""
+            },
+            "sortBy": [
+              {
+                "displayName": "Time",
+                "desc": true
+              }
+            ]
+          },
+          "pluginVersion": "9.5.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "sum by (client_ip) (count_over_time({namespace=\"default\", app=\"vcluster-yaml-mcp\"} |= \"MCP POST\" | regexp `from (?P<client_ip>\\S+)` | client_ip =~ `.+:.+` [$__range]))",
+              "queryType": "instant",
+              "refId": "A"
+            }
+          ],
+          "title": "Client IPs (IPv6)",
+          "type": "table",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "client_ip": 0,
+                  "Value #A": 1
+                },
+                "renameByName": {
+                  "client_ip": "Client IP",
+                  "Value #A": "Requests",
                   "Value": "Requests"
                 }
               }
@@ -880,7 +1005,11 @@ data:
       "refresh": "10s",
       "schemaVersion": 38,
       "style": "dark",
-      "tags": ["mcp", "vcluster", "cloudflare"],
+      "tags": [
+        "mcp",
+        "vcluster",
+        "cloudflare"
+      ],
       "templating": {
         "list": []
       },

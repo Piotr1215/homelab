@@ -261,7 +261,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "histogram_quantile(0.50, rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[5m]))",
+              "expr": "histogram_quantile(0.50, sum(rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[$__rate_interval])) by (le))",
               "legendFormat": "p50",
               "refId": "A"
             },
@@ -270,7 +270,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "histogram_quantile(0.95, rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[5m]))",
+              "expr": "histogram_quantile(0.95, sum(rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[$__rate_interval])) by (le))",
               "legendFormat": "p95",
               "refId": "B"
             },
@@ -279,7 +279,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "histogram_quantile(0.99, rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[5m]))",
+              "expr": "histogram_quantile(0.99, sum(rate(mcp_request_duration_seconds_bucket{namespace=\"default\"}[$__rate_interval])) by (le))",
               "legendFormat": "p99",
               "refId": "C"
             }
@@ -339,12 +339,12 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\"}[24h]))",
-              "legendFormat": "Tool Calls (24h)",
+              "expr": "sum(increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\"}[$__range]))",
+              "legendFormat": "Tool Calls",
               "refId": "A"
             }
           ],
-          "title": "Tool Calls (24h)",
+          "title": "Tool Calls",
           "type": "stat"
         },
         {
@@ -402,13 +402,13 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (tool_name) (increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\",tool_name!=\"\"}[1h]))",
+              "expr": "sum by (tool_name) (increase(mcp_requests_total{namespace=\"default\",mcp_method=\"tools/call\",tool_name!=\"\"}[$__range]))",
               "legendFormat": "{{tool_name}}",
               "refId": "A",
               "instant": true
             }
           ],
-          "title": "Tool Usage (1h)",
+          "title": "Tool Usage",
           "type": "barchart"
         },
         {

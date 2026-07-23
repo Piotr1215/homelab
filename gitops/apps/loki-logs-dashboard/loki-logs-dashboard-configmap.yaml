@@ -163,7 +163,7 @@ data:
                 "type": "loki",
                 "uid": "loki"
               },
-              "expr": "sum(count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ `(?i)(error|warn|fail|panic|fatal|exception)` [$__range]))",
+              "expr": "sum(count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"error|warn|critical|fatal\" [$__range]))",
               "refId": "A",
               "queryType": "instant",
               "editorMode": "code"
@@ -179,7 +179,7 @@ data:
           "title": "Top Pods by Log Volume",
           "type": "table",
           "gridPos": {
-            "h": 26,
+            "h": 32,
             "w": 8,
             "x": 0,
             "y": 8
@@ -257,7 +257,7 @@ data:
           "title": "Logs",
           "type": "logs",
           "gridPos": {
-            "h": 26,
+            "h": 32,
             "w": 16,
             "x": 8,
             "y": 8

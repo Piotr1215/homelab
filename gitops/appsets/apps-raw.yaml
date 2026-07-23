@@ -35,6 +35,9 @@ spec:
           - app: grafana-datasources
             namespace: prometheus
             project: observability
+          - app: loki-logs-dashboard
+            namespace: prometheus
+            project: observability
           - app: k8sgpt
             namespace: k8sgpt-operator-system
           - app: kube-cleanup-operator

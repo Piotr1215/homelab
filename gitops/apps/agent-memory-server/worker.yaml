@@ -105,7 +105,16 @@ spec:
             failureThreshold: 2
           resources:
             requests:
-              memory: 128Mi
+              # The worker warms in-process NER + topic-extraction models and
+              # holds a ~486Mi steady-state working set (Prometheus, 5-day flat
+              # plateau after a 24h warmup). The old 128Mi request under-reserved
+              # the real footprint by ~4x, so the scheduler sized a 486Mi workload
+              # as 128Mi. Request now reflects the measured steady state.
+              memory: 512Mi
               cpu: 100m
             limits:
-              memory: 512Mi
+              # Steady-state ~486Mi against the old 512Mi limit sat at 95% and
+              # spiked to 509Mi (99.3%) on 2026-07-23, one compaction burst from
+              # an OOMKill (COMPACTION_EVERY_MINUTES=180). 768Mi gives the plateau
+              # ~37% headroom without over-allocating on a memory-bound node.
+              memory: 768Mi

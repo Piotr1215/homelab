@@ -14,13 +14,17 @@ rbac:
   create: true
   pspEnabled: false
 # Resource limits
+# Memory raised 137Mi -> 256Mi. At 137Mi the high-log-volume nodes (worker4,
+# worker6) ran steadily at ~95% working set (~130 MiB), one OOM-triggering log
+# burst away from a kill and firing ContainerMemoryUsageHigh. 256Mi gives ~2x
+# headroom over observed peak while keeping requests==limits (Guaranteed QoS).
 resources:
   requests:
     cpu: 35m
-    memory: 137Mi
+    memory: 256Mi
   limits:
     cpu: 35m
-    memory: 137Mi
+    memory: 256Mi
 # ServiceMonitor for Prometheus
 serviceMonitor:
   enabled: true
